@@ -48,7 +48,7 @@ class PokedexRepository(private val api: PokeApiService) {
     suspend fun getTypes(): List<NamedApiResource> {
         typesCache?.let { return it }
         val list = api.getTypeList().results
-            .filterNot { it.name == "unknown" || it.name == "stellar" }
+            .filterNot { it.name == "unknown" || it.name == "stellar" || it.name == "shadow" }
         typesCache = list
         return list
     }

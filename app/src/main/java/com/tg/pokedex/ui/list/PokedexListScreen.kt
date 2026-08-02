@@ -3,10 +3,10 @@ package com.tg.pokedex.ui.list
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,15 +16,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items as lazyRowItems
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
@@ -100,11 +98,12 @@ fun PokedexListScreen(
                 singleLine = true
             )
 
-            LazyRow(
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                lazyRowItems(uiState.typeOptions, key = { it.name }) { type ->
+                uiState.typeOptions.forEach { type ->
                     FilterChip(
                         selected = uiState.selectedType == type.name,
                         onClick = {
@@ -115,13 +114,19 @@ fun PokedexListScreen(
                 }
             }
 
-            Row(
+            FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                FilterChip(
+                    selected = uiState.showFavoritesOnly,
+                    onClick = viewModel::onToggleFavoritesOnly,
+                    label = { Text("Favorites") },
+                    leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) }
+                )
                 AssistChip(
                     onClick = {
                         viewModel.loadMoveOptionsIfNeeded()

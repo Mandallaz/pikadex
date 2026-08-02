@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AssistChip
@@ -70,8 +72,10 @@ fun PokedexDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val team by viewModel.team.collectAsState()
+    val favorites by viewModel.favorites.collectAsState()
     val isInTeam = uiState.pokemon?.let { p -> team.any { it.name == p.name } } ?: false
     val isTeamFull = team.size >= com.tg.pokedex.data.TeamRepository.MAX_SIZE
+    val isFavorite = uiState.pokemon?.let { p -> favorites.contains(p.name) } ?: false
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
 
@@ -91,8 +95,14 @@ fun PokedexDetailScreen(
                             enabled = isInTeam || !isTeamFull
                         ) {
                             Icon(
-                                imageVector = if (isInTeam) Icons.Filled.Star else Icons.Filled.StarBorder,
+                                imageVector = if (isInTeam) Icons.Filled.Groups else Icons.Filled.GroupAdd,
                                 contentDescription = if (isInTeam) "Remove from team" else "Add to team"
+                            )
+                        }
+                        IconButton(onClick = { viewModel.toggleFavorite() }) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites"
                             )
                         }
                     }
