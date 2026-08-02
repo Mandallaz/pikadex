@@ -1,0 +1,72 @@
+package com.tg.pokedex.ui.team
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.tg.pokedex.data.AppContainer
+import com.tg.pokedex.data.TeamRepository
+import com.tg.pokedex.data.remote.dto.NamedApiResource
+import com.tg.pokedex.data.repository.PokedexRepository
+import com.tg.pokedex.util.TypeIds
+import com.tg.pokedex.util.computeDefensiveMultipliers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+data class TeamUiState(
+    val members: List<NamedApiResource> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    // matrix[typeName][memberName] = defensive multiplier against that attacking type
+    val matrix: Map<String, Map<String, Double>> = emptyMap()
+) {
+    /** Types where at least half the team is weak (>1x) — the team's shared vulnerabilities. */
+    val sharedWeaknesses: List<String>
+        get() {
+            if (members.isEmpty()) return emptyList()
+            return TypeIds.standardTypeNames.filter { type ->
+                val row = matrix[type] ?: return@filter false
+                val weakCount = members.count { (row[it.name] ?: 1.0) > 1.0 }
+                weakCount * 2 >= members.size && weakCount > 0
+            }
+        }
+}
+
+class TeamViewModel @JvmOverloads constructor(
+    private val repository: PokedexRepository = AppContainer.repository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(TeamUiState())
+    val uiState: StateFlow<TeamUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            TeamRepository.team.collectLatest { members ->
+                if (members.isEmpty()) {
+                    _uiState.update { TeamUiState() }
+                    return@collectLatest
+                }
+                _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null) }
+                try {
+                    val matrix = mutableMapOf<String, MutableMap<String, Double>>()
+                    TypeIds.standardTypeNames.forEach { matrix[it] = mutableMapOf() }
+                    members.forEach { member ->
+                        val types = repository.getPokemonTypes(member.name)
+                        val typeDetails = types.map { repository.getTypeDetail(it) }
+                        val defensiveMultipliers = computeDefensiveMultipliers(typeDetails)
+                        defensiveMultipliers.forEach { (attackType, multiplier) ->
+                            matrix.getOrPut(attackType) { mutableMapOf() }[member.name] = multiplier
+                        }
+                    }
+                    _uiState.update { it.copy(isLoading = false, matrix = matrix) }
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = "Network error while computing team matchups.") }
+                }
+            }
+        }
+    }
+
+    fun removeFromTeam(member: NamedApiResource) = TeamRepository.remove(member)
+}
