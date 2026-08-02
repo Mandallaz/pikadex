@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tg.pokedex"
+    namespace = "com.mandallaz.pikadex"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.tg.pokedex"
+        applicationId = "com.mandallaz.pikadex"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
