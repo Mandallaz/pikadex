@@ -299,7 +299,7 @@ private fun DetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        val paths = evolutionPaths(evolutionChain.chain)
+                        val paths = remember(evolutionChain) { evolutionPaths(evolutionChain.chain) }
                         paths.forEach { path ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -333,7 +333,7 @@ private fun DetailContent(
                                             .padding(8.dp)
                                     ) {
                                         AsyncImage(
-                                            model = Sprites.officialArtworkUrl(stage.id),
+                                            model = Sprites.defaultSpriteUrl(stage.id),
                                             contentDescription = stage.speciesName,
                                             contentScale = ContentScale.Fit,
                                             modifier = Modifier.size(64.dp)
@@ -497,7 +497,7 @@ private fun MoveSection(
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     initiallyExpanded: Boolean = false
 ) {
-    val moves = pokemon.movesForCategory(category)
+    val moves = remember(pokemon, category) { pokemon.movesForCategory(category) }
     ExpandableSection(
         title = category.label,
         itemCount = moves.size,

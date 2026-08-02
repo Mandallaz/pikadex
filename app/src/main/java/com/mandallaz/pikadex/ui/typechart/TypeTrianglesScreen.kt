@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +46,7 @@ fun TypeTrianglesScreen(onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        val (perfect, imperfect) = TypeTriangles.ALL.partition { it.isPerfect }
+        val (perfect, imperfect) = remember { TypeTriangles.ALL.partition { it.isPerfect } }
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
             item {
                 Text(

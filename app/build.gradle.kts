@@ -21,12 +21,25 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Not a Play Store build — debug-signed so the release variant can still be installed
+            // and runtime-verified (R8 breaking Gson reflection would otherwise go unnoticed until
+            // a real release).
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

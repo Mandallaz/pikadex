@@ -11,11 +11,19 @@ import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class PokedexListUiState(
     val isLoading: Boolean = true,
@@ -51,33 +59,36 @@ data class PokedexListUiState(
      *  needs a generation to look up regardless — this defaults to the current one. */
     val effectiveFormatGen: SmogonGen
         get() = selectedFormatGen ?: Smogon.ALL_GENERATIONS.last()
+}
 
-    val displayed: List<NamedApiResource>
-        get() {
-            var list = allPokemon
-            if (searchQuery.isNotBlank()) {
-                val q = searchQuery.trim().lowercase()
-                list = list.filter { it.name.contains(q) || it.id?.toString() == q }
-            }
-            typeFilterNames?.let { set -> list = list.filter { it.name in set } }
-            moveFilterNames?.let { set -> list = list.filter { it.name in set } }
-            abilityFilterNames?.let { set -> list = list.filter { it.name in set } }
-            formatFilterNames?.let { set -> list = list.filter { it.name in set } }
-            if (showFavoritesOnly) list = list.filter { it.name in favorites }
+/** Same filtering/sorting [PokedexListUiState] used to expose as a `displayed` getter, moved to a
+ *  plain function fed by a debounced query — a getter re-ran this (up to 5 chained `.filter{}`
+ *  passes, plus a full sort, over ~1300 items) on every single recomposition; now it only runs
+ *  once per actual state change, off the main thread (see [PokedexListViewModel.displayedPokemon]). */
+private fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String): List<NamedApiResource> {
+    var list = state.allPokemon
+    if (debouncedQuery.isNotBlank()) {
+        val q = debouncedQuery.trim().lowercase()
+        list = list.filter { it.name.contains(q) || it.id?.toString() == q }
+    }
+    state.typeFilterNames?.let { set -> list = list.filter { it.name in set } }
+    state.moveFilterNames?.let { set -> list = list.filter { it.name in set } }
+    state.abilityFilterNames?.let { set -> list = list.filter { it.name in set } }
+    state.formatFilterNames?.let { set -> list = list.filter { it.name in set } }
+    if (state.showFavoritesOnly) list = list.filter { it.name in state.favorites }
 
-            sortStat?.let { stat ->
-                val keyOf: (NamedApiResource) -> Int = { resource ->
-                    val stats = baseStats[resource.name]
-                    when {
-                        stats == null -> Int.MIN_VALUE
-                        stat == SortStat.TOTAL -> stats.values.sum()
-                        else -> stats[stat.apiName] ?: Int.MIN_VALUE
-                    }
-                }
-                list = if (sortAscending) list.sortedBy(keyOf) else list.sortedByDescending(keyOf)
+    state.sortStat?.let { stat ->
+        val keyOf: (NamedApiResource) -> Int = { resource ->
+            val stats = state.baseStats[resource.name]
+            when {
+                stats == null -> Int.MIN_VALUE
+                stat == SortStat.TOTAL -> stats.values.sum()
+                else -> stats[stat.apiName] ?: Int.MIN_VALUE
             }
-            return list
         }
+        list = if (state.sortAscending) list.sortedBy(keyOf) else list.sortedByDescending(keyOf)
+    }
+    return list
 }
 
 class PokedexListViewModel @JvmOverloads constructor(
@@ -87,11 +98,28 @@ class PokedexListViewModel @JvmOverloads constructor(
     private val _uiState = MutableStateFlow(PokedexListUiState())
     val uiState: StateFlow<PokedexListUiState> = _uiState.asStateFlow()
 
+    /** The search box itself must reflect every keystroke instantly, but re-filtering the list on
+     *  every single character felt mushy while typing — this settles 150ms after the last change,
+     *  independent of [_uiState] so type/move/ability/format taps (not text input) stay instant. */
+    private val debouncedSearchQuery = MutableStateFlow("")
+
+    /** The filtered/sorted list, recomputed once per actual state change (not once per
+     *  recomposition) and off the main thread — see [computeDisplayed]. */
+    @OptIn(FlowPreview::class)
+    val displayedPokemon: StateFlow<List<NamedApiResource>> =
+        combine(_uiState, debouncedSearchQuery.debounce(150)) { state, query -> computeDisplayed(state, query) }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         viewModelScope.launch {
             try {
-                val pokemonList = repository.getMasterList()
-                val types = repository.getTypes()
+                // Independent requests — no reason the type-chip row should block the ~1300-item
+                // master list (or vice versa) from appearing.
+                val masterListDeferred = async { repository.getMasterList() }
+                val typesDeferred = async { repository.getTypes() }
+                val pokemonList = masterListDeferred.await()
+                val types = typesDeferred.await()
                 _uiState.update { it.copy(allPokemon = pokemonList, typeOptions = types, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update {
@@ -112,6 +140,7 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+        debouncedSearchQuery.value = query
     }
 
     fun onTypeToggled(type: String) {

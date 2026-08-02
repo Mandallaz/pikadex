@@ -145,7 +145,9 @@ fun TeamScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 AsyncImage(
-                                    model = Sprites.officialArtworkUrl(member.id ?: 0),
+                                    // The small sprite (~1-2KB) looks equal or better at this size
+                                    // than an upscaled full artwork image (~100-200KB) would.
+                                    model = Sprites.defaultSpriteUrl(member.id ?: 0),
                                     contentDescription = member.name,
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier.size(48.dp)
@@ -188,7 +190,7 @@ private fun TeamMemberChip(member: NamedApiResource, onRemove: () -> Unit) {
     Box {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             AsyncImage(
-                model = Sprites.officialArtworkUrl(member.id ?: 0),
+                model = Sprites.defaultSpriteUrl(member.id ?: 0),
                 contentDescription = member.name,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.size(56.dp)

@@ -42,6 +42,7 @@ class PokedexRepository(private val api: PokeApiService) {
     private val smogonTierCache = mutableMapOf<String, Map<String, String>>()
     private var allBaseStatsCache: Map<String, Map<String, Int>>? = null
     private var allMoveInfoCache: Map<String, PokeApiGraphQLDataSource.MoveInfo>? = null
+    private var sortedStatArraysCache: Map<String, IntArray>? = null
 
     suspend fun getMasterList(): List<NamedApiResource> {
         masterListCache?.let { return it }
@@ -148,6 +149,44 @@ class PokedexRepository(private val api: PokeApiService) {
         return info
     }
 
+    /** Sorted value arrays per stat key (hp/attack/.../speed, plus a synthetic "total"), built
+     *  once from the bulk stats map. [getStatPercentile] binary-searches these instead of
+     *  re-scanning all ~1300 pokemon's values on every single pokemon detail load. */
+    private suspend fun getSortedStatArrays(): Map<String, IntArray> {
+        sortedStatArraysCache?.let { return it }
+        val allStats = getAllBaseStats()
+        val arrays = BASE_STAT_KEYS.associateWith { key ->
+            allStats.values.mapNotNull { it[key] }.sorted().toIntArray()
+        } + mapOf(
+            "total" to allStats.values.map { stats -> BASE_STAT_KEYS.sumOf { stats[it] ?: 0 } }.sorted().toIntArray()
+        )
+        sortedStatArraysCache = arrays
+        return arrays
+    }
+
+    /** Fraction of every other pokemon's same stat that [value] is greater-or-equal to (0.0..1.0)
+     *  — ties split evenly so a value shared by many pokemon doesn't get pushed to either extreme.
+     *  [statKey] is one of [BASE_STAT_KEYS] or the synthetic "total". */
+    suspend fun getStatPercentile(statKey: String, value: Int): Double {
+        val sorted = getSortedStatArrays()[statKey] ?: return 0.5
+        if (sorted.isEmpty()) return 0.5
+        val below = sorted.lowerBound(value)
+        val belowOrEqual = sorted.lowerBound(value + 1)
+        val equal = belowOrEqual - below
+        return ((below + equal / 2.0) / sorted.size).coerceIn(0.0, 1.0)
+    }
+
+    /** Index of the first element >= [value] (i.e. count of elements strictly less than [value]). */
+    private fun IntArray.lowerBound(value: Int): Int {
+        var lo = 0
+        var hi = size
+        while (lo < hi) {
+            val mid = (lo + hi) / 2
+            if (this[mid] < value) lo = mid + 1 else hi = mid
+        }
+        return lo
+    }
+
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
         val pokemon = pokemonDetailCache.getOrPut(nameOrId) { api.getPokemon(nameOrId) }
         // Alternate forms (mega/gmax/regional/gender/cosmetic...) have a pokemon.id in the 10000+
@@ -162,6 +201,7 @@ class PokedexRepository(private val api: PokeApiService) {
     }
 
     private companion object {
+        val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
         const val BASE_STATS_CACHE_KEY = "base_stats"
         const val MOVE_INFO_CACHE_KEY = "move_info"
         val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)

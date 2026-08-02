@@ -51,7 +51,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.TeamRepository
+import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.OptionsDialog
 import com.mandallaz.pikadex.ui.components.PokemonCard
 import com.mandallaz.pikadex.ui.components.SearchableListDialog
@@ -73,7 +75,9 @@ fun PokedexListScreen(
     viewModel: PokedexListViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val displayedPokemon by viewModel.displayedPokemon.collectAsState()
     val team by TeamRepository.team.collectAsState()
+    val favorites by FavoritesRepository.favorites.collectAsState()
     var activeDialog by remember { mutableStateOf(ActiveDialog.NONE) }
 
     Scaffold(
@@ -105,11 +109,10 @@ fun PokedexListScreen(
                 singleLine = true
             )
 
-            val typeRowHalf = (uiState.typeOptions.size + 1) / 2
-            val typeRows = listOf(
-                uiState.typeOptions.take(typeRowHalf),
-                uiState.typeOptions.drop(typeRowHalf)
-            )
+            val typeRows = remember(uiState.typeOptions) {
+                val half = (uiState.typeOptions.size + 1) / 2
+                listOf(uiState.typeOptions.take(half), uiState.typeOptions.drop(half))
+            }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 typeRows.forEach { rowTypes ->
                     LazyRow(
@@ -210,12 +213,19 @@ fun PokedexListScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(uiState.displayed, key = { it.name }) { resource ->
+                            items(displayedPokemon, key = { it.name }) { resource ->
                                 val id = resource.id ?: return@items
                                 PokemonCard(
                                     id = id,
                                     name = resource.name,
-                                    onClick = { onPokemonClick(resource.name) }
+                                    isFavorite = resource.name in favorites,
+                                    isInTeam = team.any { it.name == resource.name },
+                                    isTeamFull = team.size >= TeamRepository.MAX_SIZE,
+                                    onClick = { onPokemonClick(resource.name) },
+                                    onToggleTeam = {
+                                        TeamRepository.toggle(NamedApiResource(resource.name, "https://pokeapi.co/api/v2/pokemon/$id/"))
+                                    },
+                                    onToggleFavorite = { FavoritesRepository.toggle(resource.name) }
                                 )
                             }
                             item(span = { GridItemSpan(maxLineSpan) }) {

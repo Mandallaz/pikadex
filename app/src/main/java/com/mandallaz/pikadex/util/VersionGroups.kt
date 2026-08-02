@@ -22,8 +22,10 @@ object VersionGroups {
         "scarlet-violet"
     )
 
-    fun rank(versionGroupName: String): Int {
-        val index = order.indexOf(versionGroupName)
-        return if (index >= 0) index else Int.MAX_VALUE
-    }
+    // rank() is called once per version_group_detail while grouping a pokemon's moves (up to
+    // ~2,700 for a pokemon like Mew across 4 categories) — a Map lookup instead of an indexOf
+    // scan turns that into a hash lookup instead of a linear string-equality scan.
+    private val rankByName = order.withIndex().associate { (index, name) -> name to index }
+
+    fun rank(versionGroupName: String): Int = rankByName[versionGroupName] ?: Int.MAX_VALUE
 }
