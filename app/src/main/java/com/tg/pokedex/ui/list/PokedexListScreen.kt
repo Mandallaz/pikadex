@@ -113,10 +113,8 @@ fun PokedexListScreen(
                     ) {
                         lazyRowItems(rowTypes, key = { it.name }) { type ->
                             FilterChip(
-                                selected = uiState.selectedType == type.name,
-                                onClick = {
-                                    viewModel.onTypeSelected(if (uiState.selectedType == type.name) null else type.name)
-                                },
+                                selected = type.name in uiState.selectedTypes,
+                                onClick = { viewModel.onTypeToggled(type.name) },
                                 label = { TypeBadge(type.name, type.id ?: 0, height = 20.dp) }
                             )
                         }
