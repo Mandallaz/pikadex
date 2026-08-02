@@ -1,10 +1,9 @@
 package com.mandallaz.pikadex.data.remote
 
+import com.mandallaz.pikadex.data.AppContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.concurrent.TimeUnit
 
 /**
  * Fetches competitive tier placements (OU, UU, LC...) per Pokemon per generation from Pokemon
@@ -23,11 +22,7 @@ object SmogonTierDataSource {
         "bw" to "gen5", "xy" to "gen6", "sm" to "gen7", "ss" to "gen8"
     )
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .addInterceptor(RetryInterceptor())
-        .build()
+    private val client get() = AppContainer.sharedOkHttpClient
 
     private val ENTRY_REGEX = Regex("""(\w+):\s*\{([^{}]*)\}""")
     private val TIER_REGEX = Regex(""""?tier"?:\s*"([^"]+)"""")
