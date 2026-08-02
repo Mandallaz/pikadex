@@ -12,11 +12,14 @@
 
 # All PokeAPI/GraphQL response DTOs (including the private nested data classes in
 # PokeApiGraphQLDataSource, e.g. MoveInfo, which JsonDiskCache also deserializes via a Gson
-# TypeToken) — pure data holders, nothing to gain from shrinking them.
+# TypeToken) — pure data holders, nothing to gain from shrinking them. A missing field here isn't
+# a crash, just a silent null, so this rule is deliberately broad rather than tightly scoped: any
+# future DTO added under a `dto` package anywhere in the app is covered too, not just today's
+# com.mandallaz.pikadex.data.remote.* layout.
 -keep class com.mandallaz.pikadex.data.remote.** { <fields>; }
+-keep class com.mandallaz.pikadex.**.dto.** { <fields>; }
 
 -dontwarn sun.misc.**
--keep class com.google.gson.stream.** { *; }
 
 # Gson's TypeToken (used directly in PokedexRepository/JsonDiskCache to describe the
 # Map<String, ...> shapes read back from disk) reads its own generic superclass signature via
@@ -26,8 +29,8 @@
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
 -keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
 
-# Retrofit
+# Retrofit — OkHttp and Retrofit each ship their own consumer proguard rules bundled in their AARs,
+# so blanket -dontwarn here would only hide genuinely missing classes, not add anything they don't
+# already declare for themselves.
 -keepattributes Exceptions
--dontwarn okhttp3.**
--dontwarn retrofit2.**
 -keep,allowobfuscation interface com.mandallaz.pikadex.data.remote.PokeApiService

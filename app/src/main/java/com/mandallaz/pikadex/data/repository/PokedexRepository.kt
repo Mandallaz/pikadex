@@ -1,6 +1,8 @@
 package com.mandallaz.pikadex.data.repository
 
 import com.google.gson.reflect.TypeToken
+import com.mandallaz.pikadex.data.AsyncCache
+import com.mandallaz.pikadex.data.AsyncValueCache
 import com.mandallaz.pikadex.data.JsonDiskCache
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.PokeApiService
@@ -24,60 +26,48 @@ data class PokemonDetailBundle(
 /**
  * Access layer for PokeAPI data. Keeps the global lists (pokemon/moves/abilities/types) in memory
  * since they never change during the process lifetime, avoiding re-downloading ~1300 entries on
- * every screen.
+ * every screen. Every cache is [AsyncCache]/[AsyncValueCache] rather than a plain map, since
+ * several callers now fetch concurrently (team matchups, detail screen) and a plain
+ * `getOrPut { suspendCall() }` lets concurrent callers race past the cache check before either
+ * one's fetch completes.
  */
 class PokedexRepository(private val api: PokeApiService) {
 
-    private var masterListCache: List<NamedApiResource>? = null
-    private var moveNamesCache: List<String>? = null
-    private var abilityNamesCache: List<String>? = null
-    private var typesCache: List<NamedApiResource>? = null
+    private val masterListCache = AsyncValueCache<List<NamedApiResource>>()
+    private val moveNamesCache = AsyncValueCache<List<String>>()
+    private val abilityNamesCache = AsyncValueCache<List<String>>()
+    private val typesCache = AsyncValueCache<List<NamedApiResource>>()
 
-    private val pokemonDetailCache = mutableMapOf<String, PokemonDto>()
-    private val speciesCache = mutableMapOf<Int, PokemonSpeciesDto>()
-    private val evolutionChainCache = mutableMapOf<Int, EvolutionChainDto>()
-    private val typeDetailCache = mutableMapOf<String, TypeDetailDto>()
-    private val moveDetailCache = mutableMapOf<String, MoveDetailDto>()
-    private val abilityDetailCache = mutableMapOf<String, AbilityDetailDto>()
-    private val smogonTierCache = mutableMapOf<String, Map<String, String>>()
-    private var allBaseStatsCache: Map<String, Map<String, Int>>? = null
-    private var allMoveInfoCache: Map<String, PokeApiGraphQLDataSource.MoveInfo>? = null
-    private var sortedStatArraysCache: Map<String, IntArray>? = null
+    private val pokemonDetailCache = AsyncCache<String, PokemonDto>()
+    private val speciesCache = AsyncCache<Int, PokemonSpeciesDto>()
+    private val evolutionChainCache = AsyncCache<Int, EvolutionChainDto>()
+    private val typeDetailCache = AsyncCache<String, TypeDetailDto>()
+    private val moveDetailCache = AsyncCache<String, MoveDetailDto>()
+    private val abilityDetailCache = AsyncCache<String, AbilityDetailDto>()
+    private val smogonTierCache = AsyncCache<String, Map<String, String>>()
+    private val allBaseStatsCache = AsyncValueCache<Map<String, Map<String, Int>>>()
+    private val allMoveInfoCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.MoveInfo>>()
+    private val sortedStatArraysCache = AsyncValueCache<Map<String, IntArray>>()
 
-    suspend fun getMasterList(): List<NamedApiResource> {
-        masterListCache?.let { return it }
-        val list = api.getPokemonList(limit = 100000).results
-        masterListCache = list
-        return list
-    }
+    suspend fun getMasterList(): List<NamedApiResource> =
+        masterListCache.get { api.getPokemonList(limit = 100000).results }
 
-    suspend fun getTypes(): List<NamedApiResource> {
-        typesCache?.let { return it }
+    suspend fun getTypes(): List<NamedApiResource> = typesCache.get {
         val order = TypeIds.standardTypeNames
-        val list = api.getTypeList().results
+        api.getTypeList().results
             .filterNot { it.name == "unknown" || it.name == "stellar" || it.name == "shadow" }
             .sortedBy { order.indexOf(it.name) }
-        typesCache = list
-        return list
     }
 
-    suspend fun getMoveNames(): List<String> {
-        moveNamesCache?.let { return it }
-        val list = api.getMoveList(limit = 100000).results.map { it.name }
-        moveNamesCache = list
-        return list
-    }
+    suspend fun getMoveNames(): List<String> =
+        moveNamesCache.get { api.getMoveList(limit = 100000).results.map { it.name } }
 
-    suspend fun getAbilityNames(): List<String> {
-        abilityNamesCache?.let { return it }
-        val list = api.getAbilityList(limit = 100000).results.map { it.name }
-        abilityNamesCache = list
-        return list
-    }
+    suspend fun getAbilityNames(): List<String> =
+        abilityNamesCache.get { api.getAbilityList(limit = 100000).results.map { it.name } }
 
     /** Full type detail (including damage_relations), cached per type name. */
     suspend fun getTypeDetail(type: String): TypeDetailDto =
-        typeDetailCache.getOrPut(type) { api.getType(type) }
+        typeDetailCache.get(type) { api.getType(type) }
 
     /** Names of pokemon that have this type (the /type endpoint already does the reverse lookup). */
     suspend fun getPokemonNamesForType(type: String): Set<String> {
@@ -87,81 +77,78 @@ class PokedexRepository(private val api: PokeApiService) {
 
     /** Names of pokemon that can learn this move. */
     suspend fun getPokemonNamesForMove(move: String): Set<String> {
-        val detail = moveDetailCache.getOrPut(move) { api.getMove(move) }
+        val detail = moveDetailCache.get(move) { api.getMove(move) }
         return detail.learnedByPokemon.map { it.name }.toSet()
     }
 
     /** Names of pokemon that can have this ability. */
     suspend fun getPokemonNamesForAbility(ability: String): Set<String> {
-        val detail = abilityDetailCache.getOrPut(ability) { api.getAbility(ability) }
+        val detail = abilityDetailCache.get(ability) { api.getAbility(ability) }
         return detail.pokemon.map { it.pokemon.name }.toSet()
     }
 
     /** Plain-English description of an ability (e.g. "Levitate" -> "Gives full immunity to Ground
      *  type moves."), since PokeAPI's ability names alone are often unclear on their own. */
     suspend fun getAbilityDescription(ability: String): String? {
-        val detail = abilityDetailCache.getOrPut(ability) { api.getAbility(ability) }
+        val detail = abilityDetailCache.get(ability) { api.getAbility(ability) }
         return detail.effectEntries.firstOrNull { it.language.name == "en" }?.shortEffect
     }
 
     /** Just the type names for a pokemon, without pulling the full detail bundle (species, evolution chain). */
     suspend fun getPokemonTypes(nameOrId: String): List<String> {
-        val pokemon = pokemonDetailCache.getOrPut(nameOrId) { api.getPokemon(nameOrId) }
+        val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
         return pokemon.types.map { it.type.name }
     }
 
     /** pokemonKey (Showdown format, no hyphens) -> tier code, for a Smogon generation (e.g. "ss"). */
     suspend fun getSmogonTiers(genCode: String): Map<String, String> =
-        smogonTierCache.getOrPut(genCode) { SmogonTierDataSource.fetchTiers(genCode) }
+        smogonTierCache.get(genCode) { SmogonTierDataSource.fetchTiers(genCode) }
 
     /** pokemonName -> (statApiName -> baseStat), fetched once in bulk via GraphQL for sorting.
      *  Also persisted to disk (GraphQL is POST, so the shared HTTP cache can't cover it) — this
      *  data only changes when a new generation ships, so there's no reason to re-fetch ~1300
      *  entries worth of stats every cold start. */
-    suspend fun getAllBaseStats(): Map<String, Map<String, Int>> {
-        allBaseStatsCache?.let { return it }
-        JsonDiskCache.read<Map<String, Map<String, Int>>>(
+    suspend fun getAllBaseStats(): Map<String, Map<String, Int>> = allBaseStatsCache.get {
+        val cached = JsonDiskCache.read<Map<String, Map<String, Int>>>(
             BASE_STATS_CACHE_KEY, BASE_STATS_TYPE, DISK_CACHE_MAX_AGE_MILLIS
-        )?.let {
-            allBaseStatsCache = it
-            return it
+        )
+        if (cached != null) {
+            cached
+        } else {
+            val stats = PokeApiGraphQLDataSource.fetchAllBaseStats()
+            JsonDiskCache.write(BASE_STATS_CACHE_KEY, stats)
+            stats
         }
-        val stats = PokeApiGraphQLDataSource.fetchAllBaseStats()
-        allBaseStatsCache = stats
-        JsonDiskCache.write(BASE_STATS_CACHE_KEY, stats)
-        return stats
     }
 
     /** moveName -> (type, damage class, power, accuracy), fetched once in bulk via GraphQL and
      *  reused for every pokemon's move lists (Level Up / TM-HM / Breeding / Tutor). Persisted to
      *  disk for the same reason as [getAllBaseStats]. */
-    suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo> {
-        allMoveInfoCache?.let { return it }
-        JsonDiskCache.read<Map<String, PokeApiGraphQLDataSource.MoveInfo>>(
+    suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo> = allMoveInfoCache.get {
+        val cached = JsonDiskCache.read<Map<String, PokeApiGraphQLDataSource.MoveInfo>>(
             MOVE_INFO_CACHE_KEY, MOVE_INFO_TYPE, DISK_CACHE_MAX_AGE_MILLIS
-        )?.let {
-            allMoveInfoCache = it
-            return it
+        )
+        if (cached != null) {
+            cached
+        } else {
+            val info = PokeApiGraphQLDataSource.fetchAllMoveInfo()
+            JsonDiskCache.write(MOVE_INFO_CACHE_KEY, info)
+            info
         }
-        val info = PokeApiGraphQLDataSource.fetchAllMoveInfo()
-        allMoveInfoCache = info
-        JsonDiskCache.write(MOVE_INFO_CACHE_KEY, info)
-        return info
     }
 
     /** Sorted value arrays per stat key (hp/attack/.../speed, plus a synthetic "total"), built
      *  once from the bulk stats map. [getStatPercentile] binary-searches these instead of
-     *  re-scanning all ~1300 pokemon's values on every single pokemon detail load. */
-    private suspend fun getSortedStatArrays(): Map<String, IntArray> {
-        sortedStatArraysCache?.let { return it }
+     *  re-scanning all ~1300 pokemon's values on every single pokemon detail load. Runs on
+     *  [AsyncValueCache]'s default dispatcher (Default, not Main) since sorting ~1300 values
+     *  7 times over is real CPU work, not just a cache lookup. */
+    private suspend fun getSortedStatArrays(): Map<String, IntArray> = sortedStatArraysCache.get {
         val allStats = getAllBaseStats()
-        val arrays = BASE_STAT_KEYS.associateWith { key ->
+        BASE_STAT_KEYS.associateWith { key ->
             allStats.values.mapNotNull { it[key] }.sorted().toIntArray()
         } + mapOf(
             "total" to allStats.values.map { stats -> BASE_STAT_KEYS.sumOf { stats[it] ?: 0 } }.sorted().toIntArray()
         )
-        sortedStatArraysCache = arrays
-        return arrays
     }
 
     /** Fraction of every other pokemon's same stat that [value] is greater-or-equal to (0.0..1.0)
@@ -188,15 +175,15 @@ class PokedexRepository(private val api: PokeApiService) {
     }
 
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
-        val pokemon = pokemonDetailCache.getOrPut(nameOrId) { api.getPokemon(nameOrId) }
+        val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
         // Alternate forms (mega/gmax/regional/gender/cosmetic...) have a pokemon.id in the 10000+
         // range that does NOT match any pokemon-species id — the species must be looked up via the
         // "species" reference embedded in the pokemon payload instead (e.g. basculegion-female,
         // pokemon id 10248, belongs to species "basculegion", id 902).
         val speciesKey = pokemon.species.id ?: pokemon.id
-        val species = speciesCache.getOrPut(speciesKey) { api.getPokemonSpecies(pokemon.species.name) }
+        val species = speciesCache.get(speciesKey) { api.getPokemonSpecies(pokemon.species.name) }
         val chainId = species.evolutionChain?.id
-        val chain = chainId?.let { id -> evolutionChainCache.getOrPut(id) { api.getEvolutionChain(id) } }
+        val chain = chainId?.let { id -> evolutionChainCache.get(id) { api.getEvolutionChain(id) } }
         return PokemonDetailBundle(pokemon, species, chain)
     }
 
