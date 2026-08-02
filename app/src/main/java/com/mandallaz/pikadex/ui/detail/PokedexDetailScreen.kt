@@ -275,7 +275,7 @@ private fun DetailContent(
             TypeMatchupsCard(typeMatchups)
         }
 
-        if (memberTriangles.isNotEmpty()) {
+        if (memberTriangles.isNotEmpty() || counteredTriangles.isNotEmpty()) {
             item {
                 TypeTrianglesCard(memberTriangles, counteredTriangles)
             }
@@ -378,6 +378,11 @@ private fun TypeMatchupsCard(typeMatchups: Map<String, Double>) {
 @Composable
 private fun TypeTrianglesCard(memberTriangles: List<TypeTriangle>, counteredTriangles: List<TypeTriangle>) {
     val counteredTitles = counteredTriangles.map { it.title }.toSet()
+    // A pokemon's typing can counter a triangle without being "in" it at all — e.g. Dragonite
+    // (Flying/Dragon) counters Fire/Grass/Water, but neither Flying nor Dragon is one of that
+    // triangle's 3 types — so these need their own section, not just an inline note on triangles
+    // that happen to already be in memberTriangles.
+    val counterOnlyTriangles = counteredTriangles.filter { it !in memberTriangles }
 
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -386,38 +391,61 @@ private fun TypeTrianglesCard(memberTriangles: List<TypeTriangle>, counteredTria
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-            Text(
-                "This typing is part of these rock-paper-scissors loops.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
-            )
-            memberTriangles.forEachIndexed { index, triangle ->
-                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                Column {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.horizontalScroll(rememberScrollState())
-                    ) {
-                        triangle.types.forEach { type -> TypeBadge(type, TypeIds.of(type)) }
-                    }
-                    Text(
-                        text = triangle.title + if (triangle.isPerfect) " (Perfect)" else " (Imperfect)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(top = 6.dp)
-                    )
-                    if (triangle.title in counteredTitles) {
-                        Text(
-                            text = "This typing is the best counter to this triangle.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+
+            if (counterOnlyTriangles.isNotEmpty()) {
+                Text(
+                    "This typing is the best counter to:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+                )
+                counterOnlyTriangles.forEachIndexed { index, triangle ->
+                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                    TriangleRow(triangle)
+                }
+                if (memberTriangles.isNotEmpty()) HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp))
+            }
+
+            if (memberTriangles.isNotEmpty()) {
+                Text(
+                    "This typing is part of these rock-paper-scissors loops.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+                )
+                memberTriangles.forEachIndexed { index, triangle ->
+                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                    TriangleRow(triangle, isCounter = triangle.title in counteredTitles)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TriangleRow(triangle: TypeTriangle, isCounter: Boolean = false) {
+    Column {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ) {
+            triangle.types.forEach { type -> TypeBadge(type, TypeIds.of(type)) }
+        }
+        Text(
+            text = triangle.title + if (triangle.isPerfect) " (Perfect)" else " (Imperfect)",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        if (isCounter) {
+            Text(
+                text = "This typing is the best counter to this triangle.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
