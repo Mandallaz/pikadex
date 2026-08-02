@@ -10,6 +10,7 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
+import com.mandallaz.pikadex.util.TypeIds
 
 data class PokemonDetailBundle(
     val pokemon: PokemonDto,
@@ -48,8 +49,10 @@ class PokedexRepository(private val api: PokeApiService) {
 
     suspend fun getTypes(): List<NamedApiResource> {
         typesCache?.let { return it }
+        val order = TypeIds.standardTypeNames
         val list = api.getTypeList().results
             .filterNot { it.name == "unknown" || it.name == "stellar" || it.name == "shadow" }
+            .sortedBy { order.indexOf(it.name) }
         typesCache = list
         return list
     }
