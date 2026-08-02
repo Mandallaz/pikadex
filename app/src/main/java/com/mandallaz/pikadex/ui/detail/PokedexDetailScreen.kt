@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.ui.components.ExpandableSection
@@ -130,6 +131,7 @@ fun PokedexDetailScreen(
                     abilityDescriptions = uiState.abilityDescriptions,
                     memberTriangles = uiState.memberTriangles,
                     counteredTriangles = uiState.counteredTriangles,
+                    moveInfo = uiState.moveInfo,
                     onPokemonClick = onPokemonClick
                 )
             }
@@ -146,6 +148,7 @@ private fun DetailContent(
     abilityDescriptions: Map<String, String>,
     memberTriangles: List<TypeTriangle>,
     counteredTriangles: List<TypeTriangle>,
+    moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     onPokemonClick: (String) -> Unit
 ) {
     val primaryType = pokemon.types.minByOrNull { it.slot }?.type?.name ?: "normal"
@@ -347,11 +350,11 @@ private fun DetailContent(
         }
 
         item {
-            MoveSection(pokemon, MoveCategory.LEVEL_UP)
+            MoveSection(pokemon, MoveCategory.LEVEL_UP, moveInfo)
         }
-        item { MoveSection(pokemon, MoveCategory.MACHINE) }
-        item { MoveSection(pokemon, MoveCategory.EGG) }
-        item { MoveSection(pokemon, MoveCategory.TUTOR) }
+        item { MoveSection(pokemon, MoveCategory.MACHINE, moveInfo) }
+        item { MoveSection(pokemon, MoveCategory.EGG, moveInfo) }
+        item { MoveSection(pokemon, MoveCategory.TUTOR, moveInfo) }
 
         item { androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(24.dp)) }
     }
@@ -456,7 +459,12 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String) {
 }
 
 @Composable
-private fun MoveSection(pokemon: PokemonDto, category: MoveCategory, initiallyExpanded: Boolean = false) {
+private fun MoveSection(
+    pokemon: PokemonDto,
+    category: MoveCategory,
+    moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
+    initiallyExpanded: Boolean = false
+) {
     val moves = pokemon.movesForCategory(category)
     ExpandableSection(
         title = category.label,
@@ -467,18 +475,46 @@ private fun MoveSection(pokemon: PokemonDto, category: MoveCategory, initiallyEx
         if (moves.isEmpty()) {
             Text("No moves in this category.", style = MaterialTheme.typography.bodyMedium)
         } else {
-            moves.forEach { move ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(move.moveName.toDisplayName(), modifier = Modifier.weight(1f))
-                    if (category == MoveCategory.LEVEL_UP) {
-                        Text(if (move.level > 0) "Lv. ${move.level}" else "Evolution")
+            moves.forEachIndexed { index, move ->
+                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(move.moveName.toDisplayName(), fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                        if (category == MoveCategory.LEVEL_UP) {
+                            Text(if (move.level > 0) "Lv. ${move.level}" else "Evolution")
+                        }
+                    }
+                    moveInfo[move.moveName]?.let { info ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            TypeBadge(info.type, TypeIds.of(info.type), height = 18.dp)
+                            Text(
+                                text = moveStatsLabel(info),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+private fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
+    val category = when (info.damageClass) {
+        "physical" -> "Physical"
+        "special" -> "Special"
+        else -> "Status"
+    }
+    val power = info.power?.toString() ?: "—"
+    val accuracy = info.accuracy?.let { "$it%" } ?: "—"
+    return "$category · Power $power · Accuracy $accuracy"
 }
 

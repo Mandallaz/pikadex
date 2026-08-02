@@ -37,6 +37,7 @@ class PokedexRepository(private val api: PokeApiService) {
     private val abilityDetailCache = mutableMapOf<String, AbilityDetailDto>()
     private val smogonTierCache = mutableMapOf<String, Map<String, String>>()
     private var allBaseStatsCache: Map<String, Map<String, Int>>? = null
+    private var allMoveInfoCache: Map<String, PokeApiGraphQLDataSource.MoveInfo>? = null
 
     suspend fun getMasterList(): List<NamedApiResource> {
         masterListCache?.let { return it }
@@ -112,6 +113,15 @@ class PokedexRepository(private val api: PokeApiService) {
         val stats = PokeApiGraphQLDataSource.fetchAllBaseStats()
         allBaseStatsCache = stats
         return stats
+    }
+
+    /** moveName -> (type, damage class, power, accuracy), fetched once in bulk via GraphQL and
+     *  reused for every pokemon's move lists (Level Up / TM-HM / Breeding / Tutor). */
+    suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo> {
+        allMoveInfoCache?.let { return it }
+        val info = PokeApiGraphQLDataSource.fetchAllMoveInfo()
+        allMoveInfoCache = info
+        return info
     }
 
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
