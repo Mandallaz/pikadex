@@ -3,6 +3,7 @@ package com.tg.pokedex.ui.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tg.pokedex.data.AppContainer
+import com.tg.pokedex.data.FavoritesRepository
 import com.tg.pokedex.data.remote.SmogonTierDataSource
 import com.tg.pokedex.data.remote.dto.NamedApiResource
 import com.tg.pokedex.data.repository.PokedexRepository
@@ -38,10 +39,13 @@ data class PokedexListUiState(
     val sortStat: SortStat? = null,
     val sortAscending: Boolean = false,
     val baseStats: Map<String, Map<String, Int>> = emptyMap(),
-    val isStatsLoading: Boolean = false
+    val isStatsLoading: Boolean = false,
+    val showFavoritesOnly: Boolean = false,
+    val favorites: Set<String> = emptySet()
 ) {
     val hasActiveFilters: Boolean
-        get() = selectedType != null || selectedMove != null || selectedAbility != null || selectedFormatGen != null
+        get() = selectedType != null || selectedMove != null || selectedAbility != null ||
+            selectedFormatGen != null || showFavoritesOnly
 
     val displayed: List<NamedApiResource>
         get() {
@@ -54,6 +58,7 @@ data class PokedexListUiState(
             moveFilterNames?.let { set -> list = list.filter { it.name in set } }
             abilityFilterNames?.let { set -> list = list.filter { it.name in set } }
             formatFilterNames?.let { set -> list = list.filter { it.name in set } }
+            if (showFavoritesOnly) list = list.filter { it.name in favorites }
 
             sortStat?.let { stat ->
                 val keyOf: (NamedApiResource) -> Int = { resource ->
@@ -89,6 +94,15 @@ class PokedexListViewModel @JvmOverloads constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            FavoritesRepository.favorites.collect { favs ->
+                _uiState.update { it.copy(favorites = favs) }
+            }
+        }
+    }
+
+    fun onToggleFavoritesOnly() {
+        _uiState.update { it.copy(showFavoritesOnly = !it.showFavoritesOnly) }
     }
 
     fun onSearchQueryChange(query: String) {
@@ -230,7 +244,8 @@ class PokedexListViewModel @JvmOverloads constructor(
                 selectedMove = null, moveFilterNames = null,
                 selectedAbility = null, abilityFilterNames = null,
                 selectedFormatGen = null, formatTierOptions = emptyList(),
-                selectedFormatTier = null, formatFilterNames = null
+                selectedFormatTier = null, formatFilterNames = null,
+                showFavoritesOnly = false
             )
         }
     }

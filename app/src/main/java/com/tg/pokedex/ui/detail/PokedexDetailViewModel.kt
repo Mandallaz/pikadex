@@ -3,6 +3,7 @@ package com.tg.pokedex.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tg.pokedex.data.AppContainer
+import com.tg.pokedex.data.FavoritesRepository
 import com.tg.pokedex.data.TeamRepository
 import com.tg.pokedex.data.remote.dto.EvolutionChainDto
 import com.tg.pokedex.data.remote.dto.NamedApiResource
@@ -33,6 +34,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
     val uiState: StateFlow<PokedexDetailUiState> = _uiState.asStateFlow()
 
     val team: StateFlow<List<NamedApiResource>> = TeamRepository.team
+    val favorites: StateFlow<Set<String>> = FavoritesRepository.favorites
 
     private var loadedFor: String? = null
 
@@ -65,5 +67,10 @@ class PokedexDetailViewModel @JvmOverloads constructor(
     fun toggleTeamMembership() {
         val pokemon = _uiState.value.pokemon ?: return
         TeamRepository.toggle(NamedApiResource(pokemon.name, "https://pokeapi.co/api/v2/pokemon/${pokemon.id}/"))
+    }
+
+    fun toggleFavorite() {
+        val pokemon = _uiState.value.pokemon ?: return
+        FavoritesRepository.toggle(pokemon.name)
     }
 }
