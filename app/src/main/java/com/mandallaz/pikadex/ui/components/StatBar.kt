@@ -9,15 +9,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mandallaz.pikadex.util.StatColors
 import com.mandallaz.pikadex.util.toDisplayName
 
 private const val MAX_STAT = 255f
 
 @Composable
-fun StatBar(statName: String, value: Int, modifier: Modifier = Modifier) {
+fun StatBar(statName: String, value: Int, color: Color, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -37,7 +37,7 @@ fun StatBar(statName: String, value: Int, modifier: Modifier = Modifier) {
         )
         LinearProgressIndicator(
             progress = { (value / MAX_STAT).coerceIn(0f, 1f) },
-            color = StatColors.of(statName),
+            color = color,
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 8.dp)

@@ -59,6 +59,7 @@ import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.Sprites
+import com.mandallaz.pikadex.util.StatColors
 import com.mandallaz.pikadex.util.TypeColors
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.TypeTriangle
@@ -132,6 +133,7 @@ fun PokedexDetailScreen(
                     memberTriangles = uiState.memberTriangles,
                     counteredTriangles = uiState.counteredTriangles,
                     moveInfo = uiState.moveInfo,
+                    statPercentiles = uiState.statPercentiles,
                     onPokemonClick = onPokemonClick
                 )
             }
@@ -149,6 +151,7 @@ private fun DetailContent(
     memberTriangles: List<TypeTriangle>,
     counteredTriangles: List<TypeTriangle>,
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
+    statPercentiles: Map<String, Double>,
     onPokemonClick: (String) -> Unit
 ) {
     val primaryType = pokemon.types.minByOrNull { it.slot }?.type?.name ?: "normal"
@@ -230,7 +233,8 @@ private fun DetailContent(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     pokemon.stats.forEach { stat ->
-                        StatBar(statName = stat.stat.name, value = stat.baseStat)
+                        val percentile = statPercentiles[stat.stat.name] ?: 0.5
+                        StatBar(statName = stat.stat.name, value = stat.baseStat, color = StatColors.forPercentile(percentile))
                     }
                     val total = pokemon.stats.sumOf { it.baseStat }
                     Text(
