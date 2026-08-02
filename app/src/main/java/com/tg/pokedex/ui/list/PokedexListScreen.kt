@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as lazyRowItems
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Groups
@@ -98,12 +100,11 @@ fun PokedexListScreen(
                 singleLine = true
             )
 
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                uiState.typeOptions.forEach { type ->
+                lazyRowItems(uiState.typeOptions, key = { it.name }) { type ->
                     FilterChip(
                         selected = uiState.selectedType == type.name,
                         onClick = {
