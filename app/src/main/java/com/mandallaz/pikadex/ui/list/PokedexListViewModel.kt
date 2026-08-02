@@ -20,7 +20,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -86,7 +88,15 @@ private fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String):
                 else -> stats[stat.apiName] ?: Int.MIN_VALUE
             }
         }
-        list = if (state.sortAscending) list.sortedBy(keyOf) else list.sortedByDescending(keyOf)
+        // sortedBy/sortedByDescending call the key selector on every *comparison*, not once per
+        // element (~27k calls for a ~1300-item sort instead of 1300) — decorate-sort-undecorate
+        // computes each key exactly once.
+        val decorated = list.map { it to keyOf(it) }
+        list = if (state.sortAscending) {
+            decorated.sortedBy { it.second }
+        } else {
+            decorated.sortedByDescending { it.second }
+        }.map { it.first }
     }
     return list
 }
@@ -107,7 +117,14 @@ class PokedexListViewModel @JvmOverloads constructor(
      *  recomposition) and off the main thread — see [computeDisplayed]. */
     @OptIn(FlowPreview::class)
     val displayedPokemon: StateFlow<List<NamedApiResource>> =
-        combine(_uiState, debouncedSearchQuery.debounce(150)) { state, query -> computeDisplayed(state, query) }
+        combine(
+            // searchQuery is deliberately zeroed out here — it's already fed in separately, via
+            // the debounced flow below. Left in, every keystroke would re-emit *this* arm too
+            // (searchQuery lives on the same _uiState as everything else), which re-ran the
+            // filter/sort pass on the un-debounced text and defeated the debounce entirely.
+            _uiState.map { it.copy(searchQuery = "") }.distinctUntilChanged(),
+            debouncedSearchQuery.debounce(150)
+        ) { state, query -> computeDisplayed(state, query) }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

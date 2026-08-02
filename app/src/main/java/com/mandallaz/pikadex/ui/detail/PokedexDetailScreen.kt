@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +25,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AssistChip
@@ -34,13 +38,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,7 +60,6 @@ import coil.compose.AsyncImage
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
-import com.mandallaz.pikadex.ui.components.ExpandableSection
 import com.mandallaz.pikadex.ui.components.StatBar
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.MoveCategory
@@ -62,6 +68,7 @@ import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.StatColors
 import com.mandallaz.pikadex.util.TypeColors
 import com.mandallaz.pikadex.util.TypeIds
+import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
 import com.mandallaz.pikadex.util.movesForCategory
@@ -156,6 +163,25 @@ private fun DetailContent(
 ) {
     val primaryType = pokemon.types.minByOrNull { it.slot }?.type?.name ?: "normal"
     val primaryColor = TypeColors.of(primaryType)
+
+    // Each category's moves computed once per pokemon (not on every recomposition — this is the
+    // exact same grouping/sorting work regardless of whether the section is expanded), and which
+    // sections are expanded is tracked here rather than inside each section, since expanded rows
+    // now need to be items() in *this* LazyColumn rather than a nested non-lazy Column (composing
+    // ~250 rows for a pokemon like Mew in one non-lazy Column, all at once on expand, was the
+    // actual performance problem — LazyColumn only composes what's on/near screen).
+    val levelUpMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.LEVEL_UP) }
+    val machineMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.MACHINE) }
+    val eggMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.EGG) }
+    val tutorMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.TUTOR) }
+    var expandedCategories by remember { mutableStateOf(emptySet<MoveCategory>()) }
+    fun toggle(category: MoveCategory) {
+        expandedCategories = if (category in expandedCategories) {
+            expandedCategories - category
+        } else {
+            expandedCategories + category
+        }
+    }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -353,12 +379,22 @@ private fun DetailContent(
             }
         }
 
-        item {
-            MoveSection(pokemon, MoveCategory.LEVEL_UP, moveInfo)
-        }
-        item { MoveSection(pokemon, MoveCategory.MACHINE, moveInfo) }
-        item { MoveSection(pokemon, MoveCategory.EGG, moveInfo) }
-        item { MoveSection(pokemon, MoveCategory.TUTOR, moveInfo) }
+        moveSection(
+            MoveCategory.LEVEL_UP, levelUpMoves, moveInfo,
+            expanded = MoveCategory.LEVEL_UP in expandedCategories
+        ) { toggle(MoveCategory.LEVEL_UP) }
+        moveSection(
+            MoveCategory.MACHINE, machineMoves, moveInfo,
+            expanded = MoveCategory.MACHINE in expandedCategories
+        ) { toggle(MoveCategory.MACHINE) }
+        moveSection(
+            MoveCategory.EGG, eggMoves, moveInfo,
+            expanded = MoveCategory.EGG in expandedCategories
+        ) { toggle(MoveCategory.EGG) }
+        moveSection(
+            MoveCategory.TUTOR, tutorMoves, moveInfo,
+            expanded = MoveCategory.TUTOR in expandedCategories
+        ) { toggle(MoveCategory.TUTOR) }
 
         item { androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(24.dp)) }
     }
@@ -490,51 +526,114 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String) {
     }
 }
 
-@Composable
-private fun MoveSection(
-    pokemon: PokemonDto,
+/**
+ * Renders one move category as real [LazyListScope] items (a header, then — only while expanded —
+ * one item per move) instead of a header wrapping a plain [Column] of all rows. A pokemon like Mew
+ * has ~250 TM/HM entries; composing all of them in one non-lazy Column the instant the section
+ * expands was a multi-hundred-millisecond hitch. As real lazy items, only the rows actually on or
+ * near screen get composed, the same as the rest of this pokemon detail page's own LazyColumn.
+ *
+ * The header and rows share one rounded-corner "card" look across separate list items: the header
+ * is flat-bottomed while expanded, the last row is rounded-bottomed, and both share the same
+ * surface color, so it still reads as a single grouped section rather than a stack of independent
+ * cards.
+ */
+private fun LazyListScope.moveSection(
     category: MoveCategory,
+    moves: List<LearnedMove>,
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
-    initiallyExpanded: Boolean = false
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit
 ) {
-    val moves = remember(pokemon, category) { pokemon.movesForCategory(category) }
-    ExpandableSection(
-        title = category.label,
-        itemCount = moves.size,
-        initiallyExpanded = initiallyExpanded,
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
-        if (moves.isEmpty()) {
-            Text("No moves in this category.", style = MaterialTheme.typography.bodyMedium)
-        } else {
-            moves.forEachIndexed { index, move ->
-                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(move.moveName.toDisplayName(), fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                        if (category == MoveCategory.LEVEL_UP) {
-                            Text(if (move.level > 0) "Lv. ${move.level}" else "Evolution")
-                        }
-                    }
-                    moveInfo[move.moveName]?.let { info ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) {
-                            TypeBadge(info.type, TypeIds.of(info.type), height = 18.dp)
-                            Text(
-                                text = moveStatsLabel(info),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
+    item(key = "movesection-header-${category.name}") {
+        Surface(
+            onClick = onToggleExpanded,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp),
+            shape = if (expanded) {
+                RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            } else {
+                RoundedCornerShape(16.dp)
+            },
+            color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "${category.label} (${moves.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand"
+                )
             }
+        }
+    }
+
+    if (!expanded) return
+
+    if (moves.isEmpty()) {
+        item(key = "movesection-empty-${category.name}") {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Text(
+                    "No moves in this category.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+            }
+        }
+        return
+    }
+
+    itemsIndexed(
+        moves,
+        key = { _, move -> "movesection-${category.name}-${move.moveName}-${move.level}" }
+    ) { index, move ->
+        val isLast = index == moves.lastIndex
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            shape = if (isLast) RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp) else RoundedCornerShape(0.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+                if (index > 0) HorizontalDivider(modifier = Modifier.padding(bottom = 6.dp))
+                MoveRow(move, category, moveInfo)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoveRow(move: LearnedMove, category: MoveCategory, moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(move.moveName.toDisplayName(), fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        if (category == MoveCategory.LEVEL_UP) {
+            Text(if (move.level > 0) "Lv. ${move.level}" else "Evolution")
+        }
+    }
+    moveInfo[move.moveName]?.let { info ->
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 4.dp)
+        ) {
+            TypeBadge(info.type, TypeIds.of(info.type), height = 18.dp)
+            Text(
+                text = moveStatsLabel(info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
