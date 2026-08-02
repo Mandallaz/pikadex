@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items as lazyRowItems
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChangeHistory
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
@@ -68,6 +69,7 @@ private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, 
 fun PokedexListScreen(
     onPokemonClick: (String) -> Unit,
     onTeamClick: () -> Unit,
+    onTypeTrianglesClick: () -> Unit,
     viewModel: PokedexListViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -79,6 +81,9 @@ fun PokedexListScreen(
             TopAppBar(
                 title = { Text("PikaDex") },
                 actions = {
+                    IconButton(onClick = onTypeTrianglesClick) {
+                        Icon(Icons.Default.ChangeHistory, contentDescription = "Type triangles")
+                    }
                     IconButton(onClick = onTeamClick) {
                         BadgedBox(badge = {
                             if (team.isNotEmpty()) Badge { Text("${team.size}") }
