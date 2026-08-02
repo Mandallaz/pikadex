@@ -1,5 +1,7 @@
 package com.tg.pokedex.ui.detail
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -18,8 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,10 +37,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,6 +53,7 @@ import com.tg.pokedex.ui.components.ExpandableSection
 import com.tg.pokedex.ui.components.StatBar
 import com.tg.pokedex.ui.components.TypeBadge
 import com.tg.pokedex.util.MoveCategory
+import com.tg.pokedex.util.Smogon
 import com.tg.pokedex.util.Sprites
 import com.tg.pokedex.util.TypeColors
 import com.tg.pokedex.util.evolutionPaths
@@ -236,6 +243,10 @@ private fun DetailContent(
             TypeMatchupsCard(typeMatchups)
         }
 
+        item {
+            SmogonLinksCard(pokemonName = pokemon.name, speciesGeneration = species.generation.name)
+        }
+
         if (evolutionChain != null) {
             item {
                 Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -322,6 +333,42 @@ private fun TypeMatchupsCard(typeMatchups: Map<String, Double>) {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             com.tg.pokedex.ui.components.TypeMatchupGroups(typeMatchups)
+        }
+    }
+}
+
+@Composable
+private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String) {
+    val links = remember(pokemonName, speciesGeneration) { Smogon.linksFor(pokemonName, speciesGeneration) }
+    if (links.isEmpty()) return
+    val context = LocalContext.current
+
+    Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Smogon Strategy Dex",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState())
+            ) {
+                links.forEach { link ->
+                    AssistChip(
+                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url))) },
+                        label = { Text(link.label) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
+            }
         }
     }
 }
