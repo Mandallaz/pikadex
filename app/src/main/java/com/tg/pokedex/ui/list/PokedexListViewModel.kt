@@ -3,8 +3,13 @@ package com.tg.pokedex.ui.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tg.pokedex.data.AppContainer
+import com.tg.pokedex.data.remote.SmogonTierDataSource
 import com.tg.pokedex.data.remote.dto.NamedApiResource
 import com.tg.pokedex.data.repository.PokedexRepository
+import com.tg.pokedex.util.Smogon
+import com.tg.pokedex.util.SmogonGen
+import com.tg.pokedex.util.SmogonTierLabels
+import com.tg.pokedex.util.SortStat
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,10 +30,18 @@ data class PokedexListUiState(
     val abilityOptions: List<String> = emptyList(),
     val selectedAbility: String? = null,
     val abilityFilterNames: Set<String>? = null,
-    val isFilterLoading: Boolean = false
+    val selectedFormatGen: SmogonGen? = null,
+    val formatTierOptions: List<String> = emptyList(),
+    val selectedFormatTier: String? = null,
+    val formatFilterNames: Set<String>? = null,
+    val isFilterLoading: Boolean = false,
+    val sortStat: SortStat? = null,
+    val sortAscending: Boolean = false,
+    val baseStats: Map<String, Map<String, Int>> = emptyMap(),
+    val isStatsLoading: Boolean = false
 ) {
     val hasActiveFilters: Boolean
-        get() = selectedType != null || selectedMove != null || selectedAbility != null
+        get() = selectedType != null || selectedMove != null || selectedAbility != null || selectedFormatGen != null
 
     val displayed: List<NamedApiResource>
         get() {
@@ -40,6 +53,19 @@ data class PokedexListUiState(
             typeFilterNames?.let { set -> list = list.filter { it.name in set } }
             moveFilterNames?.let { set -> list = list.filter { it.name in set } }
             abilityFilterNames?.let { set -> list = list.filter { it.name in set } }
+            formatFilterNames?.let { set -> list = list.filter { it.name in set } }
+
+            sortStat?.let { stat ->
+                val keyOf: (NamedApiResource) -> Int = { resource ->
+                    val stats = baseStats[resource.name]
+                    when {
+                        stats == null -> Int.MIN_VALUE
+                        stat == SortStat.TOTAL -> stats.values.sum()
+                        else -> stats[stat.apiName] ?: Int.MIN_VALUE
+                    }
+                }
+                list = if (sortAscending) list.sortedBy(keyOf) else list.sortedByDescending(keyOf)
+            }
             return list
         }
 }
@@ -135,12 +161,76 @@ class PokedexListViewModel @JvmOverloads constructor(
         }
     }
 
+    fun onFormatGenSelected(gen: SmogonGen?) {
+        _uiState.update {
+            it.copy(
+                selectedFormatGen = gen,
+                formatTierOptions = emptyList(),
+                selectedFormatTier = null,
+                formatFilterNames = null
+            )
+        }
+        if (gen == null) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isFilterLoading = true) }
+            try {
+                val tiers = repository.getSmogonTiers(gen.code)
+                val options = SmogonTierLabels.sortedTiers(tiers.values.toSet())
+                _uiState.update { it.copy(formatTierOptions = options, isFilterLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while loading formats.") }
+            }
+        }
+    }
+
+    fun onFormatTierSelected(tier: String?) {
+        val gen = _uiState.value.selectedFormatGen
+        _uiState.update { it.copy(selectedFormatTier = tier, formatFilterNames = null) }
+        if (tier == null || gen == null) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isFilterLoading = true) }
+            try {
+                val tiers = repository.getSmogonTiers(gen.code)
+                val names = _uiState.value.allPokemon
+                    .filter { tiers[SmogonTierDataSource.showdownKey(it.name)] == tier }
+                    .map { it.name }
+                    .toSet()
+                _uiState.update { it.copy(formatFilterNames = names, isFilterLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by format.") }
+            }
+        }
+    }
+
+    fun loadBaseStatsIfNeeded() {
+        if (_uiState.value.baseStats.isNotEmpty()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isStatsLoading = true) }
+            try {
+                val stats = repository.getAllBaseStats()
+                _uiState.update { it.copy(baseStats = stats, isStatsLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isStatsLoading = false, errorMessage = "Network error while loading stats.") }
+            }
+        }
+    }
+
+    fun onSortStatSelected(stat: SortStat?) {
+        _uiState.update { it.copy(sortStat = stat, sortAscending = false) }
+    }
+
+    fun toggleSortDirection() {
+        _uiState.update { it.copy(sortAscending = !it.sortAscending) }
+    }
+
     fun clearFilters() {
         _uiState.update {
             it.copy(
                 selectedType = null, typeFilterNames = null,
                 selectedMove = null, moveFilterNames = null,
-                selectedAbility = null, abilityFilterNames = null
+                selectedAbility = null, abilityFilterNames = null,
+                selectedFormatGen = null, formatTierOptions = emptyList(),
+                selectedFormatTier = null, formatFilterNames = null
             )
         }
     }
