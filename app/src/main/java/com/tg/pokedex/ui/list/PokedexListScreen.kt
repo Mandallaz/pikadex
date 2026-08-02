@@ -1,5 +1,9 @@
 package com.tg.pokedex.ui.list
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,14 +13,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items as lazyRowItems
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
@@ -38,13 +46,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tg.pokedex.data.TeamRepository
+import com.tg.pokedex.ui.components.OptionsDialog
 import com.tg.pokedex.ui.components.PokemonCard
 import com.tg.pokedex.ui.components.SearchableListDialog
 import com.tg.pokedex.ui.components.TypeBadge
+import com.tg.pokedex.util.Smogon
+import com.tg.pokedex.util.SmogonGen
+import com.tg.pokedex.util.SmogonTierLabels
+import com.tg.pokedex.util.SortStat
 import com.tg.pokedex.util.toDisplayName
+
+private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,8 +72,7 @@ fun PokedexListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val team by TeamRepository.team.collectAsState()
-    var showMoveDialog by remember { mutableStateOf(false) }
-    var showAbilityDialog by remember { mutableStateOf(false) }
+    var activeDialog by remember { mutableStateOf(ActiveDialog.NONE) }
 
     Scaffold(
         topBar = {
@@ -100,23 +116,52 @@ fun PokedexListScreen(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AssistChip(
                     onClick = {
                         viewModel.loadMoveOptionsIfNeeded()
-                        showMoveDialog = true
+                        activeDialog = ActiveDialog.MOVE
                     },
                     label = { Text(uiState.selectedMove?.toDisplayName() ?: "Move") }
                 )
                 AssistChip(
                     onClick = {
                         viewModel.loadAbilityOptionsIfNeeded()
-                        showAbilityDialog = true
+                        activeDialog = ActiveDialog.ABILITY
                     },
                     label = { Text(uiState.selectedAbility?.toDisplayName() ?: "Ability") }
                 )
+                AssistChip(
+                    onClick = { activeDialog = ActiveDialog.FORMAT_GEN },
+                    label = { Text(uiState.selectedFormatGen?.label ?: "Format") }
+                )
+                AssistChip(
+                    onClick = { activeDialog = ActiveDialog.FORMAT_TIER },
+                    enabled = uiState.selectedFormatGen != null,
+                    label = {
+                        Text(uiState.selectedFormatTier?.let { SmogonTierLabels.labelFor(it) } ?: "Tier")
+                    }
+                )
+                AssistChip(
+                    onClick = {
+                        viewModel.loadBaseStatsIfNeeded()
+                        activeDialog = ActiveDialog.SORT
+                    },
+                    label = { Text(uiState.sortStat?.label ?: "Sort") }
+                )
+                if (uiState.sortStat != null) {
+                    IconButton(onClick = viewModel::toggleSortDirection) {
+                        Icon(
+                            imageVector = if (uiState.sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                            contentDescription = if (uiState.sortAscending) "Ascending" else "Descending"
+                        )
+                    }
+                }
                 if (uiState.hasActiveFilters) {
                     AssistChip(
                         onClick = viewModel::clearFilters,
@@ -135,7 +180,7 @@ fun PokedexListScreen(
                         style = MaterialTheme.typography.bodyLarge
                     )
                     else -> {
-                        if (uiState.isFilterLoading) {
+                        if (uiState.isFilterLoading || uiState.isStatsLoading) {
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(8.dp))
                         }
                         LazyVerticalGrid(
@@ -153,6 +198,9 @@ fun PokedexListScreen(
                                     onClick = { onPokemonClick(resource.name) }
                                 )
                             }
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                AttributionFooter()
+                            }
                         }
                     }
                 }
@@ -160,27 +208,81 @@ fun PokedexListScreen(
         }
     }
 
-    if (showMoveDialog) {
-        SearchableListDialog(
+    when (activeDialog) {
+        ActiveDialog.MOVE -> SearchableListDialog(
             title = "Choose a move",
             options = uiState.moveOptions,
-            onDismiss = { showMoveDialog = false },
+            onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { move ->
                 viewModel.onMoveSelected(move)
-                showMoveDialog = false
+                activeDialog = ActiveDialog.NONE
             }
         )
-    }
 
-    if (showAbilityDialog) {
-        SearchableListDialog(
+        ActiveDialog.ABILITY -> SearchableListDialog(
             title = "Choose an ability",
             options = uiState.abilityOptions,
-            onDismiss = { showAbilityDialog = false },
+            onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { ability ->
                 viewModel.onAbilitySelected(ability)
-                showAbilityDialog = false
+                activeDialog = ActiveDialog.NONE
             }
+        )
+
+        ActiveDialog.FORMAT_GEN -> OptionsDialog(
+            title = "Choose a generation",
+            options = listOf<SmogonGen?>(null) + Smogon.ALL_GENERATIONS,
+            labelFor = { it?.label ?: "Clear format filter" },
+            onDismiss = { activeDialog = ActiveDialog.NONE },
+            onSelect = { gen ->
+                viewModel.onFormatGenSelected(gen)
+                activeDialog = if (gen != null) ActiveDialog.FORMAT_TIER else ActiveDialog.NONE
+            }
+        )
+
+        ActiveDialog.FORMAT_TIER -> OptionsDialog(
+            title = "Choose a tier",
+            options = listOf<String?>(null) + uiState.formatTierOptions,
+            labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: "Any tier in this generation" },
+            onDismiss = { activeDialog = ActiveDialog.NONE },
+            onSelect = { tier ->
+                viewModel.onFormatTierSelected(tier)
+                activeDialog = ActiveDialog.NONE
+            }
+        )
+
+        ActiveDialog.SORT -> OptionsDialog(
+            title = "Sort by",
+            options = listOf<SortStat?>(null) + SortStat.entries,
+            labelFor = { it?.label ?: "No sorting" },
+            onDismiss = { activeDialog = ActiveDialog.NONE },
+            onSelect = { stat ->
+                viewModel.onSortStatSelected(stat)
+                activeDialog = ActiveDialog.NONE
+            }
+        )
+
+        ActiveDialog.NONE -> Unit
+    }
+}
+
+@Composable
+private fun AttributionFooter() {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 20.dp)
+            .clickable {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://pokeapi.co")))
+            },
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "Data provided by PokeAPI",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium
         )
     }
 }

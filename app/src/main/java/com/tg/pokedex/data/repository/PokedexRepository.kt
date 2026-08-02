@@ -1,6 +1,8 @@
 package com.tg.pokedex.data.repository
 
+import com.tg.pokedex.data.remote.PokeApiGraphQLDataSource
 import com.tg.pokedex.data.remote.PokeApiService
+import com.tg.pokedex.data.remote.SmogonTierDataSource
 import com.tg.pokedex.data.remote.dto.AbilityDetailDto
 import com.tg.pokedex.data.remote.dto.EvolutionChainDto
 import com.tg.pokedex.data.remote.dto.MoveDetailDto
@@ -33,6 +35,8 @@ class PokedexRepository(private val api: PokeApiService) {
     private val typeDetailCache = mutableMapOf<String, TypeDetailDto>()
     private val moveDetailCache = mutableMapOf<String, MoveDetailDto>()
     private val abilityDetailCache = mutableMapOf<String, AbilityDetailDto>()
+    private val smogonTierCache = mutableMapOf<String, Map<String, String>>()
+    private var allBaseStatsCache: Map<String, Map<String, Int>>? = null
 
     suspend fun getMasterList(): List<NamedApiResource> {
         masterListCache?.let { return it }
@@ -89,6 +93,18 @@ class PokedexRepository(private val api: PokeApiService) {
     suspend fun getPokemonTypes(nameOrId: String): List<String> {
         val pokemon = pokemonDetailCache.getOrPut(nameOrId) { api.getPokemon(nameOrId) }
         return pokemon.types.map { it.type.name }
+    }
+
+    /** pokemonKey (Showdown format, no hyphens) -> tier code, for a Smogon generation (e.g. "ss"). */
+    suspend fun getSmogonTiers(genCode: String): Map<String, String> =
+        smogonTierCache.getOrPut(genCode) { SmogonTierDataSource.fetchTiers(genCode) }
+
+    /** pokemonName -> (statApiName -> baseStat), fetched once in bulk via GraphQL for sorting. */
+    suspend fun getAllBaseStats(): Map<String, Map<String, Int>> {
+        allBaseStatsCache?.let { return it }
+        val stats = PokeApiGraphQLDataSource.fetchAllBaseStats()
+        allBaseStatsCache = stats
+        return stats
     }
 
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {

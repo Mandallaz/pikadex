@@ -1,6 +1,7 @@
 package com.tg.pokedex.data
 
 import com.tg.pokedex.data.remote.PokeApiService
+import com.tg.pokedex.data.remote.RetryInterceptor
 import com.tg.pokedex.data.repository.PokedexRepository
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -15,6 +16,7 @@ object AppContainer {
         OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor(RetryInterceptor())
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BASIC
             })
