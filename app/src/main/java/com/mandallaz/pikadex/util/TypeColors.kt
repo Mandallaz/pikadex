@@ -30,18 +30,21 @@ object TypeColors {
     fun of(typeName: String): Color = colors[typeName.lowercase()] ?: Color(0xFF68A090)
 }
 
-/** Colors for the 6 base stats, in the usual HP/Atk/Def/SpAtk/SpDef/Speed order. */
+/**
+ * Colors a base-stat bar by how that value ranks against every other Pokemon's same stat,
+ * rather than a fixed per-stat hue (which said nothing about whether e.g. a Speed of 5 was good
+ * or bad). A diverging red -> yellow -> green sweep, low percentile = red ("bad"), high = green
+ * ("good"), with yellow as the distinguishable midpoint — a plain red-to-green blend collapses
+ * for red-green color blindness (the most common form), so the hue sweeps through yellow instead
+ * of mixing directly, keeping both ends distinguishable under deuteranopia/protanopia.
+ */
 object StatColors {
-    private val colors = mapOf(
-        "hp" to Color(0xFFFF5959),
-        "attack" to Color(0xFFF5AC78),
-        "defense" to Color(0xFFFAE078),
-        "special-attack" to Color(0xFF9DB7F5),
-        "special-defense" to Color(0xFFA7DB8D),
-        "speed" to Color(0xFFFA92B2)
-    )
-
-    fun of(statName: String): Color = colors[statName.lowercase()] ?: Color(0xFFB0B0B0)
+    /** [percentile] in 0.0..1.0 — the fraction of all Pokemon this value is greater than or equal to. */
+    fun forPercentile(percentile: Double): Color {
+        val hue = (percentile.coerceIn(0.0, 1.0) * 120.0).toFloat() // 0=red, 60=yellow, 120=green
+        val hsv = floatArrayOf(hue, 0.75f, 0.85f)
+        return Color(android.graphics.Color.HSVToColor(hsv))
+    }
 }
 
 fun String.toDisplayName(): String =

@@ -32,8 +32,23 @@ data class PokedexDetailUiState(
     val abilityDescriptions: Map<String, String> = emptyMap(),
     val memberTriangles: List<TypeTriangle> = emptyList(),
     val counteredTriangles: List<TypeTriangle> = emptyList(),
-    val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap()
+    val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap(),
+    /** statApiName (hp/attack/.../speed, plus a synthetic "total") -> this pokemon's percentile
+     *  rank (0.0..1.0) among every other pokemon's same stat, for coloring stat bars by how good
+     *  the value actually is rather than a fixed per-stat hue. */
+    val statPercentiles: Map<String, Double> = emptyMap()
 )
+
+private val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
+
+/** Fraction of [allValues] that [value] is greater-or-equal to — ties split evenly so a value
+ *  shared by many pokemon doesn't get pushed to either extreme. */
+private fun percentileOf(value: Int, allValues: List<Int>): Double {
+    if (allValues.isEmpty()) return 0.5
+    val below = allValues.count { it < value }
+    val equal = allValues.count { it == value }
+    return ((below + equal / 2.0) / allValues.size).coerceIn(0.0, 1.0)
+}
 
 class PokedexDetailViewModel @JvmOverloads constructor(
     private val repository: PokedexRepository = AppContainer.repository
@@ -68,7 +83,19 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         .toMap()
                 }
                 val moveInfo = repository.getAllMoveInfo()
+                val allStats = repository.getAllBaseStats()
                 val descriptions = descriptionsDeferred.await()
+
+                val percentiles = BASE_STAT_KEYS.mapNotNull { key ->
+                    val thisValue = bundle.pokemon.stats.firstOrNull { it.stat.name == key }?.baseStat
+                    thisValue?.let { key to percentileOf(it, allStats.values.mapNotNull { s -> s[key] }) }
+                }.toMap() + mapOf(
+                    "total" to percentileOf(
+                        bundle.pokemon.stats.sumOf { it.baseStat },
+                        allStats.values.map { s -> BASE_STAT_KEYS.sumOf { key -> s[key] ?: 0 } }
+                    )
+                )
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -79,7 +106,8 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         abilityDescriptions = descriptions,
                         memberTriangles = memberTriangles,
                         counteredTriangles = counteredTriangles,
-                        moveInfo = moveInfo
+                        moveInfo = moveInfo,
+                        statPercentiles = percentiles
                     )
                 }
             } catch (e: Exception) {
