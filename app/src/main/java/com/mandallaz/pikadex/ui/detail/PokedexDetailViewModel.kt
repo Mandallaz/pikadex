@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.TeamRepository
+import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
@@ -30,7 +31,8 @@ data class PokedexDetailUiState(
     val typeMatchups: Map<String, Double> = emptyMap(),
     val abilityDescriptions: Map<String, String> = emptyMap(),
     val memberTriangles: List<TypeTriangle> = emptyList(),
-    val counteredTriangles: List<TypeTriangle> = emptyList()
+    val counteredTriangles: List<TypeTriangle> = emptyList(),
+    val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap()
 )
 
 class PokedexDetailViewModel @JvmOverloads constructor(
@@ -58,11 +60,15 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                 val memberTriangles = TypeTriangles.containing(pokemonTypes)
                 val counteredTriangles = TypeTriangles.counteredBy(pokemonTypes)
                 val abilityNames = bundle.pokemon.abilities.map { it.ability.name }
-                val descriptions = abilityNames
-                    .map { name -> async { name to repository.getAbilityDescription(name) } }
-                    .awaitAll()
-                    .mapNotNull { (name, description) -> description?.let { name to it } }
-                    .toMap()
+                val descriptionsDeferred = async {
+                    abilityNames
+                        .map { name -> async { name to repository.getAbilityDescription(name) } }
+                        .awaitAll()
+                        .mapNotNull { (name, description) -> description?.let { name to it } }
+                        .toMap()
+                }
+                val moveInfo = repository.getAllMoveInfo()
+                val descriptions = descriptionsDeferred.await()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -72,7 +78,8 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         typeMatchups = matchups,
                         abilityDescriptions = descriptions,
                         memberTriangles = memberTriangles,
-                        counteredTriangles = counteredTriangles
+                        counteredTriangles = counteredTriangles,
+                        moveInfo = moveInfo
                     )
                 }
             } catch (e: Exception) {
