@@ -100,18 +100,27 @@ fun PokedexListScreen(
                 singleLine = true
             )
 
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                lazyRowItems(uiState.typeOptions, key = { it.name }) { type ->
-                    FilterChip(
-                        selected = uiState.selectedType == type.name,
-                        onClick = {
-                            viewModel.onTypeSelected(if (uiState.selectedType == type.name) null else type.name)
-                        },
-                        label = { TypeBadge(type.name, type.id ?: 0, height = 20.dp) }
-                    )
+            val typeRowHalf = (uiState.typeOptions.size + 1) / 2
+            val typeRows = listOf(
+                uiState.typeOptions.take(typeRowHalf),
+                uiState.typeOptions.drop(typeRowHalf)
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                typeRows.forEach { rowTypes ->
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        lazyRowItems(rowTypes, key = { it.name }) { type ->
+                            FilterChip(
+                                selected = uiState.selectedType == type.name,
+                                onClick = {
+                                    viewModel.onTypeSelected(if (uiState.selectedType == type.name) null else type.name)
+                                },
+                                label = { TypeBadge(type.name, type.id ?: 0, height = 20.dp) }
+                            )
+                        }
+                    }
                 }
             }
 

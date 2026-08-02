@@ -109,7 +109,12 @@ class PokedexRepository(private val api: PokeApiService) {
 
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
         val pokemon = pokemonDetailCache.getOrPut(nameOrId) { api.getPokemon(nameOrId) }
-        val species = speciesCache.getOrPut(pokemon.id) { api.getPokemonSpecies(pokemon.id.toString()) }
+        // Alternate forms (mega/gmax/regional/gender/cosmetic...) have a pokemon.id in the 10000+
+        // range that does NOT match any pokemon-species id — the species must be looked up via the
+        // "species" reference embedded in the pokemon payload instead (e.g. basculegion-female,
+        // pokemon id 10248, belongs to species "basculegion", id 902).
+        val speciesKey = pokemon.species.id ?: pokemon.id
+        val species = speciesCache.getOrPut(speciesKey) { api.getPokemonSpecies(pokemon.species.name) }
         val chainId = species.evolutionChain?.id
         val chain = chainId?.let { id -> evolutionChainCache.getOrPut(id) { api.getEvolutionChain(id) } }
         return PokemonDetailBundle(pokemon, species, chain)
