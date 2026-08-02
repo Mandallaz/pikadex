@@ -23,7 +23,7 @@ data class PokedexListUiState(
     val searchQuery: String = "",
     val allPokemon: List<NamedApiResource> = emptyList(),
     val typeOptions: List<NamedApiResource> = emptyList(),
-    val selectedType: String? = null,
+    val selectedTypes: Set<String> = emptySet(),
     val typeFilterNames: Set<String>? = null,
     val moveOptions: List<String> = emptyList(),
     val selectedMove: String? = null,
@@ -44,7 +44,7 @@ data class PokedexListUiState(
     val favorites: Set<String> = emptySet()
 ) {
     val hasActiveFilters: Boolean
-        get() = selectedType != null || selectedMove != null || selectedAbility != null ||
+        get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
             selectedFormatGen != null || showFavoritesOnly
 
     val displayed: List<NamedApiResource>
@@ -109,14 +109,20 @@ class PokedexListViewModel @JvmOverloads constructor(
         _uiState.update { it.copy(searchQuery = query) }
     }
 
-    fun onTypeSelected(type: String?) {
-        _uiState.update { it.copy(selectedType = type, typeFilterNames = null) }
-        if (type == null) return
+    fun onTypeToggled(type: String) {
+        val current = _uiState.value.selectedTypes
+        val updated = if (type in current) current - type else current + type
+        _uiState.update { it.copy(selectedTypes = updated, typeFilterNames = null) }
+        if (updated.isEmpty()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
             try {
-                val names = repository.getPokemonNamesForType(type)
-                _uiState.update { it.copy(typeFilterNames = names, isFilterLoading = false) }
+                // AND semantics: a pokemon must match every selected type (e.g. Dragon + Flying = Altaria),
+                // not just any one of them, so intersect each type's pokemon set rather than union them.
+                val intersection = updated
+                    .map { repository.getPokemonNamesForType(it) }
+                    .reduce { a, b -> a intersect b }
+                _uiState.update { it.copy(typeFilterNames = intersection, isFilterLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by type.") }
             }
@@ -240,7 +246,7 @@ class PokedexListViewModel @JvmOverloads constructor(
     fun clearFilters() {
         _uiState.update {
             it.copy(
-                selectedType = null, typeFilterNames = null,
+                selectedTypes = emptySet(), typeFilterNames = null,
                 selectedMove = null, moveFilterNames = null,
                 selectedAbility = null, abilityFilterNames = null,
                 selectedFormatGen = null, formatTierOptions = emptyList(),
