@@ -43,7 +43,12 @@ fun SearchableListDialog(
 ) {
     var query by remember { mutableStateOf("") }
     val filtered = remember(query, options) {
-        if (query.isBlank()) options else options.filter { it.contains(query.trim().lowercase()) }
+        if (query.isBlank()) {
+            options
+        } else {
+            val normalizedQuery = query.trim().lowercase()
+            options.filter { it.contains(normalizedQuery) }
+        }
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {

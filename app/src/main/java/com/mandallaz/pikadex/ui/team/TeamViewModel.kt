@@ -8,6 +8,8 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepository
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,14 +52,22 @@ class TeamViewModel @JvmOverloads constructor(
                 }
                 _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null) }
                 try {
+                    // Every member is independent of every other, and every type detail lookup is
+                    // independent too — sequentially this was up to 18 round trips (6 members x up
+                    // to 3 calls each) before the matrix could render at all.
+                    val memberResults = members.map { member ->
+                        async {
+                            val types = repository.getPokemonTypes(member.name)
+                            val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
+                            member.name to computeDefensiveMultipliers(typeDetails)
+                        }
+                    }.awaitAll()
+
                     val matrix = mutableMapOf<String, MutableMap<String, Double>>()
                     TypeIds.standardTypeNames.forEach { matrix[it] = mutableMapOf() }
-                    members.forEach { member ->
-                        val types = repository.getPokemonTypes(member.name)
-                        val typeDetails = types.map { repository.getTypeDetail(it) }
-                        val defensiveMultipliers = computeDefensiveMultipliers(typeDetails)
+                    memberResults.forEach { (memberName, defensiveMultipliers) ->
                         defensiveMultipliers.forEach { (attackType, multiplier) ->
-                            matrix.getOrPut(attackType) { mutableMapOf() }[member.name] = multiplier
+                            matrix.getOrPut(attackType) { mutableMapOf() }[memberName] = multiplier
                         }
                     }
                     _uiState.update { it.copy(isLoading = false, matrix = matrix) }

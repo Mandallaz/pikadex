@@ -39,17 +39,6 @@ data class PokedexDetailUiState(
     val statPercentiles: Map<String, Double> = emptyMap()
 )
 
-private val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
-
-/** Fraction of [allValues] that [value] is greater-or-equal to — ties split evenly so a value
- *  shared by many pokemon doesn't get pushed to either extreme. */
-private fun percentileOf(value: Int, allValues: List<Int>): Double {
-    if (allValues.isEmpty()) return 0.5
-    val below = allValues.count { it < value }
-    val equal = allValues.count { it == value }
-    return ((below + equal / 2.0) / allValues.size).coerceIn(0.0, 1.0)
-}
-
 class PokedexDetailViewModel @JvmOverloads constructor(
     private val repository: PokedexRepository = AppContainer.repository
 ) : ViewModel() {
@@ -68,8 +57,16 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             _uiState.update { PokedexDetailUiState(isLoading = true) }
             try {
+                // The two bulk fetches depend on nothing else here — start them immediately
+                // instead of waiting until after the pokemon/species/evolution chain (which is a
+                // genuine 3-step dependency chain and can't be parallelized further).
+                val moveInfoDeferred = async { repository.getAllMoveInfo() }
+                val allStatsDeferred = async { repository.getAllBaseStats() }
+
                 val bundle = repository.getPokemonDetailBundle(nameOrId)
-                val typeDetails = bundle.pokemon.types.map { repository.getTypeDetail(it.type.name) }
+                val typeDetails = bundle.pokemon.types
+                    .map { async { repository.getTypeDetail(it.type.name) } }
+                    .awaitAll()
                 val matchups = computeDefensiveMultipliers(typeDetails)
                 val pokemonTypes = bundle.pokemon.types.map { it.type.name }
                 val memberTriangles = TypeTriangles.containing(pokemonTypes)
@@ -82,18 +79,17 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         .mapNotNull { (name, description) -> description?.let { name to it } }
                         .toMap()
                 }
-                val moveInfo = repository.getAllMoveInfo()
-                val allStats = repository.getAllBaseStats()
+                val moveInfo = moveInfoDeferred.await()
+                allStatsDeferred.await() // warms the repository's cache before the per-key lookups below
                 val descriptions = descriptionsDeferred.await()
 
-                val percentiles = BASE_STAT_KEYS.mapNotNull { key ->
-                    val thisValue = bundle.pokemon.stats.firstOrNull { it.stat.name == key }?.baseStat
-                    thisValue?.let { key to percentileOf(it, allStats.values.mapNotNull { s -> s[key] }) }
-                }.toMap() + mapOf(
-                    "total" to percentileOf(
-                        bundle.pokemon.stats.sumOf { it.baseStat },
-                        allStats.values.map { s -> BASE_STAT_KEYS.sumOf { key -> s[key] ?: 0 } }
-                    )
+                // Binary-searches a sorted array the repository builds once (see
+                // PokedexRepository.getSortedStatArrays) instead of re-scanning all ~1300 pokemon's
+                // values on every single detail load.
+                val percentiles = bundle.pokemon.stats.associate { stat ->
+                    stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
+                } + mapOf(
+                    "total" to repository.getStatPercentile("total", bundle.pokemon.stats.sumOf { it.baseStat })
                 )
 
                 _uiState.update {

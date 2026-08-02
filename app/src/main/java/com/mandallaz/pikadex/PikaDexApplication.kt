@@ -12,11 +12,18 @@ import okhttp3.OkHttpClient
 
 class PikaDexApplication : Application(), ImageLoaderFactory {
 
-    /** 30 days: sprites/artwork never change once published, but the CDN they're served from
-     *  sends a 5-minute max-age (fine for a high-traffic public site, not for a mobile client
-     *  that would otherwise re-check network every time a screen is revisited). */
+    /** Reuses the shared client's connection pool and dispatcher (a second `OkHttpClient.Builder()`
+     *  from scratch would spin up its own, pure overhead) but not its interceptor chain — images
+     *  get their own 30-day Cache-Control (sprites/artwork never change once published, versus 7
+     *  days for API JSON) and no HTTP-level disk cache of their own, since Coil's dedicated
+     *  [DiskCache] below already covers that; keeping both would just double-cache the same bytes. */
     private val imageCacheOkHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
+        AppContainer.sharedOkHttpClient.newBuilder()
+            .cache(null)
+            .apply {
+                interceptors().clear()
+                networkInterceptors().clear()
+            }
             .addNetworkInterceptor(CacheControlInterceptor(30 * 24 * 60 * 60))
             .build()
     }
@@ -29,6 +36,7 @@ class PikaDexApplication : Application(), ImageLoaderFactory {
 
     override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
         .okHttpClient(imageCacheOkHttpClient)
+        .crossfade(200)
         .memoryCache {
             MemoryCache.Builder(this)
                 .maxSizePercent(0.25)

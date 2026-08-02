@@ -1,6 +1,7 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
+import com.mandallaz.pikadex.BuildConfig
 import com.mandallaz.pikadex.data.remote.CacheControlInterceptor
 import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.RetryInterceptor
@@ -40,9 +41,15 @@ object AppContainer {
             .cache(Cache(File(appContext.cacheDir, "http_cache"), HTTP_CACHE_SIZE_BYTES))
             .addInterceptor(RetryInterceptor())
             .addNetworkInterceptor(CacheControlInterceptor(HTTP_CACHE_MAX_AGE_SECONDS))
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BASIC
-            })
+            .apply {
+                // Formats every request/response body — pure overhead in release, where nothing
+                // reads logcat.
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(HttpLoggingInterceptor().apply {
+                        level = HttpLoggingInterceptor.Level.BASIC
+                    })
+                }
+            }
             .build()
     }
 

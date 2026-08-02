@@ -18,8 +18,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,25 +26,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.mandallaz.pikadex.data.FavoritesRepository
-import com.mandallaz.pikadex.data.TeamRepository
-import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.toDisplayName
 
+/**
+ * Reads its team/favorite status from parameters rather than collecting
+ * [com.mandallaz.pikadex.data.TeamRepository]/[com.mandallaz.pikadex.data.FavoritesRepository]
+ * itself — every card in the grid subscribing to those flows independently meant tapping one
+ * star recomposed all ~15-20 visible cards (a state read inside each card's own scope, not a
+ * parameter change strong-skipping could shortcut), plus launched/cancelled two coroutines per
+ * card on every scroll. Hoisting the reads to the screen means only the tapped card recomposes.
+ */
 @Composable
 fun PokemonCard(
     id: Int,
     name: String,
+    isFavorite: Boolean,
+    isInTeam: Boolean,
+    isTeamFull: Boolean,
     onClick: () -> Unit,
+    onToggleTeam: () -> Unit,
+    onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val team by TeamRepository.team.collectAsState()
-    val favorites by FavoritesRepository.favorites.collectAsState()
-    val isInTeam = team.any { it.name == name }
-    val isTeamFull = team.size >= TeamRepository.MAX_SIZE
-    val isFavorite = favorites.contains(name)
-
     Box(modifier = modifier.aspectRatio(0.82f)) {
         Card(
             onClick = onClick,
@@ -79,7 +81,7 @@ fun PokemonCard(
             }
         }
         IconButton(
-            onClick = { TeamRepository.toggle(NamedApiResource(name, "https://pokeapi.co/api/v2/pokemon/$id/")) },
+            onClick = onToggleTeam,
             enabled = isInTeam || !isTeamFull,
             modifier = Modifier.align(Alignment.TopStart)
         ) {
@@ -90,7 +92,7 @@ fun PokemonCard(
             )
         }
         IconButton(
-            onClick = { FavoritesRepository.toggle(name) },
+            onClick = onToggleFavorite,
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(

@@ -2,6 +2,8 @@ package com.mandallaz.pikadex.data
 
 import android.content.Context
 import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
@@ -28,19 +30,22 @@ object JsonDiskCache {
         cacheDir = File(context.applicationContext.filesDir, DIR_NAME).apply { mkdirs() }
     }
 
-    fun <T> read(key: String, type: java.lang.reflect.Type, maxAgeMillis: Long): T? {
-        val file = File(cacheDir, "$key.json.gz")
-        if (!file.exists()) return null
-        val age = System.currentTimeMillis() - file.lastModified()
-        if (age > maxAgeMillis) return null
-        return try {
-            GZIPInputStream(file.inputStream()).bufferedReader().use { gson.fromJson<T>(it, type) }
-        } catch (e: Exception) {
-            null
+    /** Gunzip + Gson-reflection-parsing ~1300 entries is 150-350ms of work — must run off the
+     *  main thread, or every cold-cache screen open freezes the UI for that long. */
+    suspend fun <T> read(key: String, type: java.lang.reflect.Type, maxAgeMillis: Long): T? =
+        withContext(Dispatchers.IO) {
+            val file = File(cacheDir, "$key.json.gz")
+            if (!file.exists()) return@withContext null
+            val age = System.currentTimeMillis() - file.lastModified()
+            if (age > maxAgeMillis) return@withContext null
+            try {
+                GZIPInputStream(file.inputStream()).bufferedReader().use { gson.fromJson<T>(it, type) }
+            } catch (e: Exception) {
+                null
+            }
         }
-    }
 
-    fun write(key: String, value: Any) {
+    suspend fun write(key: String, value: Any) = withContext(Dispatchers.IO) {
         val file = File(cacheDir, "$key.json.gz")
         try {
             GZIPOutputStream(file.outputStream()).bufferedWriter().use { gson.toJson(value, it) }
