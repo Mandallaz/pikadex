@@ -8,10 +8,12 @@ import androidx.navigation.compose.rememberNavController
 import com.tg.pokedex.ui.detail.PokedexDetailScreen
 import com.tg.pokedex.ui.list.PokedexListScreen
 import com.tg.pokedex.ui.team.TeamScreen
+import com.tg.pokedex.ui.typechart.TypeTrianglesScreen
 
 private const val ROUTE_LIST = "list"
 private const val ROUTE_DETAIL = "detail/{pokemonName}"
 private const val ROUTE_TEAM = "team"
+private const val ROUTE_TYPE_TRIANGLES = "type-triangles"
 
 @Composable
 fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
@@ -19,8 +21,12 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
         composable(ROUTE_LIST) {
             PokedexListScreen(
                 onPokemonClick = { name -> navController.navigate("detail/$name") },
-                onTeamClick = { navController.navigate(ROUTE_TEAM) }
+                onTeamClick = { navController.navigate(ROUTE_TEAM) },
+                onTypeTrianglesClick = { navController.navigate(ROUTE_TYPE_TRIANGLES) }
             )
+        }
+        composable(ROUTE_TYPE_TRIANGLES) {
+            TypeTrianglesScreen(onBack = { navController.popBackStack() })
         }
         composable(ROUTE_DETAIL) { backStackEntry ->
             val name = backStackEntry.arguments?.getString("pokemonName").orEmpty()
