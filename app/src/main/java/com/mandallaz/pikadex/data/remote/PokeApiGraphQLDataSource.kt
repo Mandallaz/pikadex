@@ -2,13 +2,12 @@ package com.mandallaz.pikadex.data.remote
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import com.mandallaz.pikadex.data.AppContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.concurrent.TimeUnit
 
 /**
  * Fetches base stats for every Pokemon in a single request via PokeAPI's GraphQL beta endpoint,
@@ -43,11 +42,7 @@ object PokeApiGraphQLDataSource {
         }
     """
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .addInterceptor(RetryInterceptor())
-        .build()
+    private val client get() = AppContainer.sharedOkHttpClient
 
     private val gson = Gson()
 

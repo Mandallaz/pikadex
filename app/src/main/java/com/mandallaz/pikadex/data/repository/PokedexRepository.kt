@@ -1,5 +1,7 @@
 package com.mandallaz.pikadex.data.repository
 
+import com.google.gson.reflect.TypeToken
+import com.mandallaz.pikadex.data.JsonDiskCache
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.SmogonTierDataSource
@@ -11,6 +13,7 @@ import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import com.mandallaz.pikadex.util.TypeIds
+import java.util.concurrent.TimeUnit
 
 data class PokemonDetailBundle(
     val pokemon: PokemonDto,
@@ -110,20 +113,38 @@ class PokedexRepository(private val api: PokeApiService) {
     suspend fun getSmogonTiers(genCode: String): Map<String, String> =
         smogonTierCache.getOrPut(genCode) { SmogonTierDataSource.fetchTiers(genCode) }
 
-    /** pokemonName -> (statApiName -> baseStat), fetched once in bulk via GraphQL for sorting. */
+    /** pokemonName -> (statApiName -> baseStat), fetched once in bulk via GraphQL for sorting.
+     *  Also persisted to disk (GraphQL is POST, so the shared HTTP cache can't cover it) — this
+     *  data only changes when a new generation ships, so there's no reason to re-fetch ~1300
+     *  entries worth of stats every cold start. */
     suspend fun getAllBaseStats(): Map<String, Map<String, Int>> {
         allBaseStatsCache?.let { return it }
+        JsonDiskCache.read<Map<String, Map<String, Int>>>(
+            BASE_STATS_CACHE_KEY, BASE_STATS_TYPE, DISK_CACHE_MAX_AGE_MILLIS
+        )?.let {
+            allBaseStatsCache = it
+            return it
+        }
         val stats = PokeApiGraphQLDataSource.fetchAllBaseStats()
         allBaseStatsCache = stats
+        JsonDiskCache.write(BASE_STATS_CACHE_KEY, stats)
         return stats
     }
 
     /** moveName -> (type, damage class, power, accuracy), fetched once in bulk via GraphQL and
-     *  reused for every pokemon's move lists (Level Up / TM-HM / Breeding / Tutor). */
+     *  reused for every pokemon's move lists (Level Up / TM-HM / Breeding / Tutor). Persisted to
+     *  disk for the same reason as [getAllBaseStats]. */
     suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo> {
         allMoveInfoCache?.let { return it }
+        JsonDiskCache.read<Map<String, PokeApiGraphQLDataSource.MoveInfo>>(
+            MOVE_INFO_CACHE_KEY, MOVE_INFO_TYPE, DISK_CACHE_MAX_AGE_MILLIS
+        )?.let {
+            allMoveInfoCache = it
+            return it
+        }
         val info = PokeApiGraphQLDataSource.fetchAllMoveInfo()
         allMoveInfoCache = info
+        JsonDiskCache.write(MOVE_INFO_CACHE_KEY, info)
         return info
     }
 
@@ -138,5 +159,16 @@ class PokedexRepository(private val api: PokeApiService) {
         val chainId = species.evolutionChain?.id
         val chain = chainId?.let { id -> evolutionChainCache.getOrPut(id) { api.getEvolutionChain(id) } }
         return PokemonDetailBundle(pokemon, species, chain)
+    }
+
+    private companion object {
+        const val BASE_STATS_CACHE_KEY = "base_stats"
+        const val MOVE_INFO_CACHE_KEY = "move_info"
+        val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)
+
+        val BASE_STATS_TYPE: java.lang.reflect.Type =
+            object : TypeToken<Map<String, Map<String, Int>>>() {}.type
+        val MOVE_INFO_TYPE: java.lang.reflect.Type =
+            object : TypeToken<Map<String, PokeApiGraphQLDataSource.MoveInfo>>() {}.type
     }
 }
