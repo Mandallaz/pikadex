@@ -49,4 +49,4 @@ will change accordingly.
 
 ## Contact
 
-Questions about this policy can be sent to: **[your contact email here]**
+For any question about this policy, open an issue on the project's repository: <https://github.com/Mandallaz/pikadex>.
