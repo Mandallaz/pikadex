@@ -9,37 +9,44 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items as lazyRowItems
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChangeHistory
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.data.FavoritesRepository
@@ -70,8 +78,6 @@ private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, 
 @Composable
 fun PokedexListScreen(
     onPokemonClick: (String) -> Unit,
-    onTeamClick: () -> Unit,
-    onTypeTrianglesClick: () -> Unit,
     viewModel: PokedexListViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -79,25 +85,33 @@ fun PokedexListScreen(
     val team by TeamRepository.team.collectAsState()
     val favorites by FavoritesRepository.favorites.collectAsState()
     var activeDialog by remember { mutableStateOf(ActiveDialog.NONE) }
+    var showFilterSheet by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val gridState = rememberLazyGridState()
+
+    // Filter/network errors used to be written into state and never shown anywhere — picking a
+    // type filter that failed to load flashed a spinner and then silently left the list unchanged,
+    // with no indication anything had gone wrong.
+    LaunchedEffect(uiState.errorMessage) {
+        val message = uiState.errorMessage
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissError()
+        }
+    }
+
+    // Applying a sort used to leave the user stranded mid-list in a now-completely-reordered grid
+    // instead of jumping back to the top where the new #1 result actually is.
+    LaunchedEffect(uiState.sortStat, uiState.sortAscending) {
+        gridState.scrollToItem(0)
+    }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("PikaDex") },
-                actions = {
-                    IconButton(onClick = onTypeTrianglesClick) {
-                        Icon(Icons.Default.ChangeHistory, contentDescription = "Type triangles")
-                    }
-                    IconButton(onClick = onTeamClick) {
-                        BadgedBox(badge = {
-                            if (team.isNotEmpty()) Badge { Text("${team.size}") }
-                        }) {
-                            Icon(Icons.Default.Groups, contentDescription = "My team")
-                        }
-                    }
-                }
-            )
-        }
+        // Team/Type Triangles access moved to the bottom navigation bar (see PokedexNavHost) — a
+        // labelled, always-visible tab reads as a much clearer destination than an icon-only button
+        // buried in this screen's own top bar, and it no longer disappears while browsing this list.
+        topBar = { TopAppBar(title = { Text("PikaDex") }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             OutlinedTextField(
@@ -109,68 +123,29 @@ fun PokedexListScreen(
                 singleLine = true
             )
 
-            val typeRows = remember(uiState.typeOptions) {
-                val half = (uiState.typeOptions.size + 1) / 2
-                listOf(uiState.typeOptions.take(half), uiState.typeOptions.drop(half))
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                typeRows.forEach { rowTypes ->
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp)
-                    ) {
-                        lazyRowItems(rowTypes, key = { it.name }) { type ->
-                            FilterChip(
-                                selected = type.name in uiState.selectedTypes,
-                                onClick = { viewModel.onTypeToggled(type.name) },
-                                label = { TypeBadge(type.name, type.id ?: 0, height = 20.dp) }
-                            )
-                        }
-                    }
-                }
-            }
-
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            // Search + Filters + Sort + Reset — the search field is the only thing that must
+            // always be visible; everything else used to permanently occupy ~36% of the screen
+            // above the grid (two type-chip rows plus a filter-chip row that never scrolled away).
+            // Collapsing type/move/ability/format/tier/favorites behind one "Filters" sheet gives
+            // that space back to the actual Pokémon grid.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                val filterCount = uiState.activeFilterCount
                 FilterChip(
-                    selected = uiState.showFavoritesOnly,
-                    onClick = viewModel::onToggleFavoritesOnly,
-                    label = { Text("Favorites") },
-                    leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) }
+                    selected = filterCount > 0,
+                    onClick = { showFilterSheet = true },
+                    label = { Text(if (filterCount > 0) "Filters ($filterCount)" else "Filters") },
+                    leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 )
-                AssistChip(
-                    onClick = {
-                        viewModel.loadMoveOptionsIfNeeded()
-                        activeDialog = ActiveDialog.MOVE
-                    },
-                    label = { Text(uiState.selectedMove?.toDisplayName() ?: "Move") }
-                )
-                AssistChip(
-                    onClick = {
-                        viewModel.loadAbilityOptionsIfNeeded()
-                        activeDialog = ActiveDialog.ABILITY
-                    },
-                    label = { Text(uiState.selectedAbility?.toDisplayName() ?: "Ability") }
-                )
-                AssistChip(
-                    onClick = { activeDialog = ActiveDialog.FORMAT_GEN },
-                    label = { Text(uiState.selectedFormatGen?.label ?: "Format") }
-                )
-                AssistChip(
-                    onClick = {
-                        viewModel.loadTierOptionsIfNeeded()
-                        activeDialog = ActiveDialog.FORMAT_TIER
-                    },
-                    label = {
-                        Text(uiState.selectedFormatTier?.let { SmogonTierLabels.labelFor(it) } ?: "Tier")
-                    }
-                )
-                AssistChip(
+                // FilterChip, not AssistChip: an active sort is exactly the same kind of "a filter
+                // control has a non-default value set" state as the Filters button next to it, so
+                // it gets the same visual treatment (tonal fill once selected) instead of always
+                // looking like an inert, un-set button.
+                FilterChip(
+                    selected = uiState.sortStat != null,
                     onClick = {
                         viewModel.loadBaseStatsIfNeeded()
                         activeDialog = ActiveDialog.SORT
@@ -181,7 +156,11 @@ fun PokedexListScreen(
                     IconButton(onClick = viewModel::toggleSortDirection) {
                         Icon(
                             imageVector = if (uiState.sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                            contentDescription = if (uiState.sortAscending) "Ascending" else "Descending"
+                            contentDescription = if (uiState.sortAscending) {
+                                "Sorted ascending — tap to sort descending"
+                            } else {
+                                "Sorted descending — tap to sort ascending"
+                            }
                         )
                     }
                 }
@@ -194,6 +173,15 @@ fun PokedexListScreen(
                 }
             }
 
+            if (!uiState.isLoading && uiState.allPokemon.isNotEmpty()) {
+                Text(
+                    "${displayedPokemon.size} Pokémon",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     uiState.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -202,11 +190,17 @@ fun PokedexListScreen(
                         modifier = Modifier.align(Alignment.Center).padding(24.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
+                    displayedPokemon.isEmpty() -> EmptyResultsState(
+                        hasActiveFilters = uiState.hasActiveFilters,
+                        onResetFilters = viewModel::clearFilters,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                     else -> {
                         if (uiState.isFilterLoading || uiState.isStatsLoading) {
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(8.dp))
                         }
                         LazyVerticalGrid(
+                            state = gridState,
                             columns = GridCells.Fixed(3),
                             contentPadding = PaddingValues(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -238,10 +232,35 @@ fun PokedexListScreen(
         }
     }
 
+    if (showFilterSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        ModalBottomSheet(onDismissRequest = { showFilterSheet = false }, sheetState = sheetState) {
+            FilterSheetContent(
+                uiState = uiState,
+                onToggleFavoritesOnly = viewModel::onToggleFavoritesOnly,
+                onTypeToggled = viewModel::onTypeToggled,
+                onOpenMove = {
+                    viewModel.loadMoveOptionsIfNeeded()
+                    activeDialog = ActiveDialog.MOVE
+                },
+                onOpenAbility = {
+                    viewModel.loadAbilityOptionsIfNeeded()
+                    activeDialog = ActiveDialog.ABILITY
+                },
+                onOpenFormat = { activeDialog = ActiveDialog.FORMAT_GEN },
+                onOpenTier = {
+                    viewModel.loadTierOptionsIfNeeded()
+                    activeDialog = ActiveDialog.FORMAT_TIER
+                }
+            )
+        }
+    }
+
     when (activeDialog) {
         ActiveDialog.MOVE -> SearchableListDialog(
             title = "Choose a move",
             options = uiState.moveOptions,
+            clearLabel = "Any move",
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { move ->
                 viewModel.onMoveSelected(move)
@@ -252,6 +271,7 @@ fun PokedexListScreen(
         ActiveDialog.ABILITY -> SearchableListDialog(
             title = "Choose an ability",
             options = uiState.abilityOptions,
+            clearLabel = "Any ability",
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { ability ->
                 viewModel.onAbilitySelected(ability)
@@ -263,6 +283,7 @@ fun PokedexListScreen(
             title = "Choose a generation",
             options = listOf<SmogonGen?>(null) + Smogon.ALL_GENERATIONS,
             labelFor = { it?.label ?: "Clear format filter" },
+            selected = uiState.selectedFormatGen,
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { gen ->
                 viewModel.onFormatGenSelected(gen)
@@ -274,6 +295,7 @@ fun PokedexListScreen(
             title = "Choose a tier (${uiState.effectiveFormatGen.label})",
             options = listOf<String?>(null) + uiState.formatTierOptions,
             labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: "Any tier" },
+            selected = uiState.selectedFormatTier,
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { tier ->
                 viewModel.onFormatTierSelected(tier)
@@ -285,6 +307,7 @@ fun PokedexListScreen(
             title = "Sort by",
             options = listOf<SortStat?>(null) + SortStat.entries,
             labelFor = { it?.label ?: "No sorting" },
+            selected = uiState.sortStat,
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { stat ->
                 viewModel.onSortStatSelected(stat)
@@ -293,6 +316,132 @@ fun PokedexListScreen(
         )
 
         ActiveDialog.NONE -> Unit
+    }
+}
+
+/** Bottom sheet holding every filter control except Sort — Types as one wrapping row (was two
+ * independently-scrolling rows split by id, with no visible way to tell which row had e.g. Steel),
+ * every control showing a clear selected/active state (was: identical AssistChip whether a filter
+ * was set or not), and a note on how type selection combines (undocumented AND semantics). */
+@Composable
+private fun FilterSheetContent(
+    uiState: PokedexListUiState,
+    onToggleFavoritesOnly: () -> Unit,
+    onTypeToggled: (String) -> Unit,
+    onOpenMove: () -> Unit,
+    onOpenAbility: () -> Unit,
+    onOpenFormat: () -> Unit,
+    onOpenTier: () -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+        Text("Filters", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+
+        Text(
+            "Type",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        if (uiState.selectedTypes.size > 1) {
+            Text(
+                "Matching all selected types",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            uiState.typeOptions.forEach { type ->
+                val isSelected = type.name in uiState.selectedTypes
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onTypeToggled(type.name) },
+                    label = { TypeBadge(type.name, type.id ?: 0, height = 20.dp) },
+                    leadingIcon = if (isSelected) {
+                        { Icon(Icons.Default.Check, contentDescription = "Selected", modifier = Modifier.size(18.dp)) }
+                    } else {
+                        null
+                    }
+                )
+            }
+        }
+
+        Text(
+            "Other filters",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SelectableChip(
+                label = "Favorites",
+                selected = uiState.showFavoritesOnly,
+                onClick = onToggleFavoritesOnly,
+                unselectedIcon = { Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            )
+            SelectableChip(
+                label = uiState.selectedMove?.toDisplayName() ?: "Move",
+                selected = uiState.selectedMove != null,
+                onClick = onOpenMove
+            )
+            SelectableChip(
+                label = uiState.selectedAbility?.toDisplayName() ?: "Ability",
+                selected = uiState.selectedAbility != null,
+                onClick = onOpenAbility
+            )
+            SelectableChip(
+                label = uiState.selectedFormatGen?.label ?: "Format",
+                selected = uiState.selectedFormatGen != null,
+                onClick = onOpenFormat
+            )
+            SelectableChip(
+                label = uiState.selectedFormatTier?.let { SmogonTierLabels.labelFor(it) } ?: "Tier",
+                selected = uiState.selectedFormatTier != null,
+                onClick = onOpenTier
+            )
+        }
+    }
+}
+
+/** A chip that visibly shows whether it represents an active selection (a leading checkmark once
+ * selected) instead of looking identical whether or not a value is set. */
+@Composable
+private fun SelectableChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    unselectedIcon: (@Composable () -> Unit)? = null
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = when {
+            selected -> { { Icon(Icons.Default.Check, contentDescription = "Selected", modifier = Modifier.size(18.dp)) } }
+            unselectedIcon != null -> unselectedIcon
+            else -> null
+        }
+    )
+}
+
+@Composable
+private fun EmptyResultsState(hasActiveFilters: Boolean, onResetFilters: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            "No Pokémon match your search and filters.",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+        if (hasActiveFilters) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onResetFilters) { Text("Reset filters") }
+        }
     }
 }
 

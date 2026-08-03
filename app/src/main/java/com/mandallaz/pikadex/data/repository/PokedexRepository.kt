@@ -59,11 +59,13 @@ class PokedexRepository(private val api: PokeApiService) {
             .sortedBy { order.indexOf(it.name) }
     }
 
+    // Sorted alphabetically — PokeAPI returns these in id order (Pound, Karate Chop, Double
+    // Slap...), which is effectively random for a picker the user has to scan through.
     suspend fun getMoveNames(): List<String> =
-        moveNamesCache.get { api.getMoveList(limit = 100000).results.map { it.name } }
+        moveNamesCache.get { api.getMoveList(limit = 100000).results.map { it.name }.sorted() }
 
     suspend fun getAbilityNames(): List<String> =
-        abilityNamesCache.get { api.getAbilityList(limit = 100000).results.map { it.name } }
+        abilityNamesCache.get { api.getAbilityList(limit = 100000).results.map { it.name }.sorted() }
 
     /** Full type detail (including damage_relations), cached per type name. */
     suspend fun getTypeDetail(type: String): TypeDetailDto =

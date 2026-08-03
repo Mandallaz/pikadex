@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 
 data class PokedexDetailUiState(
     val isLoading: Boolean = true,
@@ -57,58 +58,69 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             _uiState.update { PokedexDetailUiState(isLoading = true) }
             try {
-                // The two bulk fetches depend on nothing else here — start them immediately
-                // instead of waiting until after the pokemon/species/evolution chain (which is a
-                // genuine 3-step dependency chain and can't be parallelized further).
-                val moveInfoDeferred = async { repository.getAllMoveInfo() }
-                val allStatsDeferred = async { repository.getAllBaseStats() }
+                // supervisorScope, not a plain coroutine body: without it, a child `async` that
+                // fails (e.g. no network) before it's awaited cancels this whole launch's Job as
+                // a *child failure*, not a normal thrown exception — the surrounding try/catch
+                // can appear to catch it, but the coroutine machinery still surfaces the original
+                // exception as uncaught once the (now-cancelled) coroutine completes, crashing the
+                // app. This was a real, reproducible offline crash: open any pokemon detail whose
+                // data isn't cached with no network. supervisorScope makes a failed child's
+                // exception surface only when *that* child is awaited, a normal catchable throw.
+                supervisorScope {
+                    // The two bulk fetches depend on nothing else here — start them immediately
+                    // instead of waiting until after the pokemon/species/evolution chain (which is
+                    // a genuine 3-step dependency chain and can't be parallelized further).
+                    val moveInfoDeferred = async { repository.getAllMoveInfo() }
+                    val allStatsDeferred = async { repository.getAllBaseStats() }
 
-                val bundle = repository.getPokemonDetailBundle(nameOrId)
-                val typeDetails = bundle.pokemon.types
-                    .map { async { repository.getTypeDetail(it.type.name) } }
-                    .awaitAll()
-                val matchups = computeDefensiveMultipliers(typeDetails)
-                val pokemonTypes = bundle.pokemon.types.map { it.type.name }
-                val memberTriangles = TypeTriangles.containing(pokemonTypes)
-                val counteredTriangles = TypeTriangles.counteredBy(pokemonTypes)
-                val abilityNames = bundle.pokemon.abilities.map { it.ability.name }
-                val descriptionsDeferred = async {
-                    abilityNames
-                        .map { name -> async { name to repository.getAbilityDescription(name) } }
+                    val bundle = repository.getPokemonDetailBundle(nameOrId)
+                    val typeDetails = bundle.pokemon.types
+                        .map { async { repository.getTypeDetail(it.type.name) } }
                         .awaitAll()
-                        .mapNotNull { (name, description) -> description?.let { name to it } }
-                        .toMap()
-                }
-                val moveInfo = moveInfoDeferred.await()
-                allStatsDeferred.await() // warms the repository's cache before the per-key lookups below
-                val descriptions = descriptionsDeferred.await()
+                    val matchups = computeDefensiveMultipliers(typeDetails)
+                    val pokemonTypes = bundle.pokemon.types.map { it.type.name }
+                    val memberTriangles = TypeTriangles.containing(pokemonTypes)
+                    val counteredTriangles = TypeTriangles.counteredBy(pokemonTypes)
+                    val abilityNames = bundle.pokemon.abilities.map { it.ability.name }
+                    val descriptionsDeferred = async {
+                        abilityNames
+                            .map { name -> async { name to repository.getAbilityDescription(name) } }
+                            .awaitAll()
+                            .mapNotNull { (name, description) -> description?.let { name to it } }
+                            .toMap()
+                    }
+                    val moveInfo = moveInfoDeferred.await()
+                    allStatsDeferred.await() // warms the repository's cache before the per-key lookups below
+                    val descriptions = descriptionsDeferred.await()
 
-                // Binary-searches a sorted array the repository builds once (see
-                // PokedexRepository.getSortedStatArrays) instead of re-scanning all ~1300 pokemon's
-                // values on every single detail load.
-                val percentiles = bundle.pokemon.stats.associate { stat ->
-                    stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
-                } + mapOf(
-                    "total" to repository.getStatPercentile("total", bundle.pokemon.stats.sumOf { it.baseStat })
-                )
-
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        pokemon = bundle.pokemon,
-                        species = bundle.species,
-                        evolutionChain = bundle.evolutionChain,
-                        typeMatchups = matchups,
-                        abilityDescriptions = descriptions,
-                        memberTriangles = memberTriangles,
-                        counteredTriangles = counteredTriangles,
-                        moveInfo = moveInfo,
-                        statPercentiles = percentiles
+                    // Binary-searches a sorted array the repository builds once (see
+                    // PokedexRepository.getSortedStatArrays) instead of re-scanning all ~1300
+                    // pokemon's values on every single detail load.
+                    val percentiles = bundle.pokemon.stats.associate { stat ->
+                        stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
+                    } + mapOf(
+                        "total" to repository.getStatPercentile("total", bundle.pokemon.stats.sumOf { it.baseStat })
                     )
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            pokemon = bundle.pokemon,
+                            species = bundle.species,
+                            evolutionChain = bundle.evolutionChain,
+                            typeMatchups = matchups,
+                            abilityDescriptions = descriptions,
+                            memberTriangles = memberTriangles,
+                            counteredTriangles = counteredTriangles,
+                            moveInfo = moveInfo,
+                            statPercentiles = percentiles
+                        )
+                    }
                 }
             } catch (e: Exception) {
+                loadedFor = null // let the user retry (e.g. after regaining network) instead of being stuck
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "Couldn't load this Pokémon.")
+                    it.copy(isLoading = false, errorMessage = "Couldn't load this Pokémon. Check your connection.")
                 }
             }
         }

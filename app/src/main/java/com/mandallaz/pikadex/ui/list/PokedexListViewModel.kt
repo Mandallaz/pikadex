@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 
 data class PokedexListUiState(
     val isLoading: Boolean = true,
@@ -55,7 +56,17 @@ data class PokedexListUiState(
 ) {
     val hasActiveFilters: Boolean
         get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
-            selectedFormatGen != null || selectedFormatTier != null || showFavoritesOnly
+            selectedFormatGen != null || selectedFormatTier != null || showFavoritesOnly || sortStat != null
+
+    /** How many of the filter controls (not counting sort) are currently set — shown as a badge
+     *  count on the "Filters" button so it's clear at a glance whether/how much filtering is active
+     *  without opening the sheet. */
+    val activeFilterCount: Int
+        get() = selectedTypes.size +
+            (if (selectedMove != null) 1 else 0) +
+            (if (selectedAbility != null) 1 else 0) +
+            (if (selectedFormatGen != null || selectedFormatTier != null) 1 else 0) +
+            (if (showFavoritesOnly) 1 else 0)
 
     /** The tier filter works standalone (e.g. picking "Uber" with no generation chosen), so it
      *  needs a generation to look up regardless — this defaults to the current one. */
@@ -71,7 +82,12 @@ private fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String):
     var list = state.allPokemon
     if (debouncedQuery.isNotBlank()) {
         val q = debouncedQuery.trim().lowercase()
-        list = list.filter { it.name.contains(q) || it.id?.toString() == q }
+        // Cards display the zero-padded dex number ("#0004"), but the old exact string match
+        // (`it.id?.toString() == q`) only matched the *unpadded* form — searching the exact text
+        // on screen ("0004") returned nothing. Comparing as Int handles both: "4".toIntOrNull()
+        // and "0004".toIntOrNull() are both 4.
+        val numericQuery = q.toIntOrNull()
+        list = list.filter { it.name.contains(q) || (numericQuery != null && it.id == numericQuery) }
     }
     state.typeFilterNames?.let { set -> list = list.filter { it.name in set } }
     state.moveFilterNames?.let { set -> list = list.filter { it.name in set } }
@@ -131,13 +147,20 @@ class PokedexListViewModel @JvmOverloads constructor(
     init {
         viewModelScope.launch {
             try {
-                // Independent requests — no reason the type-chip row should block the ~1300-item
-                // master list (or vice versa) from appearing.
-                val masterListDeferred = async { repository.getMasterList() }
-                val typesDeferred = async { repository.getTypes() }
-                val pokemonList = masterListDeferred.await()
-                val types = typesDeferred.await()
-                _uiState.update { it.copy(allPokemon = pokemonList, typeOptions = types, isLoading = false) }
+                // supervisorScope: a plain `async {}` here that fails before being awaited would
+                // otherwise cancel this whole launch's Job as a child failure rather than a normal
+                // catchable exception, which can crash the app uncaught even with a try/catch
+                // around it — see the full explanation on the identical fix in
+                // PokedexDetailViewModel.load().
+                supervisorScope {
+                    // Independent requests — no reason the type-chip row should block the
+                    // ~1300-item master list (or vice versa) from appearing.
+                    val masterListDeferred = async { repository.getMasterList() }
+                    val typesDeferred = async { repository.getTypes() }
+                    val pokemonList = masterListDeferred.await()
+                    val types = typesDeferred.await()
+                    _uiState.update { it.copy(allPokemon = pokemonList, typeOptions = types, isLoading = false) }
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isLoading = false, errorMessage = "Couldn't load the Pokédex. Check your connection.")
@@ -319,7 +342,11 @@ class PokedexListViewModel @JvmOverloads constructor(
                 selectedAbility = null, abilityFilterNames = null,
                 selectedFormatGen = null, formatTierOptions = emptyList(),
                 selectedFormatTier = null, formatFilterNames = null,
-                showFavoritesOnly = false
+                showFavoritesOnly = false,
+                // Reset used to leave a sort applied while making the Reset chip itself disappear
+                // (hasActiveFilters didn't count sortStat) — so there was no visible way back to
+                // dex order except reopening the Sort dialog and picking "No sorting" by hand.
+                sortStat = null, sortAscending = false
             )
         }
     }

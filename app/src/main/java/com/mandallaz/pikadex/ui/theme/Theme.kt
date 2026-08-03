@@ -37,7 +37,12 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun PokeDexTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    // Defaults off: on API 31+ this derives the whole scheme from the user's wallpaper, which used
+    // to silently replace PikaDex's own red/blue/yellow brand palette above with whatever colors
+    // happen to be dynamic-themed that day — a Pokédex that doesn't reliably look like a Pokédex.
+    // Left as a parameter (not deleted) in case a future settings toggle wants to offer it as an
+    // opt-in.
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
