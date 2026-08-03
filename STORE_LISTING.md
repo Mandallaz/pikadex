@@ -15,12 +15,16 @@ competitive and casual players alike:
 - Full national dex: search by name or number, filter by type, move, ability, or
   competitive tier, and sort by any base stat.
 - Detailed Pokémon pages: base stats (ranked against every other Pokémon), type
-  matchups, abilities, evolution lines, and full move lists (level-up, TM/HM,
-  breeding, tutor).
+  matchups, abilities, evolution lines including Mega Evolutions, and full move
+  lists with type, power and accuracy (level-up, TM/HM, breeding, tutor).
+- Competitive links: open a Pokémon's Smogon strategy dex page for the
+  generations it actually appears in, without leaving the app.
 - Type Triangles: a reference for every three-way type "beats" cycle in the type
   chart (like Fire/Water/Grass), including which typings counter each one.
 - Team Builder: assemble a team of up to 6 Pokémon and see the combined type
-  matchup matrix and shared weaknesses at a glance.
+  matchup matrix and shared weaknesses at a glance — or load any of 81 gym
+  leader and champion teams from the main series, from Red/Blue to
+  Scarlet/Violet.
 - Favorites, offline-friendly caching, and a clean Material You interface with
   full dark mode support.
 
@@ -35,7 +39,9 @@ Answer the Play Console questionnaire — this app has no violence, ads, or user
 
 ## Data safety form
 No data is collected or shared. See PRIVACY_POLICY.md — the app has no accounts,
-no analytics, no ads, and stores favorites/team locally on-device only.
+no analytics and no ads. The only things it writes are on-device and stay there:
+favorites/team in SharedPreferences, plus a cache of the public game data and
+images already downloaded.
 
 ## Privacy policy URL
 Host PRIVACY_POLICY.md somewhere public (GitHub Pages, a Gist raw link, Google
@@ -50,8 +56,9 @@ Not included here — capture these from the running app:
 - App icon: 512x512 PNG for the store listing (separate from the in-app
   adaptive icon).
 
-## Known open item
-The in-app launcher icon (`app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`)
-is still the default Android Studio template icon, not a custom PikaDex icon —
-replace it before shipping if you want a real brand identity in the launcher
-and store listing.
+## Known open items
+The launcher icon is done — a custom Poké Ball adaptive icon, not the Android
+Studio template. What is still outstanding before submitting:
+
+- Screenshots and the feature graphic (see the section above).
+- Hosting PRIVACY_POLICY.md at a public URL for the Play Console field.
