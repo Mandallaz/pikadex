@@ -3,6 +3,7 @@ package com.mandallaz.pikadex.ui.list
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -76,6 +77,18 @@ import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.toDisplayName
 
+/**
+ * Smallest a Pokémon card may get before the grid drops a column.
+ *
+ * Chosen to reproduce exactly what `GridCells.Fixed(3)` used to give on a portrait phone — a
+ * ~411dp-wide screen still lands on 3 columns of ~126dp — so this is a no-op there and only changes
+ * what happens on wider screens, where the count now grows instead of the cards.
+ */
+private val POKEMON_CARD_MIN_WIDTH = 120.dp
+
+/** Below this content height the list header stops being pinned — see [PokedexListScreen]. */
+private val COMPACT_HEADER_MAX_HEIGHT = 400.dp
+
 private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -146,173 +159,214 @@ fun PokedexListScreen(
         topBar = { TopAppBar(title = { Text("PikaDex") }) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = viewModel::onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Name or number...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                        }
-                    }
-                } else {
-                    null
-                },
-                singleLine = true
-            )
+        BoxWithConstraints(modifier = Modifier.padding(padding).fillMaxSize()) {
+            // Landscape left the grid a ~64dp slit — under half a card, so no row was ever fully
+            // visible and the names were clipped mid-word. The header earns its space on a tall
+            // screen and does not on a short one, so below this height it stops being pinned and
+            // rides along as full-width grid items, scrolling away with the content. It stays
+            // pinned for the loading/error/no-results states: those have no grid to ride on, and
+            // hiding it there would strand the user with no way to edit the search that got them
+            // to an empty result in the first place.
+            val compact = maxHeight < COMPACT_HEADER_MAX_HEIGHT
 
-            // Search + Filters + Sort + Reset — the search field is the only thing that must
-            // always be visible; everything else used to permanently occupy ~36% of the screen
-            // above the grid (two type-chip rows plus a filter-chip row that never scrolled away).
-            // Collapsing type/move/ability/format/tier/favorites behind one "Filters" sheet gives
-            // that space back to the actual Pokémon grid.
-            // FlowRow, not Row: with a long sort label ("Sort: Dex number") plus the direction
-            // toggle plus Reset, a plain Row squeezed the last chip until its text broke mid-word
-            // ("Res/et") instead of letting it move to the next line.
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                itemVerticalAlignment = Alignment.CenterVertically
-            ) {
-                val filterCount = uiState.activeFilterCount
-                FilterChip(
-                    selected = filterCount > 0,
-                    onClick = { showFilterSheet = true },
-                    label = { Text(if (filterCount > 0) "Filters ($filterCount)" else "Filters") },
-                    leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                )
-                // FilterChip, not AssistChip: an active sort is exactly the same kind of "a filter
-                // control has a non-default value set" state as the Filters button next to it, so
-                // it gets the same visual treatment (tonal fill once selected) instead of always
-                // looking like an inert, un-set button.
-                FilterChip(
-                    selected = uiState.sortStat != null,
-                    onClick = {
-                        viewModel.loadBaseStatsIfNeeded()
-                        activeDialog = ActiveDialog.SORT
+            val searchField: @Composable () -> Unit = {
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = viewModel::onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text("Name or number...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
+                        {
+                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            }
+                        }
+                    } else {
+                        null
                     },
-                    // "Sort: " prefix once a stat is picked — a bare "Attack" next to "Filters (2)"
-                    // read as if it were itself a filter value, not what it's actually sorting by.
-                    label = { Text(uiState.sortStat?.let { "Sort: ${it.label}" } ?: "Sort") }
+                    singleLine = true
                 )
-                if (uiState.sortStat != null) {
-                    IconButton(onClick = viewModel::toggleSortDirection) {
-                        Icon(
-                            imageVector = if (uiState.sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                            contentDescription = if (uiState.sortAscending) {
-                                "Sorted ascending — tap to sort descending"
-                            } else {
-                                "Sorted descending — tap to sort ascending"
-                            }
-                        )
-                    }
-                }
-                if (uiState.hasActiveFilters) {
-                    AssistChip(
-                        onClick = viewModel::clearFilters,
-                        label = { Text("Reset") },
-                        leadingIcon = { Icon(Icons.Default.Clear, contentDescription = null) }
+            }
+
+            val filterChips: @Composable () -> Unit = {
+                // Search + Filters + Sort + Reset — the search field is the only thing that must
+                // always be visible; everything else used to permanently occupy ~36% of the screen
+                // above the grid (two type-chip rows plus a filter-chip row that never scrolled away).
+                // Collapsing type/move/ability/format/tier/favorites behind one "Filters" sheet gives
+                // that space back to the actual Pokémon grid.
+                // FlowRow, not Row: with a long sort label ("Sort: Dex number") plus the direction
+                // toggle plus Reset, a plain Row squeezed the last chip until its text broke mid-word
+                // ("Res/et") instead of letting it move to the next line.
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    itemVerticalAlignment = Alignment.CenterVertically
+                ) {
+                    val filterCount = uiState.activeFilterCount
+                    FilterChip(
+                        selected = filterCount > 0,
+                        onClick = { showFilterSheet = true },
+                        label = { Text(if (filterCount > 0) "Filters ($filterCount)" else "Filters") },
+                        leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp)) }
                     )
-                }
-            }
-
-            if (!uiState.isLoading && uiState.allPokemon.isNotEmpty()) {
-                Text(
-                    "${displayedPokemon.size} Pokémon",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                when {
-                    uiState.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    uiState.errorMessage != null && uiState.allPokemon.isEmpty() -> Column(
-                        modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = uiState.errorMessage ?: "",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // A failed cold start used to be a genuine dead end — load() only ever ran
-                        // once from init{}, so there was no way back into the app short of
-                        // force-killing it, even after connectivity came back.
-                        Button(onClick = viewModel::retryInitialLoad) { Text("Retry") }
-                    }
-                    displayedPokemon.isEmpty() -> EmptyResultsState(
-                        hasActiveFilters = uiState.hasActiveFilters,
-                        onResetFilters = {
-                            viewModel.clearFilters()
-                            viewModel.onSearchQueryChange("")
+                    // FilterChip, not AssistChip: an active sort is exactly the same kind of "a filter
+                    // control has a non-default value set" state as the Filters button next to it, so
+                    // it gets the same visual treatment (tonal fill once selected) instead of always
+                    // looking like an inert, un-set button.
+                    FilterChip(
+                        selected = uiState.sortStat != null,
+                        onClick = {
+                            viewModel.loadBaseStatsIfNeeded()
+                            activeDialog = ActiveDialog.SORT
                         },
-                        modifier = Modifier.align(Alignment.Center)
+                        // "Sort: " prefix once a stat is picked — a bare "Attack" next to "Filters (2)"
+                        // read as if it were itself a filter value, not what it's actually sorting by.
+                        label = { Text(uiState.sortStat?.let { "Sort: ${it.label}" } ?: "Sort") }
                     )
-                    else -> {
-                        val idsByName = remember(uiState.allPokemon) {
-                            uiState.allPokemon.mapNotNull { p -> p.id?.let { p.name to it } }.toMap()
-                        }
-                        LazyVerticalGrid(
-                            state = gridState,
-                            columns = GridCells.Fixed(3),
-                            contentPadding = PaddingValues(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(displayedPokemon, key = { it.name }) { resource ->
-                                val id = resource.id ?: return@items
-                                val isInTeamAlready = team.any { it.name == resource.name }
-                                val isTeamFull = team.size >= TeamRepository.MAX_SIZE
-                                // Only alternate forms (hyphenated names) can lack their own
-                                // artwork, so ordinary species skip the lookup entirely.
-                                val baseSpeciesId = remember(resource.name, idsByName) {
-                                    if ('-' !in resource.name) {
-                                        null
-                                    } else {
-                                        Sprites.baseSpeciesName(resource.name) { it in idsByName }
-                                            ?.let { idsByName[it] }
-                                    }
+                    if (uiState.sortStat != null) {
+                        IconButton(onClick = viewModel::toggleSortDirection) {
+                            Icon(
+                                imageVector = if (uiState.sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                contentDescription = if (uiState.sortAscending) {
+                                    "Sorted ascending — tap to sort descending"
+                                } else {
+                                    "Sorted descending — tap to sort ascending"
                                 }
-                                PokemonCard(
-                                    id = id,
-                                    name = resource.name,
-                                    baseSpeciesId = baseSpeciesId,
-                                    isFavorite = resource.name in favorites,
-                                    isInTeam = isInTeamAlready,
-                                    isTeamFull = isTeamFull,
-                                    onClick = { onPokemonClick(resource.name) },
-                                    onToggleTeam = {
-                                        if (!isInTeamAlready && isTeamFull) {
-                                            // The button used to just render disabled with zero
-                                            // explanation of why tapping it did nothing.
-                                            coroutineScope.launch {
-                                                snackbarHostState.showSnackbar("Your team is full (${TeamRepository.MAX_SIZE}/${TeamRepository.MAX_SIZE}). Remove one first.")
-                                            }
-                                        } else {
-                                            TeamRepository.toggle(NamedApiResource(resource.name, "https://pokeapi.co/api/v2/pokemon/$id/"))
-                                        }
-                                    },
-                                    onToggleFavorite = { FavoritesRepository.toggle(resource.name) }
-                                )
-                            }
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                AttributionFooter()
-                            }
+                            )
                         }
-                        // Drawn after (i.e. on top of) the grid, not before it — composed first, the
-                        // spinner used to sit directly behind the opaque first row of cards and was
-                        // never actually visible while a type/move/ability/tier filter was applying.
-                        if (uiState.isFilterLoading || uiState.isStatsLoading) {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(8.dp))
+                    }
+                    if (uiState.hasActiveFilters) {
+                        AssistChip(
+                            onClick = viewModel::clearFilters,
+                            label = { Text("Reset") },
+                            leadingIcon = { Icon(Icons.Default.Clear, contentDescription = null) }
+                        )
+                    }
+                }
+            }
+
+            val resultCount: @Composable () -> Unit = {
+                if (!uiState.isLoading && uiState.allPokemon.isNotEmpty()) {
+                    Text(
+                        "${displayedPokemon.size} Pokémon",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            // Mirrors the `when` below — the grid is its last branch, so this is "a grid is what
+            // is actually on screen right now".
+            val showsGrid = !uiState.isLoading &&
+                !(uiState.errorMessage != null && uiState.allPokemon.isEmpty()) &&
+                displayedPokemon.isNotEmpty()
+            val headerScrollsWithGrid = compact && showsGrid
+
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (!headerScrollsWithGrid) {
+                    searchField()
+                    filterChips()
+                    resultCount()
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when {
+                        uiState.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        uiState.errorMessage != null && uiState.allPokemon.isEmpty() -> Column(
+                            modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = uiState.errorMessage ?: "",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            // A failed cold start used to be a genuine dead end — load() only ever ran
+                            // once from init{}, so there was no way back into the app short of
+                            // force-killing it, even after connectivity came back.
+                            Button(onClick = viewModel::retryInitialLoad) { Text("Retry") }
+                        }
+                        displayedPokemon.isEmpty() -> EmptyResultsState(
+                            hasActiveFilters = uiState.hasActiveFilters,
+                            onResetFilters = {
+                                viewModel.clearFilters()
+                                viewModel.onSearchQueryChange("")
+                            },
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                        else -> {
+                            val idsByName = remember(uiState.allPokemon) {
+                                uiState.allPokemon.mapNotNull { p -> p.id?.let { p.name to it } }.toMap()
+                            }
+                            LazyVerticalGrid(
+                                state = gridState,
+                                // Adaptive, not Fixed(3): three columns is right for a portrait
+                                // phone but stretched each card to a third of a landscape screen —
+                                // a ~120dp sprite marooned in 300dp of empty card. Sizing by a
+                                // minimum card width instead keeps cards the size they are today in
+                                // portrait (still 3 columns there) and simply fits more of them per
+                                // row when the screen is wider.
+                                columns = GridCells.Adaptive(minSize = POKEMON_CARD_MIN_WIDTH),
+                                contentPadding = PaddingValues(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                if (headerScrollsWithGrid) {
+                                    item(span = { GridItemSpan(maxLineSpan) }) { searchField() }
+                                    item(span = { GridItemSpan(maxLineSpan) }) { filterChips() }
+                                    item(span = { GridItemSpan(maxLineSpan) }) { resultCount() }
+                                }
+                                items(displayedPokemon, key = { it.name }) { resource ->
+                                    val id = resource.id ?: return@items
+                                    val isInTeamAlready = team.any { it.name == resource.name }
+                                    val isTeamFull = team.size >= TeamRepository.MAX_SIZE
+                                    // Only alternate forms (hyphenated names) can lack their own
+                                    // artwork, so ordinary species skip the lookup entirely.
+                                    val baseSpeciesId = remember(resource.name, idsByName) {
+                                        if ('-' !in resource.name) {
+                                            null
+                                        } else {
+                                            Sprites.baseSpeciesName(resource.name) { it in idsByName }
+                                                ?.let { idsByName[it] }
+                                        }
+                                    }
+                                    PokemonCard(
+                                        id = id,
+                                        name = resource.name,
+                                        baseSpeciesId = baseSpeciesId,
+                                        isFavorite = resource.name in favorites,
+                                        isInTeam = isInTeamAlready,
+                                        isTeamFull = isTeamFull,
+                                        onClick = { onPokemonClick(resource.name) },
+                                        onToggleTeam = {
+                                            if (!isInTeamAlready && isTeamFull) {
+                                                // The button used to just render disabled with zero
+                                                // explanation of why tapping it did nothing.
+                                                coroutineScope.launch {
+                                                    snackbarHostState.showSnackbar("Your team is full (${TeamRepository.MAX_SIZE}/${TeamRepository.MAX_SIZE}). Remove one first.")
+                                                }
+                                            } else {
+                                                TeamRepository.toggle(NamedApiResource(resource.name, "https://pokeapi.co/api/v2/pokemon/$id/"))
+                                            }
+                                        },
+                                        onToggleFavorite = { FavoritesRepository.toggle(resource.name) }
+                                    )
+                                }
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    AttributionFooter()
+                                }
+                            }
+                            // Drawn after (i.e. on top of) the grid, not before it — composed first, the
+                            // spinner used to sit directly behind the opaque first row of cards and was
+                            // never actually visible while a type/move/ability/tier filter was applying.
+                            if (uiState.isFilterLoading || uiState.isStatsLoading) {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(8.dp))
+                            }
                         }
                     }
                 }
