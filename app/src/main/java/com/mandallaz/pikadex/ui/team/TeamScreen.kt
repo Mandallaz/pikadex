@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -107,7 +108,15 @@ fun TeamScreen(
             }
 
             uiState.errorMessage?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+                    // Without this the matrix only ever recomputed when the team itself changed, so
+                    // a failed fetch left every cell blank until the user added or removed a member.
+                    Button(onClick = viewModel::retry, modifier = Modifier.padding(start = 8.dp)) { Text("Retry") }
+                }
             }
 
             val sharedWeaknesses = uiState.sharedWeaknesses
@@ -145,6 +154,12 @@ fun TeamScreen(
             val horizontalScrollState = rememberScrollState()
             val verticalScrollState = rememberScrollState()
 
+            // The pinned type-name column and the scrolling cell grid are two separate Columns that
+            // only stay row-aligned because both use this exact same fixed height — so it can't just
+            // wrap its content. Instead it grows with the user's font scale, since at 1.5-2x the
+            // multiplier text ("×4", "×½") no longer fits 32dp and was getting vertically clipped.
+            val rowHeight = MATRIX_ROW_HEIGHT * LocalDensity.current.fontScale.coerceAtLeast(1f)
+
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(horizontal = 16.dp)) {
                 Box(modifier = Modifier.width(TYPE_COLUMN_WIDTH))
                 Row(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
@@ -170,7 +185,7 @@ fun TeamScreen(
                 Column(modifier = Modifier.verticalScroll(verticalScrollState)) {
                     TypeIds.standardTypeNames.forEach { typeName ->
                         Box(
-                            modifier = Modifier.width(TYPE_COLUMN_WIDTH).height(MATRIX_ROW_HEIGHT),
+                            modifier = Modifier.width(TYPE_COLUMN_WIDTH).height(rowHeight),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             TypeBadge(typeName, TypeIds.of(typeName), height = 20.dp)
@@ -192,7 +207,7 @@ fun TeamScreen(
                     val showKnownData = !uiState.isLoading && !uiState.isMatrixStale
                     TypeIds.standardTypeNames.forEach { typeName ->
                         val row = uiState.matrix[typeName].orEmpty()
-                        Row(modifier = Modifier.height(MATRIX_ROW_HEIGHT), verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.height(rowHeight), verticalAlignment = Alignment.CenterVertically) {
                             uiState.members.forEach { member ->
                                 val multiplier = row[member.name] ?: 1.0
                                 val (background, content) = if (showKnownData) {

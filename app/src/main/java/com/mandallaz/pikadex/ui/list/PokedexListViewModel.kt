@@ -11,6 +11,7 @@ import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -148,7 +149,13 @@ class PokedexListViewModel @JvmOverloads constructor(
             // (searchQuery lives on the same _uiState as everything else), which re-ran the
             // filter/sort pass on the un-debounced text and defeated the debounce entirely.
             _uiState.map { it.copy(searchQuery = "") }.distinctUntilChanged(),
-            debouncedSearchQuery.debounce(150)
+            // Only a non-empty query is worth waiting on. A flat debounce(150) also delayed the
+            // *initial* "" emission, and since combine can't produce anything until both arms have
+            // emitted, displayedPokemon stayed empty for the first 150ms of the screen's life — long
+            // enough that a cache-warm cold start (list ready in well under 150ms) flashed
+            // "0 Pokémon"/"No Pokémon match your search and filters" before showing the grid. It also
+            // makes clearing the search box snap back instantly instead of lagging.
+            debouncedSearchQuery.debounce { query -> if (query.isEmpty()) 0L else 150L }
         ) { state, query -> computeDisplayed(state, query) }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -216,8 +223,12 @@ class PokedexListViewModel @JvmOverloads constructor(
     fun onTypeToggled(type: String) {
         val current = _uiState.value.selectedTypes
         val updated = if (type in current) current - type else current + type
-        _uiState.update { it.copy(selectedTypes = updated, typeFilterNames = null) }
         typeFilterJob?.cancel()
+        // isFilterLoading has to be cleared here, at the cancel site: the cancelled job's own
+        // `isFilterLoading = false` lives in a catch block that no longer runs (see the
+        // CancellationException rethrow below), so deselecting the last type while its request was
+        // still in flight used to leave the spinner over the grid spinning forever.
+        _uiState.update { it.copy(selectedTypes = updated, typeFilterNames = null, isFilterLoading = false) }
         if (updated.isEmpty()) return
         typeFilterJob = viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
@@ -228,6 +239,14 @@ class PokedexListViewModel @JvmOverloads constructor(
                     .map { repository.getPokemonNamesForType(it) }
                     .reduce { a, b -> a intersect b }
                 _uiState.update { it.copy(typeFilterNames = intersection, isFilterLoading = false) }
+            } catch (e: CancellationException) {
+                // Cancelling this job (the rapid-tap guard above) throws CancellationException out of
+                // whatever network call was in flight — and CancellationException *is* an Exception,
+                // so the generic handler below used to catch it and report a "Network error" that
+                // never happened. That error then also force-closed the filter sheet (see the error
+                // effect in PokedexListScreen), so every quick second tap on a type chip slammed the
+                // sheet shut with a bogus network error. Rethrowing keeps cancellation as cancellation.
+                throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by type.") }
             }
@@ -247,14 +266,16 @@ class PokedexListViewModel @JvmOverloads constructor(
     }
 
     fun onMoveSelected(move: String?) {
-        _uiState.update { it.copy(selectedMove = move, moveFilterNames = null) }
         moveFilterJob?.cancel()
+        _uiState.update { it.copy(selectedMove = move, moveFilterNames = null, isFilterLoading = false) }
         if (move == null) return
         moveFilterJob = viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
             try {
                 val names = repository.getPokemonNamesForMove(move)
                 _uiState.update { it.copy(moveFilterNames = names, isFilterLoading = false) }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
             } catch (e: Exception) {
                 _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by move.") }
             }
@@ -274,14 +295,16 @@ class PokedexListViewModel @JvmOverloads constructor(
     }
 
     fun onAbilitySelected(ability: String?) {
-        _uiState.update { it.copy(selectedAbility = ability, abilityFilterNames = null) }
         abilityFilterJob?.cancel()
+        _uiState.update { it.copy(selectedAbility = ability, abilityFilterNames = null, isFilterLoading = false) }
         if (ability == null) return
         abilityFilterJob = viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
             try {
                 val names = repository.getPokemonNamesForAbility(ability)
                 _uiState.update { it.copy(abilityFilterNames = names, isFilterLoading = false) }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
             } catch (e: Exception) {
                 _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by ability.") }
             }
@@ -320,8 +343,8 @@ class PokedexListViewModel @JvmOverloads constructor(
     }
 
     fun onFormatTierSelected(tier: String?) {
-        _uiState.update { it.copy(selectedFormatTier = tier) }
         tierFilterJob?.cancel()
+        _uiState.update { it.copy(selectedFormatTier = tier, isFilterLoading = false) }
         if (tier == null) {
             _uiState.update { it.copy(formatFilterNames = null) }
             return
@@ -350,6 +373,8 @@ class PokedexListViewModel @JvmOverloads constructor(
                     .map { it.name }
                     .toSet()
                 _uiState.update { it.copy(formatFilterNames = names, isFilterLoading = false) }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
             } catch (e: Exception) {
                 _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by tier.") }
             }
@@ -391,6 +416,10 @@ class PokedexListViewModel @JvmOverloads constructor(
                 selectedFormatGen = null, formatTierOptions = emptyList(),
                 selectedFormatTier = null, formatFilterNames = null,
                 showFavoritesOnly = false,
+                // Same reason as the individual cancel sites: whichever of the four jobs just got
+                // cancelled will never clear this itself, so Reset while a filter was still
+                // resolving used to leave the grid's spinner up permanently.
+                isFilterLoading = false,
                 // Reset used to leave a sort applied while making the Reset chip itself disappear
                 // (hasActiveFilters didn't count sortStat) — so there was no visible way back to
                 // dex order except reopening the Sort dialog and picking "No sorting" by hand.
