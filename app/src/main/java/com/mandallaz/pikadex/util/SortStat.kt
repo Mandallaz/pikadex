@@ -1,7 +1,11 @@
 package com.mandallaz.pikadex.util
 
-/** Sortable base stats. [apiName] matches PokeAPI/GraphQL's stat name; TOTAL has none since it's a sum. */
+/** Sort keys for the Pokédex list. [apiName] matches PokeAPI/GraphQL's stat name; the entries that
+ *  aren't a single stat (a sum, or the dex number itself) have none. */
 enum class SortStat(val apiName: String?, val label: String) {
+    /** Unlike every other entry this reads the resource's own id rather than the bulk stats map, so
+     *  it's the one sort that still works with no network. */
+    DEX_NUMBER(null, "Dex number"),
     HP("hp", "HP"),
     ATTACK("attack", "Attack"),
     DEFENSE("defense", "Defense"),

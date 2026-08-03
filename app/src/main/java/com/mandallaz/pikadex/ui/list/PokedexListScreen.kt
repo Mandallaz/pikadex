@@ -170,10 +170,14 @@ fun PokedexListScreen(
             // above the grid (two type-chip rows plus a filter-chip row that never scrolled away).
             // Collapsing type/move/ability/format/tier/favorites behind one "Filters" sheet gives
             // that space back to the actual Pokémon grid.
-            Row(
+            // FlowRow, not Row: with a long sort label ("Sort: Dex number") plus the direction
+            // toggle plus Reset, a plain Row squeezed the last chip until its text broke mid-word
+            // ("Res/et") instead of letting it move to the next line.
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically
             ) {
                 val filterCount = uiState.activeFilterCount
                 FilterChip(

@@ -107,11 +107,18 @@ private fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String):
 
     state.sortStat?.let { stat ->
         val keyOf: (NamedApiResource) -> Int = { resource ->
-            val stats = state.baseStats[resource.name]
-            when {
-                stats == null -> Int.MIN_VALUE
-                stat == SortStat.TOTAL -> stats.values.sum()
-                else -> stats[stat.apiName] ?: Int.MIN_VALUE
+            // Checked before the stats lookup, not inside it: sorting by dex number doesn't need
+            // the bulk stats map at all, so it must not fall into the "no stats loaded -> every key
+            // is MIN_VALUE" branch below and silently do nothing.
+            if (stat == SortStat.DEX_NUMBER) {
+                resource.id ?: Int.MIN_VALUE
+            } else {
+                val stats = state.baseStats[resource.name]
+                when {
+                    stats == null -> Int.MIN_VALUE
+                    stat == SortStat.TOTAL -> stats.values.sum()
+                    else -> stats[stat.apiName] ?: Int.MIN_VALUE
+                }
             }
         }
         // sortedBy/sortedByDescending call the key selector on every *comparison*, not once per
