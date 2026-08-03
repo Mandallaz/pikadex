@@ -9,8 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +38,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -64,6 +63,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -148,10 +148,25 @@ fun PokedexDetailScreen(
                 // name bar, stat rows) sets that expectation immediately and feels faster even at
                 // the same real load time.
                 uiState.isLoading -> DetailLoadingSkeleton()
-                uiState.errorMessage != null || pokemon == null || species == null -> Text(
-                    text = uiState.errorMessage ?: "Pokémon not found.",
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp)
-                )
+                uiState.errorMessage != null || pokemon == null || species == null -> Column(
+                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = uiState.errorMessage ?: "Pokémon not found.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    // load() resets its internal "already attempted" guard on failure specifically
+                    // so a retry can succeed, but nothing ever called load() a second time — the
+                    // only call site is keyed on the pokemon name/id, which never changes for this
+                    // screen instance, so regaining network did nothing until the user backed out
+                    // and re-entered the screen.
+                    if (uiState.errorMessage != null) {
+                        Spacer(modifier = Modifier.size(16.dp))
+                        Button(onClick = { viewModel.load(pokemonNameOrId) }) { Text("Retry") }
+                    }
+                }
                 else -> DetailContent(
                     pokemon = pokemon,
                     species = species,
@@ -483,7 +498,10 @@ private fun EvolutionStageBox(
                 },
                 RoundedCornerShape(12.dp)
             )
-            .clickable(enabled = stage.id != 0) { onPokemonClick(stage.speciesName) }
+            // Excludes the current Pokémon too, not just the placeholder id=0 case — tapping the
+            // highlighted "you are here" stage in its own chain used to push a duplicate detail
+            // screen of the page already on screen.
+            .clickable(enabled = stage.id != 0 && stage.speciesName != pokemon.name) { onPokemonClick(stage.speciesName) }
             .padding(8.dp)
     ) {
         AsyncImage(
@@ -595,9 +613,9 @@ private fun TypeTrianglesCard(
                 }
             }
 
-            if (!expanded && totalCount > COLLAPSED_TRIANGLE_LIMIT) {
-                TextButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Show all $totalCount")
+            if (totalCount > COLLAPSED_TRIANGLE_LIMIT) {
+                TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (expanded) "Show less" else "Show all $totalCount")
                 }
             }
         }
@@ -645,9 +663,9 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String) {
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            Row(
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.horizontalScroll(rememberScrollState())
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 links.forEach { link ->
                     AssistChip(

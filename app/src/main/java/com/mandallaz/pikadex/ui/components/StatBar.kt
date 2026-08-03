@@ -3,7 +3,7 @@ package com.mandallaz.pikadex.ui.components
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,14 +30,18 @@ fun StatBar(statName: String, value: Int, color: Color, modifier: Modifier = Mod
             .padding(vertical = 4.dp),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
+        // Fixed dp widths here used to clip a bold 3-digit value ("255") and unevenly wrap a long
+        // label ("Special Defense") at larger font scales. weight()/widthIn(min=) instead of a hard
+        // width() means the label can wrap within its own share of the row and the value column can
+        // grow past its minimum rather than ever truncating.
         Text(
             text = statName.toDisplayName(),
-            modifier = Modifier.width(110.dp),
+            modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium
         )
         Text(
             text = value.toString(),
-            modifier = Modifier.width(36.dp),
+            modifier = Modifier.widthIn(min = 36.dp),
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.bodyMedium
         )
@@ -50,7 +54,7 @@ fun StatBar(statName: String, value: Int, color: Color, modifier: Modifier = Mod
             // nothing here removes that false signal.
             drawStopIndicator = {},
             modifier = Modifier
-                .weight(1f)
+                .weight(1.5f)
                 .padding(start = 8.dp)
         )
     }

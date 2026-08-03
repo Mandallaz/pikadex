@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mandallaz.pikadex.util.TypeIds
 import kotlin.math.atan2
@@ -50,17 +51,27 @@ fun TypeTriangleDiagram(types: List<String>, modifier: Modifier = Modifier) {
 
         TypeBadge(
             types[0], TypeIds.of(types[0]), height = BADGE_HEIGHT,
-            modifier = Modifier.offset(x = w * TOP_ANCHOR.x - BADGE_WIDTH / 2, y = h * TOP_ANCHOR.y - BADGE_HEIGHT / 2)
+            modifier = Modifier.offset(x = clampBadgeX(w * TOP_ANCHOR.x, w), y = h * TOP_ANCHOR.y - BADGE_HEIGHT / 2)
         )
         TypeBadge(
             types[1], TypeIds.of(types[1]), height = BADGE_HEIGHT,
-            modifier = Modifier.offset(x = w * BOTTOM_LEFT_ANCHOR.x - BADGE_WIDTH / 2, y = h * BOTTOM_LEFT_ANCHOR.y - BADGE_HEIGHT / 2)
+            modifier = Modifier.offset(x = clampBadgeX(w * BOTTOM_LEFT_ANCHOR.x, w), y = h * BOTTOM_LEFT_ANCHOR.y - BADGE_HEIGHT / 2)
         )
         TypeBadge(
             types[2], TypeIds.of(types[2]), height = BADGE_HEIGHT,
-            modifier = Modifier.offset(x = w * BOTTOM_RIGHT_ANCHOR.x - BADGE_WIDTH / 2, y = h * BOTTOM_RIGHT_ANCHOR.y - BADGE_HEIGHT / 2)
+            modifier = Modifier.offset(x = clampBadgeX(w * BOTTOM_RIGHT_ANCHOR.x, w), y = h * BOTTOM_RIGHT_ANCHOR.y - BADGE_HEIGHT / 2)
         )
     }
+}
+
+/** A badge horizontally centered on [anchorX] would overflow the container on ordinary phone
+ *  widths for the bottom-left/right anchors (0.16/0.84 of a ~300-340dp content width puts their
+ *  centered badge only ~50-65dp from the edge, well under BADGE_WIDTH/2) — clipped by whatever
+ *  clips this composable's bounds (e.g. the surrounding Card). Clamping keeps every badge fully
+ *  on-screen while leaving the un-clipped (wide-container) case exactly centered as before. */
+private fun clampBadgeX(anchorX: Dp, containerWidth: Dp): Dp {
+    val maxX = (containerWidth - BADGE_WIDTH).coerceAtLeast(0.dp)
+    return (anchorX - BADGE_WIDTH / 2).coerceIn(0.dp, maxX)
 }
 
 /** Draws an arrow from [from] to [to], shrunk at both ends so it doesn't run under the type badges. */

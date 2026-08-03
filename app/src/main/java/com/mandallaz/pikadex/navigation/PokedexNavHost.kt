@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChangeHistory
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -64,6 +65,13 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
     }
 
     Scaffold(
+        // Every screen already has its own Scaffold+TopAppBar that reserves the top system-bar
+        // inset — this outer Scaffold used to *also* reserve it by default, so its `padding` doubled
+        // up on top of each screen's own inset and left an empty status-bar-height band above every
+        // title bar. Zeroing it here means this Scaffold's only job is reserving space for the
+        // bottom nav bar itself (whose own NavigationBar composable already handles the bottom
+        // system-bar inset internally).
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             // Hidden on the pushed Detail screen — that's reached *from* the Pokédex tab, not a
             // destination of its own, so showing the bar there would offer a confusing 4th "tab"
@@ -107,7 +115,10 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
                     pokemonNameOrId = name,
                     onBack = { navController.popBackStack() },
                     onPokemonClick = { newName -> navController.navigate("detail/$newName") },
-                    onViewTypeTriangles = { switchTab(ROUTE_TYPE_TRIANGLES) }
+                    // A plain push (not switchTab's popUpTo-to-start pattern) — this is a
+                    // cross-reference link from *within* a Pokémon's page, not the user picking the
+                    // Triangles tab, so Back should return to this Pokémon, not to the Pokédex list.
+                    onViewTypeTriangles = { navController.navigate(ROUTE_TYPE_TRIANGLES) { launchSingleTop = true } }
                 )
             }
             composable(ROUTE_TEAM) {
