@@ -74,6 +74,7 @@ import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
+import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.toDisplayName
 
 private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT }
@@ -257,6 +258,9 @@ fun PokedexListScreen(
                         modifier = Modifier.align(Alignment.Center)
                     )
                     else -> {
+                        val idsByName = remember(uiState.allPokemon) {
+                            uiState.allPokemon.mapNotNull { p -> p.id?.let { p.name to it } }.toMap()
+                        }
                         LazyVerticalGrid(
                             state = gridState,
                             columns = GridCells.Fixed(3),
@@ -269,9 +273,20 @@ fun PokedexListScreen(
                                 val id = resource.id ?: return@items
                                 val isInTeamAlready = team.any { it.name == resource.name }
                                 val isTeamFull = team.size >= TeamRepository.MAX_SIZE
+                                // Only alternate forms (hyphenated names) can lack their own
+                                // artwork, so ordinary species skip the lookup entirely.
+                                val baseSpeciesId = remember(resource.name, idsByName) {
+                                    if ('-' !in resource.name) {
+                                        null
+                                    } else {
+                                        Sprites.baseSpeciesName(resource.name) { it in idsByName }
+                                            ?.let { idsByName[it] }
+                                    }
+                                }
                                 PokemonCard(
                                     id = id,
                                     name = resource.name,
+                                    baseSpeciesId = baseSpeciesId,
                                     isFavorite = resource.name in favorites,
                                     isInTeam = isInTeamAlready,
                                     isTeamFull = isTeamFull,

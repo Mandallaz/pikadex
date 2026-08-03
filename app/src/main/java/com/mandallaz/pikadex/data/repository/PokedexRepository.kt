@@ -42,6 +42,7 @@ class PokedexRepository(private val api: PokeApiService) {
     private val speciesCache = AsyncCache<Int, PokemonSpeciesDto>()
     private val evolutionChainCache = AsyncCache<Int, EvolutionChainDto>()
     private val typeDetailCache = AsyncCache<String, TypeDetailDto>()
+    private val formCache = AsyncCache<String, String?>()
     private val moveDetailCache = AsyncCache<String, MoveDetailDto>()
     private val abilityDetailCache = AsyncCache<String, AbilityDetailDto>()
     private val smogonTierCache = AsyncCache<String, Map<String, String>>()
@@ -66,6 +67,11 @@ class PokedexRepository(private val api: PokeApiService) {
 
     suspend fun getAbilityNames(): List<String> =
         abilityNamesCache.get { api.getAbilityList(limit = 100000).results.map { it.name }.sorted() }
+
+    /** Which games a form was introduced in ("x-y", "mega-dimension"...), or null for a Pokémon
+     *  that has no distinct form entry. Used to decide whether Smogon actually covers a form. */
+    suspend fun getFormVersionGroup(nameOrId: String): String? =
+        formCache.get(nameOrId) { api.getPokemonForm(nameOrId).versionGroup?.name }
 
     /** Full type detail (including damage_relations), cached per type name. */
     suspend fun getTypeDetail(type: String): TypeDetailDto =

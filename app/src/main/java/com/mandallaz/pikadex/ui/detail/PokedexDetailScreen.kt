@@ -74,6 +74,8 @@ import coil.compose.AsyncImage
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
+import com.mandallaz.pikadex.ui.components.PokemonArtwork
+import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.StatBar
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.MoveCategory
@@ -204,6 +206,7 @@ fun PokedexDetailScreen(
                     counteredTriangles = uiState.counteredTriangles,
                     moveInfo = uiState.moveInfo,
                     statPercentiles = uiState.statPercentiles,
+                    formVersionGroup = uiState.formVersionGroup,
                     onPokemonClick = onPokemonClick,
                     onViewTypeTriangles = onViewTypeTriangles
                 )
@@ -260,6 +263,7 @@ private fun DetailContent(
     counteredTriangles: List<TypeTriangle>,
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     statPercentiles: Map<String, Double>,
+    formVersionGroup: String?,
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit
 ) {
@@ -294,10 +298,11 @@ private fun DetailContent(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AsyncImage(
-                    model = Sprites.officialArtworkUrl(pokemon.id),
+                PokemonArtwork(
+                    id = pokemon.id,
                     contentDescription = pokemon.name,
-                    contentScale = ContentScale.Fit,
+                    // Exact here, no name-based guessing: the payload already names this form's species.
+                    baseSpeciesId = pokemon.species.id,
                     modifier = Modifier.size(200.dp)
                 )
                 Text(
@@ -440,7 +445,11 @@ private fun DetailContent(
         }
 
         item {
-            SmogonLinksCard(pokemonName = pokemon.name, speciesGeneration = species.generation.name)
+            SmogonLinksCard(
+                pokemonName = pokemon.name,
+                speciesGeneration = species.generation.name,
+                formVersionGroup = formVersionGroup
+            )
         }
 
         val megaEvolutions = species.megaEvolutions
@@ -589,10 +598,9 @@ private fun PokemonSpriteTile(
             .clickable(enabled = id != 0 && !isCurrent, onClick = onClick)
             .padding(8.dp)
     ) {
-        AsyncImage(
-            model = Sprites.defaultSpriteUrl(id),
+        PokemonSprite(
+            id = id,
             contentDescription = name,
-            contentScale = ContentScale.Fit,
             modifier = Modifier.size(64.dp)
         )
         Text(
@@ -735,8 +743,10 @@ private fun TriangleRow(triangle: TypeTriangle, isCounter: Boolean = false) {
 }
 
 @Composable
-private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String) {
-    val links = remember(pokemonName, speciesGeneration) { Smogon.linksFor(pokemonName, speciesGeneration) }
+private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, formVersionGroup: String?) {
+    val links = remember(pokemonName, speciesGeneration, formVersionGroup) {
+        Smogon.linksFor(pokemonName, speciesGeneration, formVersionGroup)
+    }
     if (links.isEmpty()) return
     val context = LocalContext.current
 
