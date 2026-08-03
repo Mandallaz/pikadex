@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -30,9 +31,13 @@ import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -60,11 +65,20 @@ fun TeamScreen(
     viewModel: TeamViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showPresetPicker by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Team (${uiState.members.size}/${TeamRepository.MAX_SIZE})") }
+                title = { Text("My Team (${uiState.members.size}/${TeamRepository.MAX_SIZE})") },
+                actions = {
+                    IconButton(onClick = {
+                        viewModel.preparePresetPreviews()
+                        showPresetPicker = true
+                    }) {
+                        Icon(Icons.Filled.Groups, contentDescription = "Load a trainer's team")
+                    }
+                }
             )
         }
     ) { padding ->
@@ -81,6 +95,10 @@ fun TeamScreen(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     Button(onClick = onBrowsePokedex) { Text("Browse Pokédex") }
+                    TextButton(onClick = {
+                        viewModel.preparePresetPreviews()
+                        showPresetPicker = true
+                    }) { Text("Or load a trainer's team") }
                 }
                 return@Column
             }
@@ -235,6 +253,18 @@ fun TeamScreen(
                 }
             }
         }
+    }
+
+    if (showPresetPicker) {
+        PresetTeamDialog(
+            currentTeamSize = uiState.members.size,
+            spriteIds = uiState.presetSpriteIds,
+            onDismiss = { showPresetPicker = false },
+            onSelect = { preset ->
+                viewModel.loadPreset(preset)
+                showPresetPicker = false
+            }
+        )
     }
 }
 
