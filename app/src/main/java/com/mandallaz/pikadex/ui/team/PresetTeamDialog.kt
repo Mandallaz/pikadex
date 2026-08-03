@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.util.PresetRole
 import com.mandallaz.pikadex.util.PresetTeam
 import com.mandallaz.pikadex.util.PresetTeams
@@ -167,8 +168,8 @@ private fun PresetTeamRow(team: PresetTeam, spriteIds: Map<String, Int>, onClick
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
                     team.pokemon.forEach { name ->
-                        AsyncImage(
-                            model = Sprites.defaultSpriteUrl(spriteIds[name] ?: 0),
+                        PokemonSprite(
+                            id = spriteIds[name] ?: 0,
                             contentDescription = name.toDisplayName(),
                             modifier = Modifier.size(40.dp)
                         )

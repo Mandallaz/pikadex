@@ -30,6 +30,15 @@ data class SpeciesVariety(
     val pokemon: NamedApiResource
 )
 
+/** A specific form of a Pokémon. Only [versionGroup] is used: it says which games a form was
+ *  introduced in, which is the only reliable way to tell an original Gen 6 Mega ("x-y") from a
+ *  Legends Z-A one ("mega-dimension") — both are named "{species}-mega" and both can belong to a
+ *  pre-Gen-8 species, so neither the name nor the species' own generation distinguishes them. */
+data class PokemonFormDto(
+    val name: String,
+    @SerializedName("version_group") val versionGroup: NamedApiResource?
+)
+
 data class EvolutionChainRef(val url: String) {
     val id: Int? get() = url.trimEnd('/').substringAfterLast('/').toIntOrNull()
 }

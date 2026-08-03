@@ -33,28 +33,77 @@ object Smogon {
     /** Oldest to newest. */
     val ALL_GENERATIONS: List<SmogonGen> = GENERATIONS.map { it.second }
 
-    private val FORM_SUFFIX_OVERRIDES = listOf(
+    /** PokeAPI version_group -> the Smogon generation that covers it. A version group *absent* here
+     *  has no Smogon dex at all, and forms introduced in it get no links: "mega-dimension" (Legends
+     *  Z-A) is the case that matters, since it accounts for roughly half of all "-mega" forms. */
+    private val VERSION_GROUP_TO_GEN = mapOf(
+        "red-blue" to "rb", "yellow" to "rb",
+        "gold-silver" to "gs", "crystal" to "gs",
+        "ruby-sapphire" to "rs", "emerald" to "rs", "firered-leafgreen" to "rs",
+        "colosseum" to "rs", "xd" to "rs",
+        "diamond-pearl" to "dp", "platinum" to "dp", "heartgold-soulsilver" to "dp",
+        "black-white" to "bw", "black-2-white-2" to "bw",
+        "x-y" to "xy", "omega-ruby-alpha-sapphire" to "xy",
+        "sun-moon" to "sm", "ultra-sun-ultra-moon" to "sm",
+        "lets-go-pikachu-lets-go-eevee" to "sm",
+        "sword-shield" to "ss", "brilliant-diamond-shining-pearl" to "ss", "legends-arceus" to "ss",
+        "scarlet-violet" to "sv"
+    )
+
+    /** Fallback introduction generation per form suffix, used only when the form's own version group
+     *  couldn't be fetched — otherwise a regional form would inherit its species' generation and
+     *  link to dex pages from long before the form existed. */
+    private val FORM_SUFFIX_START = listOf(
         "-mega" to "xy",
-        "-primal" to "rs",
+        "-primal" to "xy", // Primal Reversion is ORAS (Gen 6), not Gen 3 like the species
         "-alola" to "sm",
         "-totem" to "sm",
         "-galar" to "ss",
         "-gmax" to "ss",
-        "-hisui" to "sv",
+        "-hisui" to "ss",
         "-paldea" to "sv",
         "-bloodmoon" to "sv"
     )
 
-    /** Most recent generation first, since that's what players usually care about. */
-    fun linksFor(pokemonName: String, speciesGeneration: String): List<SmogonLink> {
-        val overrideCode = FORM_SUFFIX_OVERRIDES.firstOrNull { (suffix, _) -> pokemonName.endsWith(suffix) }?.second
-        val startIndex = if (overrideCode != null) {
-            GENERATIONS.indexOfFirst { it.second.code == overrideCode }
+    /** Last generation a form's battle mechanic existed in. Links used to run from a form's debut
+     *  all the way to the present, so every Mega linked to Sword/Shield and Scarlet/Violet dex pages
+     *  for a mechanic those games removed. */
+    private val FORM_SUFFIX_END = listOf(
+        "-mega" to "sm",   // Mega Evolution: Gen 6-7 only
+        "-primal" to "sm", // same lifespan
+        "-totem" to "sm",  // Totem Pokémon: Sun/Moon only
+        "-gmax" to "ss"    // Gigantamax: Gen 8 only
+    )
+
+    private fun indexOfCode(code: String?) = GENERATIONS.indexOfFirst { it.second.code == code }
+
+    /**
+     * Most recent generation first, since that's what players usually care about.
+     *
+     * [formVersionGroup] is the form's own PokeAPI version group when known; it's the only signal
+     * that separates an original Mega from a Legends Z-A one, so without it the caller gets the
+     * coarser suffix-based guess instead.
+     */
+    fun linksFor(
+        pokemonName: String,
+        speciesGeneration: String,
+        formVersionGroup: String? = null
+    ): List<SmogonLink> {
+        val startIndex = if (formVersionGroup != null) {
+            val code = VERSION_GROUP_TO_GEN[formVersionGroup] ?: return emptyList()
+            indexOfCode(code)
         } else {
-            GENERATIONS.indexOfFirst { it.first == speciesGeneration }
+            // contains, not endsWith: "charizard-mega-x" is a Mega too, and matching only the end
+            // sent it back to its species' generation — links from Red/Blue onwards for a Gen 6 form.
+            val suffixCode = FORM_SUFFIX_START.firstOrNull { (suffix, _) -> pokemonName.contains(suffix) }?.second
+            if (suffixCode != null) indexOfCode(suffixCode) else GENERATIONS.indexOfFirst { it.first == speciesGeneration }
         }.coerceAtLeast(0)
 
-        return GENERATIONS.drop(startIndex)
+        val endCode = FORM_SUFFIX_END.firstOrNull { (suffix, _) -> pokemonName.contains(suffix) }?.second
+        val endIndex = endCode?.let { indexOfCode(it) }?.takeIf { it >= 0 } ?: GENERATIONS.lastIndex
+        if (startIndex > endIndex) return emptyList()
+
+        return GENERATIONS.subList(startIndex, endIndex + 1)
             .map { (_, gen) -> SmogonLink(gen.code, gen.label, "https://www.smogon.com/dex/${gen.code}/pokemon/$pokemonName/") }
             .reversed()
     }

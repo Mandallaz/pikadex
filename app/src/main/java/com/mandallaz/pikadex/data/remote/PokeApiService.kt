@@ -5,6 +5,7 @@ import com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto
 import com.mandallaz.pikadex.data.remote.dto.MoveDetailDto
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResourceList
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
+import com.mandallaz.pikadex.data.remote.dto.PokemonFormDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import retrofit2.http.GET
@@ -24,6 +25,9 @@ interface PokeApiService {
 
     @GET("pokemon-species/{nameOrId}")
     suspend fun getPokemonSpecies(@Path("nameOrId") nameOrId: String): PokemonSpeciesDto
+
+    @GET("pokemon-form/{name}")
+    suspend fun getPokemonForm(@Path("name") name: String): PokemonFormDto
 
     @GET("evolution-chain/{id}")
     suspend fun getEvolutionChain(@Path("id") id: Int): EvolutionChainDto

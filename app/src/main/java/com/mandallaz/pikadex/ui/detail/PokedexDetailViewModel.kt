@@ -38,7 +38,10 @@ data class PokedexDetailUiState(
     /** statApiName (hp/attack/.../speed, plus a synthetic "total") -> this pokemon's percentile
      *  rank (0.0..1.0) among every other pokemon's same stat, for coloring stat bars by how good
      *  the value actually is rather than a fixed per-stat hue. */
-    val statPercentiles: Map<String, Double> = emptyMap()
+    val statPercentiles: Map<String, Double> = emptyMap(),
+    /** The form's own PokeAPI version group, used to decide which Smogon dex generations actually
+     *  have a page for it. Null when unknown (not fetched yet, or the request failed). */
+    val formVersionGroup: String? = null
 )
 
 /** Result of [block], or null if it failed — but never swallowing coroutine cancellation, which
@@ -102,6 +105,15 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     }
                     val descriptions = descriptionsDeferred.await()
 
+                    // Only alternate forms can disagree with their species about which games they
+                    // exist in, so ordinary Pokémon skip this request entirely. Non-fatal: without
+                    // it the Smogon card just falls back to its suffix-based guess.
+                    val formVersionGroup = if ('-' in bundle.pokemon.name) {
+                        orNullUnlessCancelled { repository.getFormVersionGroup(bundle.pokemon.name) }
+                    } else {
+                        null
+                    }
+
                     // These two bulk fetches only *enrich* the page — percentile tint on the stat
                     // bars, and type/power/accuracy under each move name. Everything the page is
                     // actually about (stats, types, abilities, evolution, move names) comes from the
@@ -131,7 +143,8 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             memberTriangles = memberTriangles,
                             counteredTriangles = counteredTriangles,
                             moveInfo = moveInfo,
-                            statPercentiles = percentiles
+                            statPercentiles = percentiles,
+                            formVersionGroup = formVersionGroup
                         )
                     }
                 }

@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
+import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.TypeIds
@@ -186,14 +187,11 @@ fun TeamScreen(
                             modifier = Modifier.width(MEMBER_COLUMN_WIDTH),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            AsyncImage(
-                                // The small sprite (~1-2KB) looks equal or better at this size
-                                // than an upscaled full artwork image (~100-200KB) would.
-                                model = Sprites.defaultSpriteUrl(member.id ?: 0),
-                                contentDescription = member.name,
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier.size(48.dp)
-                            )
+                            PokemonSprite(
+                                    id = member.id ?: 0,
+                                    contentDescription = member.name,
+                                    modifier = Modifier.size(48.dp)
+                                )
                         }
                     }
                 }
@@ -277,10 +275,9 @@ private fun TeamMemberChip(member: NamedApiResource, onRemove: () -> Unit) {
     // neighboring chips' peeking buttons don't collide.
     Box(modifier = Modifier.padding(top = 12.dp, end = 8.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            AsyncImage(
-                model = Sprites.defaultSpriteUrl(member.id ?: 0),
+            PokemonSprite(
+                id = member.id ?: 0,
                 contentDescription = member.name,
-                contentScale = ContentScale.Fit,
                 modifier = Modifier.size(56.dp)
             )
             Text(member.name.toDisplayName(), style = MaterialTheme.typography.bodyMedium)
