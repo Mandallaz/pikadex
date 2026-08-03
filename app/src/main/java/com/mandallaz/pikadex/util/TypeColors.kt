@@ -47,5 +47,30 @@ object StatColors {
     }
 }
 
-fun String.toDisplayName(): String =
-    split("-").joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
+// PokeAPI's slugs lose punctuation the real name has (Ho-Oh, Porygon-Z, Mime Jr., Farfetch'd...),
+// so a blind "split on hyphen, title-case each word, join with spaces" turns them into wrong new
+// names ("Ho Oh", "Porygon Z") rather than just ugly ones. Covers the handful of species where
+// this actually changes the displayed name; everything else (moves, abilities, ordinary species)
+// still falls through to the generic rule below.
+private val SPECIAL_DISPLAY_NAMES = mapOf(
+    "hp" to "HP",
+    "ho-oh" to "Ho-Oh",
+    "porygon-z" to "Porygon-Z",
+    "mime-jr" to "Mime Jr.",
+    "mr-mime" to "Mr. Mime",
+    "mr-rime" to "Mr. Rime",
+    "farfetchd" to "Farfetch'd",
+    "sirfetchd" to "Sirfetch'd",
+    "nidoran-f" to "Nidoran♀",
+    "nidoran-m" to "Nidoran♂",
+    "type-null" to "Type: Null",
+    "jangmo-o" to "Jangmo-o",
+    "hakamo-o" to "Hakamo-o",
+    "kommo-o" to "Kommo-o",
+    "flabebe" to "Flabébé"
+)
+
+fun String.toDisplayName(): String {
+    SPECIAL_DISPLAY_NAMES[lowercase()]?.let { return it }
+    return split("-").joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
+}

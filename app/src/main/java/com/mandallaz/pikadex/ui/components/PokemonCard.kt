@@ -3,7 +3,6 @@ package com.mandallaz.pikadex.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,7 +47,11 @@ fun PokemonCard(
     onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.aspectRatio(0.82f)) {
+    // No fixed aspectRatio here (used to be 0.82f) — a 2-line name like "Zamazenta Crowned" would
+    // overflow that fixed height and get clipped in half by the card's own bottom edge.
+    // LazyVerticalGrid sizes each row to its tallest cell, so letting the Column size to its
+    // actual content (image + up to 2 text lines) is enough to never clip.
+    Box(modifier = modifier) {
         Card(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth()
@@ -76,7 +78,8 @@ fun PokemonCard(
                     text = name.toDisplayName(),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 2
                 )
             }
         }
@@ -88,7 +91,15 @@ fun PokemonCard(
             Icon(
                 imageVector = if (isInTeam) Icons.Filled.Groups else Icons.Filled.GroupAdd,
                 contentDescription = if (isInTeam) "Remove from team" else "Add to team",
-                tint = if (isInTeam) MaterialTheme.colorScheme.primary else Color.Gray
+                // A hardcoded Color.Gray for "not in team" used to also apply when the button was
+                // disabled (team full), so disabled looked pixel-identical to enabled — tapping a
+                // full team's add button did nothing with zero visual explanation why. Use M3's
+                // own disabled-content convention (38% alpha) only when actually disabled.
+                tint = when {
+                    isInTeam -> MaterialTheme.colorScheme.primary
+                    isTeamFull -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
         }
         IconButton(
@@ -98,7 +109,7 @@ fun PokemonCard(
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
                 contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.Gray
+                tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

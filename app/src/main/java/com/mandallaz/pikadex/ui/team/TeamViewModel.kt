@@ -10,6 +10,7 @@ import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,27 +53,33 @@ class TeamViewModel @JvmOverloads constructor(
                 }
                 _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null) }
                 try {
-                    // Every member is independent of every other, and every type detail lookup is
-                    // independent too — sequentially this was up to 18 round trips (6 members x up
-                    // to 3 calls each) before the matrix could render at all.
-                    val memberResults = members.map { member ->
-                        async {
-                            val types = repository.getPokemonTypes(member.name)
-                            val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
-                            member.name to computeDefensiveMultipliers(typeDetails)
-                        }
-                    }.awaitAll()
+                    // supervisorScope so one member's failed fetch surfaces as a normal catchable
+                    // exception at awaitAll() rather than risking an uncaught crash — see the
+                    // identical fix (and full explanation) in PokedexDetailViewModel.load().
+                    val matrix = supervisorScope {
+                        // Every member is independent of every other, and every type detail lookup
+                        // is independent too — sequentially this was up to 18 round trips (6
+                        // members x up to 3 calls each) before the matrix could render at all.
+                        val memberResults = members.map { member ->
+                            async {
+                                val types = repository.getPokemonTypes(member.name)
+                                val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
+                                member.name to computeDefensiveMultipliers(typeDetails)
+                            }
+                        }.awaitAll()
 
-                    val matrix = mutableMapOf<String, MutableMap<String, Double>>()
-                    TypeIds.standardTypeNames.forEach { matrix[it] = mutableMapOf() }
-                    memberResults.forEach { (memberName, defensiveMultipliers) ->
-                        defensiveMultipliers.forEach { (attackType, multiplier) ->
-                            matrix.getOrPut(attackType) { mutableMapOf() }[memberName] = multiplier
+                        val result = mutableMapOf<String, MutableMap<String, Double>>()
+                        TypeIds.standardTypeNames.forEach { result[it] = mutableMapOf() }
+                        memberResults.forEach { (memberName, defensiveMultipliers) ->
+                            defensiveMultipliers.forEach { (attackType, multiplier) ->
+                                result.getOrPut(attackType) { mutableMapOf() }[memberName] = multiplier
+                            }
                         }
+                        result
                     }
                     _uiState.update { it.copy(isLoading = false, matrix = matrix) }
                 } catch (e: Exception) {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = "Network error while computing team matchups.") }
+                    _uiState.update { it.copy(isLoading = false, errorMessage = "Network error while computing team matchups. Check your connection.") }
                 }
             }
         }

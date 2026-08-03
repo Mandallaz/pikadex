@@ -19,11 +19,14 @@ fun computeDefensiveMultipliers(typeDetails: List<TypeDetailDto>): Map<String, D
 
 data class MatchupBucket(val label: String, val multiplier: Double, val types: List<String>)
 
+// "×" + vulgar fractions to match the notation TeamScreen's matrix already uses ("×4", "×½"...)
+// — this used to read "x4"/"x1/2" here but "×2"/"×½" there, an inconsistency for the exact same
+// concept shown on two screens of the same app.
 private val BUCKET_ORDER = listOf(
-    4.0 to "Weak to (x4)",
-    2.0 to "Weak to (x2)",
-    0.5 to "Resists (x1/2)",
-    0.25 to "Resists (x1/4)",
+    4.0 to "Weak to (×4)",
+    2.0 to "Weak to (×2)",
+    0.5 to "Resists (×½)",
+    0.25 to "Resists (×¼)",
     0.0 to "Immune to"
 )
 

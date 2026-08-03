@@ -8,13 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,17 +29,10 @@ import com.mandallaz.pikadex.util.TypeTriangles
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TypeTrianglesScreen(onBack: () -> Unit) {
+fun TypeTrianglesScreen() {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Type Triangles") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            TopAppBar(title = { Text("Type Triangles") })
         }
     ) { padding ->
         val (perfect, imperfect) = remember { TypeTriangles.ALL.partition { it.isPerfect } }

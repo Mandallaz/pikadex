@@ -1,11 +1,9 @@
 package com.mandallaz.pikadex.ui.components
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,9 +28,9 @@ fun TypeMatchupGroups(multipliers: Map<String, Double>, modifier: Modifier = Mod
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
-            Row(
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.horizontalScroll(rememberScrollState())
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 bucket.types.forEach { typeName ->
                     TypeBadge(typeName, TypeIds.of(typeName), height = 22.dp)
