@@ -443,7 +443,8 @@ private fun DetailContent(
             SmogonLinksCard(pokemonName = pokemon.name, speciesGeneration = species.generation.name)
         }
 
-        if (evolutionChain != null) {
+        val megaEvolutions = species.megaEvolutions
+        if (evolutionChain != null || megaEvolutions.isNotEmpty()) {
             item {
                 Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -453,7 +454,9 @@ private fun DetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        val paths = remember(evolutionChain) { evolutionPaths(evolutionChain.chain) }
+                        val paths = remember(evolutionChain) {
+                            evolutionChain?.let { evolutionPaths(it.chain) }.orEmpty()
+                        }
                         if (paths.all { it.size <= 1 }) {
                             Text(
                                 "This Pokémon does not evolve.",
@@ -495,6 +498,34 @@ private fun DetailContent(
                                 }
                             }
                         }
+
+                        if (megaEvolutions.isNotEmpty()) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                            Text(
+                                "Mega Evolution",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "A temporary in-battle form, not a permanent evolution.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                megaEvolutions.forEach { variety ->
+                                    PokemonSpriteTile(
+                                        name = variety.pokemon.name,
+                                        id = variety.pokemon.id ?: 0,
+                                        isCurrent = variety.pokemon.name == pokemon.name,
+                                        onClick = { onPokemonClick(variety.pokemon.name) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -527,32 +558,45 @@ private fun EvolutionStageBox(
     pokemon: PokemonDto,
     onPokemonClick: (String) -> Unit
 ) {
+    PokemonSpriteTile(
+        name = stage.speciesName,
+        id = stage.id,
+        isCurrent = stage.speciesName == pokemon.name,
+        onClick = { onPokemonClick(stage.speciesName) }
+    )
+}
+
+/** A tappable sprite + name, highlighted when it's the Pokémon already on screen. Shared by the
+ *  evolution chain and the Mega Evolution list so the two read as the same kind of link. */
+@Composable
+private fun PokemonSpriteTile(
+    name: String,
+    id: Int,
+    isCurrent: Boolean,
+    onClick: () -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(horizontal = 4.dp)
             .background(
-                if (stage.speciesName == pokemon.name) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                } else {
-                    Color.Transparent
-                },
+                if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent,
                 RoundedCornerShape(12.dp)
             )
             // Excludes the current Pokémon too, not just the placeholder id=0 case — tapping the
             // highlighted "you are here" stage in its own chain used to push a duplicate detail
             // screen of the page already on screen.
-            .clickable(enabled = stage.id != 0 && stage.speciesName != pokemon.name) { onPokemonClick(stage.speciesName) }
+            .clickable(enabled = id != 0 && !isCurrent, onClick = onClick)
             .padding(8.dp)
     ) {
         AsyncImage(
-            model = Sprites.defaultSpriteUrl(stage.id),
-            contentDescription = stage.speciesName,
+            model = Sprites.defaultSpriteUrl(id),
+            contentDescription = name,
             contentScale = ContentScale.Fit,
             modifier = Modifier.size(64.dp)
         )
         Text(
-            stage.speciesName.toDisplayName(),
+            name.toDisplayName(),
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             softWrap = false
