@@ -1,7 +1,5 @@
 package com.mandallaz.pikadex.ui.detail
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -87,6 +85,7 @@ import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
+import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.toDisplayName
 import kotlin.math.roundToInt
@@ -764,7 +763,7 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, form
             ) {
                 links.forEach { link ->
                     AssistChip(
-                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url))) },
+                        onClick = { context.openExternalLink(link.url) },
                         label = { Text(link.label) },
                         trailingIcon = {
                             Icon(
