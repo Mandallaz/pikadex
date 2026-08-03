@@ -58,6 +58,14 @@ object TeamRepository {
         return true
     }
 
+    /** Swaps the whole roster in one shot (loading a preset team), so subscribers recompute once
+     *  instead of once per member the way six add() calls would. Trimmed to [MAX_SIZE] defensively:
+     *  the invariant "a team never exceeds MAX_SIZE" belongs here, not in every caller. */
+    fun replaceAll(pokemon: List<NamedApiResource>) {
+        _team.value = pokemon.distinctBy { it.name }.take(MAX_SIZE)
+        persist()
+    }
+
     fun remove(pokemon: NamedApiResource) {
         _team.value = _team.value.filterNot { it.name == pokemon.name }
         persist()

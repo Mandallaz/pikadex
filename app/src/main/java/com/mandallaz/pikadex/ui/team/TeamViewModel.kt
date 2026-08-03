@@ -6,6 +6,8 @@ import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.util.PresetTeam
+import com.mandallaz.pikadex.util.PresetTeams
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
 import kotlinx.coroutines.CancellationException
@@ -30,7 +32,11 @@ data class TeamUiState(
     // lookup. Whenever this doesn't match the current [members] (mid-fetch, or the fetch just
     // failed and left the previous team's matrix behind), the matrix is stale and must not be
     // rendered as if it were live data.
-    val matrixComputedFor: Set<String> = emptySet()
+    val matrixComputedFor: Set<String> = emptySet(),
+    /** Dex ids for the species named in [com.mandallaz.pikadex.util.PresetTeams], so the preset
+     *  picker can preview each roster as sprites. Empty until the master list is available (the
+     *  picker then falls back to names), since presets deliberately store names, not ids. */
+    val presetSpriteIds: Map<String, Int> = emptyMap()
 ) {
     val isMatrixStale: Boolean
         get() = matrixComputedFor != members.map { it.name }.toSet()
@@ -123,4 +129,46 @@ class TeamViewModel @JvmOverloads constructor(
     }
 
     fun removeFromTeam(member: NamedApiResource) = TeamRepository.remove(member)
+
+    /** Resolves sprite ids for every preset roster, for the picker's previews. Best-effort: with no
+     *  master list (offline, first run) the picker just lists names instead. */
+    fun preparePresetPreviews() {
+        if (_uiState.value.presetSpriteIds.isNotEmpty()) return
+        viewModelScope.launch {
+            val ids = try {
+                val byName = repository.getMasterList().associateBy { it.name }
+                PresetTeams.ALL.flatMap { it.pokemon }.distinct()
+                    .mapNotNull { name -> byName[name]?.id?.let { name to it } }
+                    .toMap()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                return@launch
+            }
+            _uiState.update { it.copy(presetSpriteIds = ids) }
+        }
+    }
+
+    /** Replaces the roster with [preset]'s. The preset stores species *names*; the real resources
+     *  (and thus the sprite ids) come from the already-downloaded master list, so a name that no
+     *  longer exists in the dex is dropped rather than rendering as a broken id-0 sprite. */
+    fun loadPreset(preset: PresetTeam) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                val byName = repository.getMasterList().associateBy { it.name }
+                val resolved = preset.pokemon.mapNotNull { byName[it] }
+                if (resolved.isEmpty()) {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = "Couldn't load ${preset.trainer}'s team.") }
+                    return@launch
+                }
+                // The team flow this collects from drives computeMatrix, so no explicit recompute.
+                TeamRepository.replaceAll(resolved)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, errorMessage = "Couldn't load ${preset.trainer}'s team. Check your connection.") }
+            }
+        }
+    }
 }
