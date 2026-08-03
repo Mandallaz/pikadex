@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,12 +31,24 @@ import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.TypeTriangles
 
+/** [onBack] is non-null only when this screen was pushed on top of a Pokémon's page (rather than
+ *  selected as a bottom-nav tab), where the bottom bar still shows "Triangles" as the current tab
+ *  and there was otherwise no visible way back to the Pokémon short of the system Back gesture. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TypeTrianglesScreen() {
+fun TypeTrianglesScreen(onBack: (() -> Unit)? = null) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Type Triangles") })
+            TopAppBar(
+                title = { Text("Type Triangles") },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                }
+            )
         }
     ) { padding ->
         val (perfect, imperfect) = remember { TypeTriangles.ALL.partition { it.isPerfect } }

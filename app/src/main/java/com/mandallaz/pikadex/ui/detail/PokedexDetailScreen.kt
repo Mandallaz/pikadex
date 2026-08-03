@@ -44,8 +44,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +59,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +87,8 @@ import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.toDisplayName
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 /** How many triangles the Type Triangles card shows before collapsing the rest behind "Show all"
  *  — a pokemon that's a member of several triangles could otherwise push the whole card (and
@@ -105,10 +111,13 @@ fun PokedexDetailScreen(
     val isInTeam = uiState.pokemon?.let { p -> team.any { it.name == p.name } } ?: false
     val isTeamFull = team.size >= com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE
     val isFavorite = uiState.pokemon?.let { p -> favorites.contains(p.name) } ?: false
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(uiState.pokemon?.name?.toDisplayName() ?: pokemonNameOrId.toDisplayName()) },
@@ -120,12 +129,30 @@ fun PokedexDetailScreen(
                 actions = {
                     if (uiState.pokemon != null) {
                         IconButton(
-                            onClick = { viewModel.toggleTeamMembership() },
-                            enabled = isInTeam || !isTeamFull
+                            // Stays enabled when the team is full and explains itself instead, the
+                            // same way the Pokédex grid's own add button does — a disabled top-bar
+                            // icon here just did nothing on tap, with no hint that the reason was a
+                            // full team rather than a broken button.
+                            onClick = {
+                                if (!isInTeam && isTeamFull) {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            "Your team is full (${com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE}/${com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE}). Remove one first."
+                                        )
+                                    }
+                                } else {
+                                    viewModel.toggleTeamMembership()
+                                }
+                            }
                         ) {
                             Icon(
                                 imageVector = if (isInTeam) Icons.Filled.Groups else Icons.Filled.GroupAdd,
-                                contentDescription = if (isInTeam) "Remove from team" else "Add to team"
+                                contentDescription = if (isInTeam) "Remove from team" else "Add to team",
+                                tint = if (!isInTeam && isTeamFull) {
+                                    LocalContentColor.current.copy(alpha = 0.38f)
+                                } else {
+                                    LocalContentColor.current
+                                }
                             )
                         }
                         IconButton(onClick = { viewModel.toggleFavorite() }) {
@@ -352,6 +379,20 @@ private fun DetailContent(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 8.dp)
                     )
+                    // Every individual stat gets a percentile-colored bar, but the total — the one
+                    // number people actually compare Pokémon by — was a bare figure with nothing to
+                    // judge it against, even though its percentile was already being computed and
+                    // then thrown away.
+                    statPercentiles["total"]?.let { percentile ->
+                        Text(
+                            "Stronger than ${(percentile * 100).roundToInt()}% of all Pokémon",
+                            style = MaterialTheme.typography.bodySmall,
+                            // Deliberately not StatColors.forPercentile: those hues are tuned to be
+                            // read as a filled bar against the surface, and are nowhere near enough
+                            // contrast for small text on either theme's background.
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.ChangeHistory
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -18,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -52,6 +54,19 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     val team by TeamRepository.team.collectAsState()
+
+    // Both taps of a fast double-tap (on a Pokémon card, an evolution stage, or Back) are dispatched
+    // before the first one's navigation takes effect, so they used to push two identical detail
+    // screens — or pop two entries, blanking the screen from a double-tapped Back. A destination
+    // that has already begun navigating away is no longer RESUMED, so gating on that swallows the
+    // second tap without needing to track any state of our own.
+    fun ifIdle(action: () -> Unit) {
+        // Read off the controller rather than the composed `currentBackStackEntry` state so the
+        // check reflects the back stack at tap time, not at the last recomposition.
+        if (navController.currentBackStackEntry?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true) {
+            action()
+        }
+    }
 
     // Standard single-top-per-tab pattern: switching tabs never stacks duplicates of the same
     // destination, and each tab keeps its own scroll/state (restoreState) while away.
@@ -101,24 +116,37 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
         NavHost(
             navController = navController,
             startDestination = ROUTE_LIST,
-            modifier = Modifier.padding(padding)
+            // consumeWindowInsets, not just padding: each screen has its own Scaffold, which by
+            // default reserves the bottom system-bar inset itself — on top of the bottom-bar height
+            // already reserved here (and the NavigationBar handles that same inset internally too).
+            // Every tab screen's content therefore stopped a nav-bar-inset short of the bottom bar,
+            // a dead band up to ~48dp tall with 3-button navigation. Marking this Scaffold's padding
+            // as consumed leaves each inner Scaffold nothing left to add.
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding)
         ) {
             composable(ROUTE_LIST) {
-                PokedexListScreen(onPokemonClick = { name -> navController.navigate("detail/$name") })
+                PokedexListScreen(onPokemonClick = { name -> ifIdle { navController.navigate("detail/$name") } })
             }
             composable(ROUTE_TYPE_TRIANGLES) {
-                TypeTrianglesScreen()
+                // Reached either as a bottom tab or pushed from a Pokémon's "View chart" — only the
+                // pushed instance gets a Back arrow, since there's nothing to go back to from the tab.
+                val pushedFromDetail = navController.previousBackStackEntry?.destination?.route == ROUTE_DETAIL
+                TypeTrianglesScreen(
+                    onBack = if (pushedFromDetail) ({ ifIdle { navController.popBackStack() } }) else null
+                )
             }
             composable(ROUTE_DETAIL) { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("pokemonName").orEmpty()
                 PokedexDetailScreen(
                     pokemonNameOrId = name,
-                    onBack = { navController.popBackStack() },
-                    onPokemonClick = { newName -> navController.navigate("detail/$newName") },
+                    onBack = { ifIdle { navController.popBackStack() } },
+                    onPokemonClick = { newName -> ifIdle { navController.navigate("detail/$newName") } },
                     // A plain push (not switchTab's popUpTo-to-start pattern) — this is a
                     // cross-reference link from *within* a Pokémon's page, not the user picking the
                     // Triangles tab, so Back should return to this Pokémon, not to the Pokédex list.
-                    onViewTypeTriangles = { navController.navigate(ROUTE_TYPE_TRIANGLES) { launchSingleTop = true } }
+                    onViewTypeTriangles = {
+                        ifIdle { navController.navigate(ROUTE_TYPE_TRIANGLES) { launchSingleTop = true } }
+                    }
                 )
             }
             composable(ROUTE_TEAM) {

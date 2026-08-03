@@ -71,7 +71,10 @@ fun PokemonCard(
             ) {
                 AsyncImage(
                     model = Sprites.officialArtworkUrl(id),
-                    contentDescription = name,
+                    // null, not the name: the card is one merged clickable for accessibility, and
+                    // the name is already right below as real text — describing the artwork too made
+                    // TalkBack read every Pokémon's name twice.
+                    contentDescription = null,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.size(96.dp)
                 )

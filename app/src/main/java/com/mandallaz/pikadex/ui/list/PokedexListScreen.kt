@@ -89,7 +89,9 @@ fun PokedexListScreen(
     val team by TeamRepository.team.collectAsState()
     val favorites by FavoritesRepository.favorites.collectAsState()
     var activeDialog by remember { mutableStateOf(ActiveDialog.NONE) }
-    var showFilterSheet by remember { mutableStateOf(false) }
+    // rememberSaveable: rotating the device with the filter sheet open used to dismiss it outright
+    // (it reads everything it shows from the ViewModel, so nothing else is lost by restoring it).
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
