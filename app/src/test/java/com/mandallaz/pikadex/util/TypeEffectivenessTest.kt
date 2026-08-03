@@ -108,4 +108,96 @@ class TypeEffectivenessTest {
         assertTrue(buckets.any { it.label.contains("×4") })
         assertTrue(buckets.any { it.label.contains("×½") })
     }
+
+    // --- Offensive coverage -------------------------------------------------
+
+    private fun attacker(
+        name: String,
+        superEffectiveAgainst: List<String> = emptyList(),
+        resistedBy: List<String> = emptyList(),
+        uselessAgainst: List<String> = emptyList()
+    ) = TypeDetailDto(
+        id = 0,
+        name = name,
+        damageRelations = DamageRelations(
+            doubleDamageFrom = emptyList(),
+            doubleDamageTo = superEffectiveAgainst.map(::ref),
+            halfDamageFrom = emptyList(),
+            halfDamageTo = resistedBy.map(::ref),
+            noDamageFrom = emptyList(),
+            noDamageTo = uselessAgainst.map(::ref)
+        ),
+        pokemon = emptyList()
+    )
+
+    private val ice = attacker("ice", superEffectiveAgainst = listOf("dragon", "flying"), resistedBy = listOf("steel", "fire"))
+    private val groundAtk = attacker("ground", superEffectiveAgainst = listOf("steel", "fire"), uselessAgainst = listOf("flying"))
+    private val normal = attacker("normal", resistedBy = listOf("rock"), uselessAgainst = listOf("ghost"))
+
+    @Test
+    fun `offensive multipliers read the to-side of damage relations`() {
+        val result = computeOffensiveMultipliers(ice)
+        assertEquals(2.0, result.getValue("dragon"), 0.0)
+        assertEquals(0.5, result.getValue("steel"), 0.0)
+        assertEquals(1.0, result.getValue("water"), 0.0)
+    }
+
+    @Test
+    fun `an attacking type that cannot touch a defender reads zero, not neutral`() {
+        assertEquals(0.0, computeOffensiveMultipliers(normal).getValue("ghost"), 0.0)
+        assertEquals(0.0, computeOffensiveMultipliers(groundAtk).getValue("flying"), 0.0)
+    }
+
+    // Defending with two types compounds (x2 and x2 makes x4); attacking with two does not, because
+    // only one move is used at a time.
+    @Test
+    fun `two attacking types take the better of the two rather than compounding`() {
+        val offensive = mapOf(
+            "ice" to computeOffensiveMultipliers(ice),
+            "ground" to computeOffensiveMultipliers(groundAtk)
+        )
+        val best = bestOffensiveMultipliers(listOf("ice", "ground"), offensive)
+        // ice is resisted by steel, ground is super effective on it: take the 2.0.
+        assertEquals(2.0, best.getValue("steel"), 0.0)
+        // ice hits flying for x2, ground cannot touch it at all: take the 2.0, not the 0.0.
+        assertEquals(2.0, best.getValue("flying"), 0.0)
+        // neither is better than neutral on water.
+        assertEquals(1.0, best.getValue("water"), 0.0)
+    }
+
+    @Test
+    fun `a member with no attacking type lands nothing rather than reading neutral`() {
+        val best = bestOffensiveMultipliers(emptyList(), emptyMap())
+        assertTrue(best.values.all { it == 0.0 })
+    }
+
+    @Test
+    fun `unknown attacking types are skipped instead of poisoning the maximum`() {
+        val offensive = mapOf("ice" to computeOffensiveMultipliers(ice))
+        val best = bestOffensiveMultipliers(listOf("ice", "not-a-type"), offensive)
+        assertEquals(2.0, best.getValue("dragon"), 0.0)
+    }
+
+    @Test
+    fun `a coverage gap is a defender no member beats, even if some hit it neutrally`() {
+        val matrix = mapOf(
+            "steel" to mapOf("a" to 1.0, "b" to 0.5),
+            "dragon" to mapOf("a" to 2.0, "b" to 1.0)
+        )
+        val gaps = coverageGaps(matrix, listOf("a", "b"))
+        assertTrue("steel" in gaps)
+        assertTrue("dragon" !in gaps)
+    }
+
+    @Test
+    fun `a defender absent from the matrix counts as a gap rather than as covered`() {
+        val gaps = coverageGaps(mapOf("dragon" to mapOf("a" to 2.0)), listOf("a"))
+        assertTrue("steel" in gaps)
+        assertTrue("dragon" !in gaps)
+    }
+
+    @Test
+    fun `an empty team has no gaps to report`() {
+        assertEquals(emptyList<String>(), coverageGaps(emptyMap(), emptyList()))
+    }
 }

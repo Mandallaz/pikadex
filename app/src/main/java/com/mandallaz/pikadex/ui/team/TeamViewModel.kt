@@ -9,7 +9,10 @@ import com.mandallaz.pikadex.data.repository.PokedexRepository
 import com.mandallaz.pikadex.util.PresetTeam
 import com.mandallaz.pikadex.util.PresetTeams
 import com.mandallaz.pikadex.util.TypeIds
+import com.mandallaz.pikadex.util.bestOffensiveMultipliers
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
+import com.mandallaz.pikadex.util.computeOffensiveMultipliers
+import com.mandallaz.pikadex.util.coverageGaps
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -27,6 +30,10 @@ data class TeamUiState(
     val errorMessage: String? = null,
     // matrix[typeName][memberName] = defensive multiplier against that attacking type
     val matrix: Map<String, Map<String, Double>> = emptyMap(),
+    /** offensiveMatrix[defendingType][memberName] = the best multiplier that member can *deal* to
+     *  that type, across every attacking type it has access to. Computed in the same pass as
+     *  [matrix] and stale under exactly the same conditions. */
+    val offensiveMatrix: Map<String, Map<String, Double>> = emptyMap(),
     // Which member names [matrix] was actually computed for — a member missing from a type's row
     // is otherwise indistinguishable from "genuinely neutral (x1)" to a plain `row[name] ?: 1.0`
     // lookup. Whenever this doesn't match the current [members] (mid-fetch, or the fetch just
@@ -51,7 +58,26 @@ data class TeamUiState(
                 weakCount * 2 >= members.size && weakCount > 0
             }
         }
+
+    /** Types nobody on the team can hit for more than neutral — the offensive counterpart of
+     *  [sharedWeaknesses], and the thing a defence-only view of a team never surfaces. */
+    val coverageGaps: List<String>
+        get() {
+            if (members.isEmpty() || isMatrixStale) return emptyList()
+            return coverageGaps(offensiveMatrix, members.map { it.name })
+        }
 }
+
+/** One member's raw inputs, gathered concurrently before the two matrices are assembled. */
+private data class MemberMatchups(
+    val name: String,
+    val defensive: Map<String, Double>,
+    val stabTypes: List<String>,
+    val moveNames: List<String>
+)
+
+/** PokeAPI's damage_class for moves that deal no damage. */
+private const val STATUS_DAMAGE_CLASS = "status"
 
 class TeamViewModel @JvmOverloads constructor(
     private val repository: PokedexRepository = AppContainer.repository
@@ -88,7 +114,11 @@ class TeamViewModel @JvmOverloads constructor(
                 // supervisorScope so one member's failed fetch surfaces as a normal catchable
                 // exception at awaitAll() rather than risking an uncaught crash — see the
                 // identical fix (and full explanation) in PokedexDetailViewModel.load().
-                val matrix = supervisorScope {
+                val (matrix, offensiveMatrix) = supervisorScope {
+                    // One bulk, already-cached lookup for the whole app rather than one call per
+                    // move: a team's six movepools run to well over a thousand entries between them.
+                    val moveInfoDeferred = async { repository.getAllMoveInfo() }
+
                     // Every member is independent of every other, and every type detail lookup
                     // is independent too — sequentially this was up to 18 round trips (6
                     // members x up to 3 calls each) before the matrix could render at all.
@@ -96,21 +126,60 @@ class TeamViewModel @JvmOverloads constructor(
                         async {
                             val types = repository.getPokemonTypes(member.name)
                             val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
-                            member.name to computeDefensiveMultipliers(typeDetails)
+                            // Same cache entry as getPokemonTypes above, so this is free.
+                            val moveNames = repository.getPokemonLevelUpMoveNames(member.name)
+                            MemberMatchups(
+                                name = member.name,
+                                defensive = computeDefensiveMultipliers(typeDetails),
+                                stabTypes = types,
+                                moveNames = moveNames
+                            )
                         }
                     }.awaitAll()
 
-                    val result = mutableMapOf<String, MutableMap<String, Double>>()
-                    TypeIds.standardTypeNames.forEach { result[it] = mutableMapOf() }
-                    memberResults.forEach { (memberName, defensiveMultipliers) ->
-                        defensiveMultipliers.forEach { (attackType, multiplier) ->
-                            result.getOrPut(attackType) { mutableMapOf() }[memberName] = multiplier
+                    val moveInfo = moveInfoDeferred.await()
+
+                    // What each member can attack with: its own types, plus the type of every
+                    // *damaging* move it can learn. Status moves are excluded — Thunder Wave being
+                    // Electric says nothing about whether this pokemon can dent a Water type.
+                    val attackingTypesByMember = memberResults.associate { member ->
+                        val fromMoves = member.moveNames.mapNotNull { moveName ->
+                            moveInfo[moveName]?.takeIf { it.damageClass != STATUS_DAMAGE_CLASS }?.type
+                        }
+                        member.name to (member.stabTypes + fromMoves).toSet()
+                    }
+
+                    val offensiveByType = attackingTypesByMember.values.flatten().distinct()
+                        .map { type -> async { type to computeOffensiveMultipliers(repository.getTypeDetail(type)) } }
+                        .awaitAll().toMap()
+
+                    val defensive = mutableMapOf<String, MutableMap<String, Double>>()
+                    val offensive = mutableMapOf<String, MutableMap<String, Double>>()
+                    TypeIds.standardTypeNames.forEach {
+                        defensive[it] = mutableMapOf()
+                        offensive[it] = mutableMapOf()
+                    }
+                    memberResults.forEach { member ->
+                        member.defensive.forEach { (attackType, multiplier) ->
+                            defensive.getOrPut(attackType) { mutableMapOf() }[member.name] = multiplier
+                        }
+                        val best = bestOffensiveMultipliers(
+                            attackingTypesByMember[member.name].orEmpty(),
+                            offensiveByType
+                        )
+                        best.forEach { (defendingType, multiplier) ->
+                            offensive.getOrPut(defendingType) { mutableMapOf() }[member.name] = multiplier
                         }
                     }
-                    result
+                    defensive to offensive
                 }
                 _uiState.update {
-                    it.copy(isLoading = false, matrix = matrix, matrixComputedFor = members.map { m -> m.name }.toSet())
+                    it.copy(
+                        isLoading = false,
+                        matrix = matrix,
+                        offensiveMatrix = offensiveMatrix,
+                        matrixComputedFor = members.map { m -> m.name }.toSet()
+                    )
                 }
             } catch (e: CancellationException) {
                 // A superseded fetch (the team changed again, or Retry was tapped) isn't a network

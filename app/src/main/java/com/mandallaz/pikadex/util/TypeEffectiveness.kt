@@ -17,6 +17,59 @@ fun computeDefensiveMultipliers(typeDetails: List<TypeDetailDto>): Map<String, D
     return multipliers
 }
 
+/**
+ * The multiplier an attack of one type deals to each defending type.
+ *
+ * The mirror image of [computeDefensiveMultipliers], reading the `*_to` half of damage_relations —
+ * which the app has been fetching, parsing and caching all along without ever reading it.
+ *
+ * Takes a single type rather than a list, and assigns rather than multiplies: a Pokémon defends
+ * with both its types at once, so those relations compound, but an attack has exactly one type and
+ * therefore exactly one relation against any given defender.
+ */
+fun computeOffensiveMultipliers(typeDetail: TypeDetailDto): Map<String, Double> {
+    val multipliers = TypeIds.standardTypeNames.associateWith { 1.0 }.toMutableMap()
+    typeDetail.damageRelations.doubleDamageTo.forEach { multipliers[it.name] = 2.0 }
+    typeDetail.damageRelations.halfDamageTo.forEach { multipliers[it.name] = 0.5 }
+    typeDetail.damageRelations.noDamageTo.forEach { multipliers[it.name] = 0.0 }
+    return multipliers
+}
+
+/**
+ * The best any of [attackingTypes] can land on each defending type — what one team member is
+ * capable of, given every attacking type it has access to.
+ *
+ * The maximum, not a combination: a Pokémon attacks with one move at a time, so having both Ice and
+ * Ground available means hitting each defender with whichever of the two is better, never with some
+ * product of the pair.
+ *
+ * [offensiveByType] maps an attacking type to its [computeOffensiveMultipliers] result. A member
+ * with no attacking type at all lands nothing, which is 0.0 rather than a neutral 1.0 — reporting
+ * neutral would claim coverage that does not exist.
+ */
+fun bestOffensiveMultipliers(
+    attackingTypes: Collection<String>,
+    offensiveByType: Map<String, Map<String, Double>>
+): Map<String, Double> = TypeIds.standardTypeNames.associateWith { defendingType ->
+    attackingTypes.mapNotNull { offensiveByType[it]?.get(defendingType) }.maxOrNull() ?: 0.0
+}
+
+/**
+ * Defending types no member of the team can hit for more than neutral damage — the holes a purely
+ * defensive read of a team never shows. A team with a flawless resistance spread still loses to
+ * anything it cannot meaningfully damage.
+ *
+ * [offensiveMatrix] is keyed defendingType -> memberName -> best multiplier, matching the shape the
+ * defensive matrix already uses.
+ */
+fun coverageGaps(offensiveMatrix: Map<String, Map<String, Double>>, memberNames: Collection<String>): List<String> {
+    if (memberNames.isEmpty()) return emptyList()
+    return TypeIds.standardTypeNames.filter { defendingType ->
+        val row = offensiveMatrix[defendingType].orEmpty()
+        memberNames.none { (row[it] ?: 0.0) > 1.0 }
+    }
+}
+
 data class MatchupBucket(val label: String, val multiplier: Double, val types: List<String>)
 
 // "×" + vulgar fractions to match the notation TeamScreen's matrix already uses ("×4", "×½"...)

@@ -14,6 +14,8 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
+import com.mandallaz.pikadex.util.MoveCategory
+import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.TypeIds
 import java.util.concurrent.TimeUnit
 
@@ -106,6 +108,20 @@ class PokedexRepository(private val api: PokeApiService) {
     suspend fun getPokemonTypes(nameOrId: String): List<String> {
         val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
         return pokemon.types.map { it.type.name }
+    }
+
+    /**
+     * The moves this pokemon learns by levelling up. Shares [pokemonDetailCache] with
+     * [getPokemonTypes], so asking for both costs one fetch rather than two.
+     *
+     * Level-up rather than the whole movepool: nearly every pokemon can be taught a TM covering
+     * nearly every attacking type, so a coverage matrix built from everything learnable came out a
+     * uniform wall of ×2 and reported "no coverage gaps" for any team whatsoever. What a pokemon
+     * learns on its own is the discriminating signal.
+     */
+    suspend fun getPokemonLevelUpMoveNames(nameOrId: String): List<String> {
+        val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
+        return pokemon.movesForCategory(MoveCategory.LEVEL_UP).map { it.moveName }
     }
 
     /** pokemonKey (Showdown format, no hyphens) -> tier code, for a Smogon generation (e.g. "ss"). */

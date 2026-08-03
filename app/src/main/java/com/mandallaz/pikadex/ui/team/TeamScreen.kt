@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.WarningAmber
@@ -25,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +73,18 @@ private val MATRIX_ROW_HEIGHT = 32.dp
  */
 private val COMPACT_LAYOUT_MIN_HEIGHT = 400.dp
 
+/**
+ * Which direction of the matchup the matrix is showing.
+ *
+ * The captions matter more than they look: both modes draw an 18-row grid of type badges and
+ * multipliers, and without them "×2 on the Fire row" is genuinely ambiguous between "takes double
+ * from Fire" and "deals double to Fire".
+ */
+private enum class MatrixMode(val label: String, val caption: String) {
+    DEFENSE("Defense", "Damage each member takes from an attack of this type."),
+    OFFENSE("Offense", "Best each member can deal to this type, from its own typing and the attacks it learns by level-up.")
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeamScreen(
@@ -79,6 +93,8 @@ fun TeamScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showPresetPicker by rememberSaveable { mutableStateOf(false) }
+    // rememberSaveable, so rotating doesn't silently drop the user back to Defense.
+    var matrixMode by rememberSaveable { mutableStateOf(MatrixMode.DEFENSE) }
 
     Scaffold(
         topBar = {
@@ -167,28 +183,58 @@ fun TeamScreen(
                     }
                 }
 
-                val sharedWeaknesses = uiState.sharedWeaknesses
-                if (sharedWeaknesses.isNotEmpty()) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        colors = androidx.compose.material3.CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                // Defense answers "what beats my team", offense answers "what can my team not
+                // touch". Both are the same 18-row grid of multipliers, so they share one matrix
+                // rather than stacking a second, near-identical table below the first.
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MatrixMode.entries.forEach { mode ->
+                        FilterChip(
+                            selected = matrixMode == mode,
+                            onClick = { matrixMode = mode },
+                            label = { Text(mode.label) }
                         )
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.WarningAmber, contentDescription = null)
-                                Text(
-                                    " Team-wide weaknesses",
-                                    fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.titleMedium
+                    }
+                }
+
+                Text(
+                    text = matrixMode.caption,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                )
+
+                when (matrixMode) {
+                    MatrixMode.DEFENSE -> {
+                        val sharedWeaknesses = uiState.sharedWeaknesses
+                        if (sharedWeaknesses.isNotEmpty()) {
+                            MatrixCallout(
+                                title = "Team-wide weaknesses",
+                                body = "At least half your team is weak to: " +
+                                    sharedWeaknesses.joinToString(", ") { it.toDisplayName() }
+                            )
+                        }
+                    }
+                    MatrixMode.OFFENSE -> {
+                        val gaps = uiState.coverageGaps
+                        // Only worth saying once the matrix is real data — mid-fetch the gap list is
+                        // empty for the boring reason, and "no gaps" would be a lie.
+                        if (!uiState.isLoading && !uiState.isMatrixStale) {
+                            if (gaps.isNotEmpty()) {
+                                MatrixCallout(
+                                    title = "Coverage gaps",
+                                    body = "Nothing on your team hits these for more than ×1: " +
+                                        gaps.joinToString(", ") { it.toDisplayName() }
+                                )
+                            } else {
+                                MatrixCallout(
+                                    title = "No coverage gaps",
+                                    body = "Every type can be hit for super-effective damage by at least one member.",
+                                    isWarning = false
                                 )
                             }
-                            Text(
-                                "At least half your team is weak to: " +
-                                    sharedWeaknesses.joinToString(", ") { it.toDisplayName() },
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
                         }
                     }
                 }
@@ -264,13 +310,17 @@ fun TeamScreen(
                         // worse, kept showing an old team's colors next to an error message after a
                         // failed fetch). Cells render blank instead of guessing whenever that's the case.
                         val showKnownData = !uiState.isLoading && !uiState.isMatrixStale
+                        val activeMatrix = when (matrixMode) {
+                            MatrixMode.DEFENSE -> uiState.matrix
+                            MatrixMode.OFFENSE -> uiState.offensiveMatrix
+                        }
                         TypeIds.standardTypeNames.forEach { typeName ->
-                            val row = uiState.matrix[typeName].orEmpty()
+                            val row = activeMatrix[typeName].orEmpty()
                             Row(modifier = Modifier.height(rowHeight), verticalAlignment = Alignment.CenterVertically) {
                                 uiState.members.forEach { member ->
                                     val multiplier = row[member.name] ?: 1.0
                                     val (background, content) = if (showKnownData) {
-                                        multiplierColors(multiplier)
+                                        multiplierColors(multiplier, isOffense = matrixMode == MatrixMode.OFFENSE)
                                     } else {
                                         MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
                                     }
@@ -370,9 +420,56 @@ private fun multiplierLabel(multiplier: Double): String = when (multiplier) {
  *  text on a light pink/blue/green background in dark mode, illegible. The neutral (1x) bucket has
  *  no fill of its own, so its text keeps following the theme's normal contrast (Color.Unspecified
  *  resolves to the current LocalContentColor). */
-private fun multiplierColors(multiplier: Double): Pair<Color, Color> = when {
-    multiplier >= 2.0 -> Color(0xFFFFCDD2) to Color(0xFFB71C1C)
-    multiplier == 0.0 -> Color(0xFFB3E5FC) to Color(0xFF01579B)
-    multiplier < 1.0 -> Color(0xFFC8E6C9) to Color(0xFF1B5E20)
-    else -> Color.Transparent to Color.Unspecified
+/**
+ * Background/foreground for one matrix cell.
+ *
+ * The same multiplier means opposite things in the two modes — ×2 *taken* is a problem, ×2 *dealt*
+ * is an advantage — so the palette keys on whether the number is good news for the player rather
+ * than on the number itself. Sharing one scale between both turned the offense matrix into a wall
+ * of red danger cells reporting what was actually a well-covered team.
+ *
+ * Blue stays reserved for a defensive immunity, the one genuinely special case; dealing ×0 is
+ * simply the worst offensive outcome and reads as such.
+ */
+private fun multiplierColors(multiplier: Double, isOffense: Boolean = false): Pair<Color, Color> {
+    val bad = Color(0xFFFFCDD2) to Color(0xFFB71C1C)
+    val good = Color(0xFFC8E6C9) to Color(0xFF1B5E20)
+    val immune = Color(0xFFB3E5FC) to Color(0xFF01579B)
+    return when {
+        multiplier == 1.0 -> Color.Transparent to Color.Unspecified
+        multiplier == 0.0 -> if (isOffense) bad else immune
+        multiplier > 1.0 -> if (isOffense) good else bad
+        else -> if (isOffense) bad else good
+    }
+}
+
+/** The banner above the matrix. Shared by both modes so the two read as the same kind of summary;
+ *  [isWarning] is what separates "here is a problem" from "here is a clean bill of health". */
+@Composable
+private fun MatrixCallout(title: String, body: String, isWarning: Boolean = true) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = if (isWarning) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (isWarning) Icons.Filled.WarningAmber else Icons.Filled.Check,
+                    contentDescription = null
+                )
+                Text(
+                    " $title",
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            Text(body, modifier = Modifier.padding(top = 4.dp))
+        }
+    }
 }
