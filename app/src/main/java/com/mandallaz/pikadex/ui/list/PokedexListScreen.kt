@@ -1,7 +1,5 @@
 package com.mandallaz.pikadex.ui.list
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,6 +73,7 @@ import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.Sprites
+import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.toDisplayName
 
 private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT }
@@ -551,7 +550,7 @@ private fun AttributionFooter() {
             .fillMaxWidth()
             .padding(vertical = 20.dp)
             .clickable {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://pokeapi.co")))
+                context.openExternalLink("https://pokeapi.co")
             },
         horizontalArrangement = Arrangement.Center
     ) {

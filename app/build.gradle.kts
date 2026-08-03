@@ -70,4 +70,7 @@ dependencies {
 
     // Chargement des sprites/artworks des Pokémon
     implementation(libs.coil.compose)
+
+    // Custom Tabs : ouvre les liens Smogon dans l'app plutôt que dans une tâche navigateur séparée
+    implementation(libs.androidx.browser)
 }
