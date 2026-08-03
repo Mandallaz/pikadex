@@ -14,6 +14,7 @@ import com.mandallaz.pikadex.data.repository.PokedexRepository
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,16 @@ data class PokedexDetailUiState(
      *  the value actually is rather than a fixed per-stat hue. */
     val statPercentiles: Map<String, Double> = emptyMap()
 )
+
+/** Result of [block], or null if it failed — but never swallowing coroutine cancellation, which
+ *  `runCatching` would, letting an already-cancelled load carry on and publish state anyway. */
+private inline fun <T> orNullUnlessCancelled(block: () -> T): T? = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    null
+}
 
 class PokedexDetailViewModel @JvmOverloads constructor(
     private val repository: PokedexRepository = AppContainer.repository
@@ -89,18 +100,25 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             .mapNotNull { (name, description) -> description?.let { name to it } }
                             .toMap()
                     }
-                    val moveInfo = moveInfoDeferred.await()
-                    allStatsDeferred.await() // warms the repository's cache before the per-key lookups below
                     val descriptions = descriptionsDeferred.await()
 
+                    // These two bulk fetches only *enrich* the page — percentile tint on the stat
+                    // bars, and type/power/accuracy under each move name. Everything the page is
+                    // actually about (stats, types, abilities, evolution, move names) comes from the
+                    // REST bundle already awaited above, so a failure here degrades one detail
+                    // rather than failing the whole screen with "check your connection".
+                    val moveInfo = orNullUnlessCancelled { moveInfoDeferred.await() }.orEmpty()
                     // Binary-searches a sorted array the repository builds once (see
                     // PokedexRepository.getSortedStatArrays) instead of re-scanning all ~1300
                     // pokemon's values on every single detail load.
-                    val percentiles = bundle.pokemon.stats.associate { stat ->
-                        stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
-                    } + mapOf(
-                        "total" to repository.getStatPercentile("total", bundle.pokemon.stats.sumOf { it.baseStat })
-                    )
+                    val percentiles = orNullUnlessCancelled {
+                        allStatsDeferred.await() // warms the repository's cache before the per-key lookups below
+                        bundle.pokemon.stats.associate { stat ->
+                            stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
+                        } + mapOf(
+                            "total" to repository.getStatPercentile("total", bundle.pokemon.stats.sumOf { it.baseStat })
+                        )
+                    }.orEmpty()
 
                     _uiState.update {
                         it.copy(

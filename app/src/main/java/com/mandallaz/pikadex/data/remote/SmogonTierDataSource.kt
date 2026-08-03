@@ -4,6 +4,7 @@ import com.mandallaz.pikadex.data.AppContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import java.io.IOException
 
 /**
  * Fetches competitive tier placements (OU, UU, LC...) per Pokemon per generation from Pokemon
@@ -39,9 +40,14 @@ object SmogonTierDataSource {
             "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/mods/$mod/formats-data.ts"
         }
         val request = Request.Builder().url(url).build()
+        // Throws rather than returning an empty map on failure: this result is memoized in an
+        // AsyncCache, which only evicts on exception, so a transient failure used to cache "this
+        // generation has no tiers at all" for the whole process — the tier picker would then show
+        // nothing, and the caller's "does this tier still exist in the new generation?" check would
+        // read the empty map as a definitive no and silently clear the user's tier selection.
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return@withContext emptyMap()
-            val body = response.body?.string() ?: return@withContext emptyMap()
+            if (!response.isSuccessful) throw IOException("Smogon tier fetch failed: HTTP ${response.code}")
+            val body = response.body?.string() ?: throw IOException("Smogon tier response had no body")
             parseTiers(body)
         }
     }

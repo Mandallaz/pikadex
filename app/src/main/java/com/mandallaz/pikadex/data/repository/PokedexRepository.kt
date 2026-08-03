@@ -111,32 +111,21 @@ class PokedexRepository(private val api: PokeApiService) {
      *  data only changes when a new generation ships, so there's no reason to re-fetch ~1300
      *  entries worth of stats every cold start. */
     suspend fun getAllBaseStats(): Map<String, Map<String, Int>> = allBaseStatsCache.get {
-        val cached = JsonDiskCache.read<Map<String, Map<String, Int>>>(
-            BASE_STATS_CACHE_KEY, BASE_STATS_TYPE, DISK_CACHE_MAX_AGE_MILLIS
-        )
-        if (cached != null) {
-            cached
-        } else {
-            val stats = PokeApiGraphQLDataSource.fetchAllBaseStats()
-            JsonDiskCache.write(BASE_STATS_CACHE_KEY, stats)
-            stats
-        }
+        diskCached(BASE_STATS_CACHE_KEY, BASE_STATS_TYPE) { PokeApiGraphQLDataSource.fetchAllBaseStats() }
     }
+
+    /** Serves [key] from the disk cache if it's still fresh, otherwise runs [fetch] and persists the
+     *  result. [fetch] throwing propagates without writing anything, so a failed request can never
+     *  persist a placeholder (an empty map, say) for the whole TTL. */
+    private suspend fun <T : Any> diskCached(key: String, type: java.lang.reflect.Type, fetch: suspend () -> T): T =
+        JsonDiskCache.read<T>(key, type, DISK_CACHE_MAX_AGE_MILLIS)
+            ?: fetch().also { JsonDiskCache.write(key, it) }
 
     /** moveName -> (type, damage class, power, accuracy), fetched once in bulk via GraphQL and
      *  reused for every pokemon's move lists (Level Up / TM-HM / Breeding / Tutor). Persisted to
      *  disk for the same reason as [getAllBaseStats]. */
     suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo> = allMoveInfoCache.get {
-        val cached = JsonDiskCache.read<Map<String, PokeApiGraphQLDataSource.MoveInfo>>(
-            MOVE_INFO_CACHE_KEY, MOVE_INFO_TYPE, DISK_CACHE_MAX_AGE_MILLIS
-        )
-        if (cached != null) {
-            cached
-        } else {
-            val info = PokeApiGraphQLDataSource.fetchAllMoveInfo()
-            JsonDiskCache.write(MOVE_INFO_CACHE_KEY, info)
-            info
-        }
+        diskCached(MOVE_INFO_CACHE_KEY, MOVE_INFO_TYPE) { PokeApiGraphQLDataSource.fetchAllMoveInfo() }
     }
 
     /** Sorted value arrays per stat key (hp/attack/.../speed, plus a synthetic "total"), built

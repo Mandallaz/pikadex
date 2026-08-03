@@ -28,7 +28,17 @@ class RetryInterceptor(
                 lastIoException = e
                 if (isLastAttempt) throw e
             }
-            Thread.sleep(delayMs)
+            // Cancelling the coroutine that made this call cancels the OkHttp Call, but that does
+            // not interrupt a thread already sitting in Thread.sleep below — without this check a
+            // call abandoned during backoff kept sleeping, then retried only to fail instantly with
+            // "Canceled", then slept again, tying up a dispatcher thread for the full backoff chain.
+            if (chain.call().isCanceled()) throw lastIoException ?: IOException("Canceled")
+            try {
+                Thread.sleep(delayMs)
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                throw lastIoException ?: IOException("Retry interrupted")
+            }
             delayMs *= 2
         }
         throw lastIoException ?: IOException("Request failed after $maxAttempts attempts")

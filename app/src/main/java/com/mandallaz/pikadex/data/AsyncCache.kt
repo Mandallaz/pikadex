@@ -29,19 +29,29 @@ import kotlinx.coroutines.async
  * failure for the rest of the process — but only on a genuine failure. A caller whose own
  * coroutine is cancelled while awaiting a *shared* fetch must not evict it out from under other
  * still-interested awaiters, so [CancellationException] specifically is rethrown as-is.
+ *
+ * The map is guarded by a lock because callers genuinely arrive on different threads: ViewModels
+ * call in on `Main.immediate`, while the repository's own derived caches (e.g. the sorted stat
+ * arrays) run their fetch lambda on this class's [Dispatchers.Default] scope and call straight
+ * back in from there. "No suspension point between lookup and insert" makes the check-and-insert
+ * atomic against other *coroutines*, but not against another *thread* — leaving a plain HashMap
+ * open to concurrent structural modification, and losing the single-flight guarantee this class
+ * exists to provide.
  */
 class AsyncCache<K, V> {
     private val scope = CoroutineScope(SupervisorJob())
+    private val lock = Any()
     private val deferreds = mutableMapOf<K, Deferred<V>>()
 
     suspend fun get(key: K, fetch: suspend () -> V): V {
-        val deferred = deferreds.getOrPut(key) { scope.async { fetch() } }
+        // async{} never suspends, so starting it inside the lock can't block another thread on IO.
+        val deferred = synchronized(lock) { deferreds.getOrPut(key) { scope.async { fetch() } } }
         return try {
             deferred.await()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            deferreds.remove(key, deferred)
+            synchronized(lock) { deferreds.remove(key, deferred) }
             throw e
         }
     }
@@ -50,16 +60,19 @@ class AsyncCache<K, V> {
 /** Same idea as [AsyncCache] but for a single memoized value (a bulk fetch with no key). */
 class AsyncValueCache<V> {
     private val scope = CoroutineScope(SupervisorJob())
+    private val lock = Any()
     private var deferred: Deferred<V>? = null
 
     suspend fun get(fetch: suspend () -> V): V {
-        val current = deferred ?: scope.async { fetch() }.also { deferred = it }
+        val current = synchronized(lock) {
+            deferred ?: scope.async { fetch() }.also { deferred = it }
+        }
         return try {
             current.await()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            if (deferred === current) deferred = null
+            synchronized(lock) { if (deferred === current) deferred = null }
             throw e
         }
     }
