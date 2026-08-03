@@ -23,12 +23,21 @@ data class TeamUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     // matrix[typeName][memberName] = defensive multiplier against that attacking type
-    val matrix: Map<String, Map<String, Double>> = emptyMap()
+    val matrix: Map<String, Map<String, Double>> = emptyMap(),
+    // Which member names [matrix] was actually computed for — a member missing from a type's row
+    // is otherwise indistinguishable from "genuinely neutral (x1)" to a plain `row[name] ?: 1.0`
+    // lookup. Whenever this doesn't match the current [members] (mid-fetch, or the fetch just
+    // failed and left the previous team's matrix behind), the matrix is stale and must not be
+    // rendered as if it were live data.
+    val matrixComputedFor: Set<String> = emptySet()
 ) {
+    val isMatrixStale: Boolean
+        get() = matrixComputedFor != members.map { it.name }.toSet()
+
     /** Types where at least half the team is weak (>1x) — the team's shared vulnerabilities. */
     val sharedWeaknesses: List<String>
         get() {
-            if (members.isEmpty()) return emptyList()
+            if (members.isEmpty() || isMatrixStale) return emptyList()
             return TypeIds.standardTypeNames.filter { type ->
                 val row = matrix[type] ?: return@filter false
                 val weakCount = members.count { (row[it.name] ?: 1.0) > 1.0 }
@@ -77,8 +86,15 @@ class TeamViewModel @JvmOverloads constructor(
                         }
                         result
                     }
-                    _uiState.update { it.copy(isLoading = false, matrix = matrix) }
+                    _uiState.update {
+                        it.copy(isLoading = false, matrix = matrix, matrixComputedFor = members.map { m -> m.name }.toSet())
+                    }
                 } catch (e: Exception) {
+                    // matrixComputedFor is deliberately left untouched here: it now reflects
+                    // whatever the *previous* successful fetch was for, which — since `members` has
+                    // already changed — no longer matches the current team. UI reads that mismatch
+                    // (isMatrixStale) to render the matrix as unknown rather than as leftover data
+                    // for a team composition that no longer exists.
                     _uiState.update { it.copy(isLoading = false, errorMessage = "Network error while computing team matchups. Check your connection.") }
                 }
             }

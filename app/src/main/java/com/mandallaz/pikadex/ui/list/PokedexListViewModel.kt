@@ -13,6 +13,7 @@ import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -81,13 +82,21 @@ data class PokedexListUiState(
 private fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String): List<NamedApiResource> {
     var list = state.allPokemon
     if (debouncedQuery.isNotBlank()) {
-        val q = debouncedQuery.trim().lowercase()
+        val trimmed = debouncedQuery.trim().lowercase()
         // Cards display the zero-padded dex number ("#0004"), but the old exact string match
         // (`it.id?.toString() == q`) only matched the *unpadded* form — searching the exact text
         // on screen ("0004") returned nothing. Comparing as Int handles both: "4".toIntOrNull()
         // and "0004".toIntOrNull() are both 4.
-        val numericQuery = q.toIntOrNull()
-        list = list.filter { it.name.contains(q) || (numericQuery != null && it.id == numericQuery) }
+        val numericQuery = trimmed.toIntOrNull()
+        // Cards display names via toDisplayName() ("Mr. Mime", "Ho-Oh", "Deoxys Attack"), which
+        // inserts spaces/hyphens/punctuation the raw API name ("mr-mime") doesn't have — typing
+        // exactly what's on screen used to match nothing for any hyphenated name. Stripping hyphens
+        // from both sides (same normalization SearchableListDialog already uses for moves/abilities)
+        // makes either form find it.
+        val normalizedQuery = trimmed.replace(" ", "").replace("-", "")
+        list = list.filter {
+            it.name.replace("-", "").contains(normalizedQuery) || (numericQuery != null && it.id == numericQuery)
+        }
     }
     state.typeFilterNames?.let { set -> list = list.filter { it.name in set } }
     state.moveFilterNames?.let { set -> list = list.filter { it.name in set } }
@@ -145,7 +154,21 @@ class PokedexListViewModel @JvmOverloads constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        loadInitialData()
         viewModelScope.launch {
+            FavoritesRepository.favorites.collect { favs ->
+                _uiState.update { it.copy(favorites = favs) }
+            }
+        }
+    }
+
+    /** Loads the master list + type options. Called from [init], and again from
+     *  [retryInitialLoad] — a cold start with no connection used to be a genuine dead end: the
+     *  ViewModel only ever attempted this once, so there was no way back in short of force-killing
+     *  the app. */
+    private fun loadInitialData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 // supervisorScope: a plain `async {}` here that fails before being awaited would
                 // otherwise cancel this whole launch's Job as a child failure rather than a normal
@@ -167,12 +190,9 @@ class PokedexListViewModel @JvmOverloads constructor(
                 }
             }
         }
-        viewModelScope.launch {
-            FavoritesRepository.favorites.collect { favs ->
-                _uiState.update { it.copy(favorites = favs) }
-            }
-        }
     }
+
+    fun retryInitialLoad() = loadInitialData()
 
     fun onToggleFavoritesOnly() {
         _uiState.update { it.copy(showFavoritesOnly = !it.showFavoritesOnly) }
@@ -183,12 +203,23 @@ class PokedexListViewModel @JvmOverloads constructor(
         debouncedSearchQuery.value = query
     }
 
+    // Each filter kind gets its own tracked Job so a rapid second tap cancels the first request
+    // instead of racing it — two `viewModelScope.launch{}` calls in a row (e.g. toggling Fire then
+    // quickly Flying) used to both run to completion with no ordering guarantee, so whichever
+    // network call happened to finish *last* silently won even if it was for the stale,
+    // already-abandoned selection.
+    private var typeFilterJob: Job? = null
+    private var moveFilterJob: Job? = null
+    private var abilityFilterJob: Job? = null
+    private var tierFilterJob: Job? = null
+
     fun onTypeToggled(type: String) {
         val current = _uiState.value.selectedTypes
         val updated = if (type in current) current - type else current + type
         _uiState.update { it.copy(selectedTypes = updated, typeFilterNames = null) }
+        typeFilterJob?.cancel()
         if (updated.isEmpty()) return
-        viewModelScope.launch {
+        typeFilterJob = viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
             try {
                 // AND semantics: a pokemon must match every selected type (e.g. Dragon + Flying = Altaria),
@@ -217,8 +248,9 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     fun onMoveSelected(move: String?) {
         _uiState.update { it.copy(selectedMove = move, moveFilterNames = null) }
+        moveFilterJob?.cancel()
         if (move == null) return
-        viewModelScope.launch {
+        moveFilterJob = viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
             try {
                 val names = repository.getPokemonNamesForMove(move)
@@ -243,8 +275,9 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     fun onAbilitySelected(ability: String?) {
         _uiState.update { it.copy(selectedAbility = ability, abilityFilterNames = null) }
+        abilityFilterJob?.cancel()
         if (ability == null) return
-        viewModelScope.launch {
+        abilityFilterJob = viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
             try {
                 val names = repository.getPokemonNamesForAbility(ability)
@@ -288,6 +321,7 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     fun onFormatTierSelected(tier: String?) {
         _uiState.update { it.copy(selectedFormatTier = tier) }
+        tierFilterJob?.cancel()
         if (tier == null) {
             _uiState.update { it.copy(formatFilterNames = null) }
             return
@@ -297,10 +331,20 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     private fun applyTierFilter(tier: String) {
         val gen = _uiState.value.effectiveFormatGen
-        viewModelScope.launch {
+        tierFilterJob?.cancel()
+        tierFilterJob = viewModelScope.launch {
             _uiState.update { it.copy(isFilterLoading = true) }
             try {
                 val tiers = repository.getSmogonTiers(gen.code)
+                // A tier selected under one generation may not exist in another (e.g. "NFE" picked
+                // in Gen 9, then switching to Gen 1) — leaving it silently selected produced a
+                // confidently-checked Tier chip alongside an empty (wrong, unexplained) result grid.
+                if (tiers.values.none { it == tier }) {
+                    _uiState.update {
+                        it.copy(selectedFormatTier = null, formatFilterNames = null, isFilterLoading = false)
+                    }
+                    return@launch
+                }
                 val names = _uiState.value.allPokemon
                     .filter { tiers[SmogonTierDataSource.showdownKey(it.name)] == tier }
                     .map { it.name }
@@ -335,6 +379,10 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     fun clearFilters() {
         tierOptionsGen = null
+        typeFilterJob?.cancel()
+        moveFilterJob?.cancel()
+        abilityFilterJob?.cancel()
+        tierFilterJob?.cancel()
         _uiState.update {
             it.copy(
                 selectedTypes = emptySet(), typeFilterNames = null,

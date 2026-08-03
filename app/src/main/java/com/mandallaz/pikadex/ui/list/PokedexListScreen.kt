@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -33,7 +35,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +52,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -87,6 +91,7 @@ fun PokedexListScreen(
     var activeDialog by remember { mutableStateOf(ActiveDialog.NONE) }
     var showFilterSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
 
     // Filter/network errors used to be written into state and never shown anywhere — picking a
@@ -95,15 +100,41 @@ fun PokedexListScreen(
     LaunchedEffect(uiState.errorMessage) {
         val message = uiState.errorMessage
         if (message != null) {
-            snackbarHostState.showSnackbar(message)
-            viewModel.dismissError()
+            // A dialog or the filter sheet covers the whole screen, so a Snackbar underneath would
+            // never be seen — picking Move/Ability/Tier with no network used to leave that full-screen
+            // dialog reading "Loading..." forever with no visible error at all. Closing whatever's
+            // open surfaces the Snackbar instead.
+            activeDialog = ActiveDialog.NONE
+            showFilterSheet = false
+            if (uiState.allPokemon.isNotEmpty()) {
+                // The master list failing to load at all is a persistent, full-screen condition
+                // (the inline error branch below, with its own Retry) — auto-dismissing it here too
+                // used to make it vanish the instant the 4-second Snackbar timed out, leaving a
+                // permanently wrong "No Pokémon match your search and filters" empty state with no
+                // way back short of force-killing the app. Only flash-and-clear errors that happen
+                // once real data is already showing (a filter/sort/network hiccup).
+                snackbarHostState.showSnackbar(message)
+                viewModel.dismissError()
+            }
         }
     }
 
-    // Applying a sort used to leave the user stranded mid-list in a now-completely-reordered grid
-    // instead of jumping back to the top where the new #1 result actually is.
+    // Applying a sort should jump back to the top of the now-reordered grid — but LaunchedEffect
+    // re-runs its body on every fresh entry into composition too, not only on a genuine key change,
+    // so a plain `LaunchedEffect(sortStat, sortAscending) { scrollToItem(0) }` also fired (and wiped
+    // the position `gridState` had just restored) on ordinary back-navigation from a detail screen
+    // and on switching bottom-nav tabs and back. Tracking the last sort actually applied in
+    // rememberSaveable (so it survives that same save/restore) distinguishes a real sort change from
+    // just re-entering this screen with the same sort as before.
+    var lastAppliedSortOrdinal by rememberSaveable { mutableStateOf(uiState.sortStat?.ordinal ?: -1) }
+    var lastAppliedSortAscending by rememberSaveable { mutableStateOf(uiState.sortAscending) }
     LaunchedEffect(uiState.sortStat, uiState.sortAscending) {
-        gridState.scrollToItem(0)
+        val newOrdinal = uiState.sortStat?.ordinal ?: -1
+        if (newOrdinal != lastAppliedSortOrdinal || uiState.sortAscending != lastAppliedSortAscending) {
+            gridState.scrollToItem(0)
+        }
+        lastAppliedSortOrdinal = newOrdinal
+        lastAppliedSortAscending = uiState.sortAscending
     }
 
     Scaffold(
@@ -120,6 +151,15 @@ fun PokedexListScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = { Text("Name or number...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
+                    {
+                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                        }
+                    }
+                } else {
+                    null
+                },
                 singleLine = true
             )
 
@@ -150,7 +190,9 @@ fun PokedexListScreen(
                         viewModel.loadBaseStatsIfNeeded()
                         activeDialog = ActiveDialog.SORT
                     },
-                    label = { Text(uiState.sortStat?.label ?: "Sort") }
+                    // "Sort: " prefix once a stat is picked — a bare "Attack" next to "Filters (2)"
+                    // read as if it were itself a filter value, not what it's actually sorting by.
+                    label = { Text(uiState.sortStat?.let { "Sort: ${it.label}" } ?: "Sort") }
                 )
                 if (uiState.sortStat != null) {
                     IconButton(onClick = viewModel::toggleSortDirection) {
@@ -185,20 +227,30 @@ fun PokedexListScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     uiState.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    uiState.errorMessage != null && uiState.allPokemon.isEmpty() -> Text(
-                        text = uiState.errorMessage ?: "",
+                    uiState.errorMessage != null && uiState.allPokemon.isEmpty() -> Column(
                         modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = uiState.errorMessage ?: "",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        // A failed cold start used to be a genuine dead end — load() only ever ran
+                        // once from init{}, so there was no way back into the app short of
+                        // force-killing it, even after connectivity came back.
+                        Button(onClick = viewModel::retryInitialLoad) { Text("Retry") }
+                    }
                     displayedPokemon.isEmpty() -> EmptyResultsState(
                         hasActiveFilters = uiState.hasActiveFilters,
-                        onResetFilters = viewModel::clearFilters,
+                        onResetFilters = {
+                            viewModel.clearFilters()
+                            viewModel.onSearchQueryChange("")
+                        },
                         modifier = Modifier.align(Alignment.Center)
                     )
                     else -> {
-                        if (uiState.isFilterLoading || uiState.isStatsLoading) {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(8.dp))
-                        }
                         LazyVerticalGrid(
                             state = gridState,
                             columns = GridCells.Fixed(3),
@@ -209,15 +261,25 @@ fun PokedexListScreen(
                         ) {
                             items(displayedPokemon, key = { it.name }) { resource ->
                                 val id = resource.id ?: return@items
+                                val isInTeamAlready = team.any { it.name == resource.name }
+                                val isTeamFull = team.size >= TeamRepository.MAX_SIZE
                                 PokemonCard(
                                     id = id,
                                     name = resource.name,
                                     isFavorite = resource.name in favorites,
-                                    isInTeam = team.any { it.name == resource.name },
-                                    isTeamFull = team.size >= TeamRepository.MAX_SIZE,
+                                    isInTeam = isInTeamAlready,
+                                    isTeamFull = isTeamFull,
                                     onClick = { onPokemonClick(resource.name) },
                                     onToggleTeam = {
-                                        TeamRepository.toggle(NamedApiResource(resource.name, "https://pokeapi.co/api/v2/pokemon/$id/"))
+                                        if (!isInTeamAlready && isTeamFull) {
+                                            // The button used to just render disabled with zero
+                                            // explanation of why tapping it did nothing.
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar("Your team is full (${TeamRepository.MAX_SIZE}/${TeamRepository.MAX_SIZE}). Remove one first.")
+                                            }
+                                        } else {
+                                            TeamRepository.toggle(NamedApiResource(resource.name, "https://pokeapi.co/api/v2/pokemon/$id/"))
+                                        }
                                     },
                                     onToggleFavorite = { FavoritesRepository.toggle(resource.name) }
                                 )
@@ -225,6 +287,12 @@ fun PokedexListScreen(
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 AttributionFooter()
                             }
+                        }
+                        // Drawn after (i.e. on top of) the grid, not before it — composed first, the
+                        // spinner used to sit directly behind the opaque first row of cards and was
+                        // never actually visible while a type/move/ability/tier filter was applying.
+                        if (uiState.isFilterLoading || uiState.isStatsLoading) {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(8.dp))
                         }
                     }
                 }
@@ -282,7 +350,7 @@ fun PokedexListScreen(
         ActiveDialog.FORMAT_GEN -> OptionsDialog(
             title = "Choose a generation",
             options = listOf<SmogonGen?>(null) + Smogon.ALL_GENERATIONS,
-            labelFor = { it?.label ?: "Clear format filter" },
+            labelFor = { it?.label ?: "Any format" },
             selected = uiState.selectedFormatGen,
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { gen ->
@@ -333,7 +401,16 @@ private fun FilterSheetContent(
     onOpenFormat: () -> Unit,
     onOpenTier: () -> Unit
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+    // verticalScroll: a plain Column here could overflow the sheet's available height in
+    // landscape or at large font scales — 18 type chips plus 5 "other filters" chips is enough
+    // content that everything past the first few type rows became completely unreachable, with no
+    // way to scroll down to Favorites/Move/Ability/Format/Tier at all.
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 24.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
         Text("Filters", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
         Text(

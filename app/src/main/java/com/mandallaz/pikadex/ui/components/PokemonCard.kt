@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -54,7 +55,12 @@ fun PokemonCard(
     Box(modifier = modifier) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth()
+            // A min height sized for a full 2-line name: without it, a 1-line-name card (e.g.
+            // "Pikachu") next to a 2-line-name card in the same grid row (e.g. "Zamazenta
+            // Crowned") ends up visibly shorter, top-aligned against a taller neighbor — the
+            // Column's own Arrangement.Center below only centers *within* its own measured height,
+            // which differs per-card since nothing constrains it.
+            modifier = Modifier.fillMaxWidth().heightIn(min = 190.dp)
         ) {
             Column(
                 modifier = Modifier

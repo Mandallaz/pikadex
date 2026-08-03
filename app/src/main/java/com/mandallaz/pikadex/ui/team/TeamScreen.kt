@@ -182,12 +182,24 @@ fun TeamScreen(
                         .horizontalScroll(horizontalScrollState)
                         .verticalScroll(verticalScrollState)
                 ) {
+                    // While a fetch is running (or just failed) for the current team composition,
+                    // the matrix is either incomplete or belongs to a *previous* team — a member
+                    // missing from a type's row is indistinguishable from a genuine neutral (x1)
+                    // matchup under a plain `row[name] ?: 1.0` lookup, so a just-added Pokémon used
+                    // to render as "neutral to all 18 types" instead of "unknown, still loading" (or,
+                    // worse, kept showing an old team's colors next to an error message after a
+                    // failed fetch). Cells render blank instead of guessing whenever that's the case.
+                    val showKnownData = !uiState.isLoading && !uiState.isMatrixStale
                     TypeIds.standardTypeNames.forEach { typeName ->
                         val row = uiState.matrix[typeName].orEmpty()
                         Row(modifier = Modifier.height(MATRIX_ROW_HEIGHT), verticalAlignment = Alignment.CenterVertically) {
                             uiState.members.forEach { member ->
                                 val multiplier = row[member.name] ?: 1.0
-                                val (background, content) = multiplierColors(multiplier)
+                                val (background, content) = if (showKnownData) {
+                                    multiplierColors(multiplier)
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+                                }
                                 Box(
                                     modifier = Modifier
                                         .width(MEMBER_COLUMN_WIDTH)
@@ -196,7 +208,11 @@ fun TeamScreen(
                                         .background(background),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(multiplierLabel(multiplier), style = MaterialTheme.typography.bodyMedium, color = content)
+                                    Text(
+                                        if (showKnownData) multiplierLabel(multiplier) else "",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = content
+                                    )
                                 }
                             }
                         }
