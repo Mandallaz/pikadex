@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A Poké Ball glyph: the red top half is just the solid-red background (ic_launcher_background)
+     showing through, since this layer only paints the white bottom half, the black band/outline,
+     and the black-and-white center button. Everything stays within the 66dp safe zone (21-87 of
+     the 108dp canvas) so no adaptive-icon mask shape (circle, squircle, rounded square...) clips it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Bottom half (white) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24,54 A30,30 0 0 0 84,54 Z" />
+
+    <!-- Outer circle outline, so the ball reads as a circle against the square red background -->
+    <path
+        android:strokeColor="#FF1A1A1A"
+        android:strokeWidth="3.5"
+        android:pathData="M24,54 A30,30 0 1 1 84,54 A30,30 0 1 1 24,54 Z" />
+
+    <!-- Center band -->
+    <path
+        android:fillColor="#FF1A1A1A"
+        android:pathData="M24,51 h60 v6 h-60 z" />
+
+    <!-- Center button: black ring, white center -->
+    <path
+        android:fillColor="#FF1A1A1A"
+        android:pathData="M54,54 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,54 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0" />
+</vector>
