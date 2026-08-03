@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 
 /**
  * Fetches base stats for every Pokemon in a single request via PokeAPI's GraphQL beta endpoint,
@@ -46,18 +47,30 @@ object PokeApiGraphQLDataSource {
 
     private val gson = Gson()
 
-    /** pokemonName -> (statApiName -> baseStat), e.g. "bulbasaur" -> {"hp" to 45, "attack" to 49, ...}. */
-    suspend fun fetchAllBaseStats(): Map<String, Map<String, Int>> = withContext(Dispatchers.IO) {
-        val requestBody = gson.toJson(mapOf("query" to QUERY)).toRequestBody("application/json".toMediaType())
+    /** Runs [query] and hands the response body to [parse].
+     *
+     *  Throws on any failure rather than returning an empty result. That distinction matters a lot
+     *  here: callers memoize this in an [com.mandallaz.pikadex.data.AsyncValueCache] *and* persist
+     *  it to disk with a multi-day TTL, both of which treat "returned normally" as success. Handing
+     *  back an empty map on a transient 500 therefore didn't degrade gracefully — it cached
+     *  emptiness for the rest of the process and wrote it to disk for the next week, silently
+     *  breaking stat sorting and every move's type/power/accuracy line with no error anywhere. An
+     *  exception instead evicts the cache entry, skips the disk write, and surfaces to the UI. */
+    private suspend fun <T> runQuery(query: String, parse: (String) -> T): T = withContext(Dispatchers.IO) {
+        val requestBody = gson.toJson(mapOf("query" to query)).toRequestBody("application/json".toMediaType())
         val request = Request.Builder().url(URL).post(requestBody).build()
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return@withContext emptyMap()
-            val body = response.body?.string() ?: return@withContext emptyMap()
-            val parsed = gson.fromJson(body, GraphQLResponse::class.java)
-            parsed.data?.pokemon.orEmpty().associate { p ->
-                p.name to p.stats.associate { it.stat.name to it.baseStat }
-            }
+            if (!response.isSuccessful) throw IOException("GraphQL request failed: HTTP ${response.code}")
+            val body = response.body?.string() ?: throw IOException("GraphQL response had no body")
+            parse(body)
         }
+    }
+
+    /** pokemonName -> (statApiName -> baseStat), e.g. "bulbasaur" -> {"hp" to 45, "attack" to 49, ...}. */
+    suspend fun fetchAllBaseStats(): Map<String, Map<String, Int>> = runQuery(QUERY) { body ->
+        val pokemon = gson.fromJson(body, GraphQLResponse::class.java)?.data?.pokemon
+            ?: throw IOException("GraphQL response had no pokemon data")
+        pokemon.associate { p -> p.name to p.stats.associate { it.stat.name to it.baseStat } }
     }
 
     private data class GraphQLResponse(val data: GraphQLData?)
@@ -79,21 +92,16 @@ object PokeApiGraphQLDataSource {
     /** moveName -> info for every move, fetched once in bulk via GraphQL, since showing this
      *  alongside each move in a pokemon's Level Up / TM-HM / Breeding / Tutor lists would otherwise
      *  mean dozens of individual REST calls per pokemon detail screen. */
-    suspend fun fetchAllMoveInfo(): Map<String, MoveInfo> = withContext(Dispatchers.IO) {
-        val requestBody = gson.toJson(mapOf("query" to MOVE_QUERY)).toRequestBody("application/json".toMediaType())
-        val request = Request.Builder().url(URL).post(requestBody).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return@withContext emptyMap()
-            val body = response.body?.string() ?: return@withContext emptyMap()
-            val parsed = gson.fromJson(body, MoveGraphQLResponse::class.java)
-            parsed.data?.moves.orEmpty().associate { m ->
-                m.name to MoveInfo(
-                    type = m.type?.name ?: "normal",
-                    damageClass = m.damageClass?.name ?: "status",
-                    power = m.power,
-                    accuracy = m.accuracy
-                )
-            }
+    suspend fun fetchAllMoveInfo(): Map<String, MoveInfo> = runQuery(MOVE_QUERY) { body ->
+        val moves = gson.fromJson(body, MoveGraphQLResponse::class.java)?.data?.moves
+            ?: throw IOException("GraphQL response had no move data")
+        moves.associate { m ->
+            m.name to MoveInfo(
+                type = m.type?.name ?: "normal",
+                damageClass = m.damageClass?.name ?: "status",
+                power = m.power,
+                accuracy = m.accuracy
+            )
         }
     }
 
