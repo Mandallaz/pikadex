@@ -1,7 +1,5 @@
 package com.mandallaz.pikadex.ui.detail
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -55,11 +53,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,6 +88,7 @@ import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
+import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.toDisplayName
 import kotlin.math.roundToInt
@@ -97,6 +99,19 @@ import kotlinx.coroutines.launch
  *  everything below it: Smogon links, Evolution, moves) several screens down before the user ever
  *  reaches them. */
 private const val COLLAPSED_TRIANGLE_LIMIT = 2
+
+/**
+ * Persists which move sections are open across Activity recreation (rotation, process death).
+ *
+ * A plain `remember` dropped this on every rotation: expand "Level Up", turn the phone, and the
+ * section silently collapsed — the user lost their place in a list they had deliberately opened.
+ * An enum `Set` isn't saveable as-is, so it round-trips through the constant enum names rather
+ * than ordinals, which would silently re-map if [MoveCategory]'s declaration order ever changed.
+ */
+private val ExpandedCategoriesSaver = listSaver<MutableState<Set<MoveCategory>>, String>(
+    save = { state -> state.value.map(MoveCategory::name) },
+    restore = { names -> mutableStateOf(names.map(MoveCategory::valueOf).toSet()) }
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -280,7 +295,9 @@ private fun DetailContent(
     val machineMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.MACHINE) }
     val eggMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.EGG) }
     val tutorMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.TUTOR) }
-    var expandedCategories by remember { mutableStateOf(emptySet<MoveCategory>()) }
+    var expandedCategories by rememberSaveable(saver = ExpandedCategoriesSaver) {
+        mutableStateOf(emptySet<MoveCategory>())
+    }
     fun toggle(category: MoveCategory) {
         expandedCategories = if (category in expandedCategories) {
             expandedCategories - category
@@ -645,7 +662,10 @@ private fun TypeTrianglesCard(
     // triangles used to push everything below this card (Smogon links, Evolution, moves) far down
     // the page. Counter-only entries fill the cap first since "you beat this" is the more
     // specifically actionable callout.
-    var expanded by remember(memberTriangles, counteredTriangles) { mutableStateOf(false) }
+    // rememberSaveable, not remember: same reason as ExpandedCategoriesSaver — rotating used to
+    // silently re-collapse a list the user had just expanded. The triangle lists stay as keys so
+    // the section still resets when the card is showing a different pokemon's triangles.
+    var expanded by rememberSaveable(memberTriangles, counteredTriangles) { mutableStateOf(false) }
     val visibleCounterOnly: List<TypeTriangle>
     val visibleMember: List<TypeTriangle>
     if (expanded || totalCount <= COLLAPSED_TRIANGLE_LIMIT) {
@@ -764,7 +784,7 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, form
             ) {
                 links.forEach { link ->
                     AssistChip(
-                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url))) },
+                        onClick = { context.openExternalLink(link.url) },
                         label = { Text(link.label) },
                         trailingIcon = {
                             Icon(
