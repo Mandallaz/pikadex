@@ -231,8 +231,17 @@ class TeamViewModel @JvmOverloads constructor(
                     _uiState.update { it.copy(isLoading = false, errorMessage = "Couldn't load ${preset.trainer}'s team.") }
                     return@launch
                 }
-                // The team flow this collects from drives computeMatrix, so no explicit recompute.
+                // The team flow this collects from drives computeMatrix, so no explicit recompute —
+                // except when there is nothing to emit. TeamRepository.team is a StateFlow, and a
+                // StateFlow conflates equal values: loading the preset you are already running
+                // assigns an equal list, emits nothing, and the collector that would have cleared
+                // the spinner set above never runs. The screen then span forever over a blank
+                // matrix, since every cell is blanked while isLoading is true.
+                val before = TeamRepository.team.value
                 TeamRepository.replaceAll(resolved)
+                if (TeamRepository.team.value == before) {
+                    _uiState.update { it.copy(isLoading = false) }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
