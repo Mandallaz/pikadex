@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.data.remote
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.mandallaz.pikadex.data.AppContainer
@@ -11,21 +12,35 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
 /**
- * Fetches base stats for every Pokemon in a single request via PokeAPI's GraphQL beta endpoint,
+ * Fetches base stats for every Pokemon in a single request via PokeAPI's GraphQL endpoint,
  * instead of ~1300 individual REST calls just to be able to sort the list by a stat — this is
  * exactly the "use GraphQL to fetch only what you need, batch requests" guidance PokeAPI's own
  * best-practice notes ask for.
+ *
+ * Targets `v1beta2` (`graphql.pokeapi.co`), not the older `v1beta` (`beta.pokeapi.co`) — that
+ * spec was announced as sunsetting and was already past its scheduled summer-2025 removal by the
+ * time this was checked. The schema also dropped the `pokemon_v2_` prefix from every type in the
+ * move, so nothing here shares a field name with the old queries; the shape below was verified
+ * against the live endpoint via an introspection query before being written, not guessed from
+ * the deprecated console UI.
  */
 object PokeApiGraphQLDataSource {
 
-    private const val URL = "https://beta.pokeapi.co/graphql/v1beta"
+    private const val URL = "https://graphql.pokeapi.co/v1beta2"
+
+    /** [QUERY] and [MOVE_QUERY] ask for this many rows; PokeAPI has ~1300 Pokemon and ~950 moves
+     *  today, so this is comfortable headroom, not a real bound. A future dex/movedex growing past
+     *  it would truncate *silently* — [logIfTruncated] is the tripwire for that, since raising the
+     *  number preemptively just moves the same risk further out rather than removing it. */
+    private const val ROW_LIMIT = 2000
+
     private const val QUERY = """
         query {
-          pokemon_v2_pokemon(limit: 2000) {
+          pokemon(limit: $ROW_LIMIT) {
             name
-            pokemon_v2_pokemonstats {
+            pokemonstats {
               base_stat
-              pokemon_v2_stat { name }
+              stat { name }
             }
           }
         }
@@ -33,15 +48,24 @@ object PokeApiGraphQLDataSource {
 
     private const val MOVE_QUERY = """
         query {
-          pokemon_v2_move(limit: 2000) {
+          move(limit: $ROW_LIMIT) {
             name
             power
             accuracy
-            pokemon_v2_type { name }
-            pokemon_v2_movedamageclass { name }
+            type { name }
+            movedamageclass { name }
           }
         }
     """
+
+    /** Logs, rather than silently truncating, if a result exactly fills [ROW_LIMIT] — the one
+     *  shape a real truncation and a coincidental exact count are indistinguishable, but a log is
+     *  cheap and a silently-missing 1301st Pokemon is not. */
+    private fun logIfTruncated(what: String, count: Int) {
+        if (count >= ROW_LIMIT) {
+            Log.w("PokeApiGraphQL", "$what returned $count rows, at or above the $ROW_LIMIT limit — results may be truncated")
+        }
+    }
 
     private val client get() = AppContainer.sharedOkHttpClient
 
@@ -70,18 +94,16 @@ object PokeApiGraphQLDataSource {
     suspend fun fetchAllBaseStats(): Map<String, Map<String, Int>> = runQuery(QUERY) { body ->
         val pokemon = gson.fromJson(body, GraphQLResponse::class.java)?.data?.pokemon
             ?: throw IOException("GraphQL response had no pokemon data")
-        pokemon.associate { p -> p.name to p.stats.associate { it.stat.name to it.baseStat } }
+        logIfTruncated("pokemon", pokemon.size)
+        pokemon.associate { p -> p.name to p.pokemonstats.associate { it.stat.name to it.baseStat } }
     }
 
     private data class GraphQLResponse(val data: GraphQLData?)
-    private data class GraphQLData(@SerializedName("pokemon_v2_pokemon") val pokemon: List<GraphQLPokemon>?)
-    private data class GraphQLPokemon(
-        val name: String,
-        @SerializedName("pokemon_v2_pokemonstats") val stats: List<GraphQLStat>
-    )
+    private data class GraphQLData(val pokemon: List<GraphQLPokemon>?)
+    private data class GraphQLPokemon(val name: String, val pokemonstats: List<GraphQLStat>)
     private data class GraphQLStat(
         @SerializedName("base_stat") val baseStat: Int,
-        @SerializedName("pokemon_v2_stat") val stat: GraphQLStatName
+        val stat: GraphQLStatName
     )
     private data class GraphQLStatName(val name: String)
 
@@ -93,12 +115,13 @@ object PokeApiGraphQLDataSource {
      *  alongside each move in a pokemon's Level Up / TM-HM / Breeding / Tutor lists would otherwise
      *  mean dozens of individual REST calls per pokemon detail screen. */
     suspend fun fetchAllMoveInfo(): Map<String, MoveInfo> = runQuery(MOVE_QUERY) { body ->
-        val moves = gson.fromJson(body, MoveGraphQLResponse::class.java)?.data?.moves
+        val moves = gson.fromJson(body, MoveGraphQLResponse::class.java)?.data?.move
             ?: throw IOException("GraphQL response had no move data")
+        logIfTruncated("move", moves.size)
         moves.associate { m ->
             m.name to MoveInfo(
                 type = m.type?.name ?: "normal",
-                damageClass = m.damageClass?.name ?: "status",
+                damageClass = m.movedamageclass?.name ?: "status",
                 power = m.power,
                 accuracy = m.accuracy
             )
@@ -106,13 +129,13 @@ object PokeApiGraphQLDataSource {
     }
 
     private data class MoveGraphQLResponse(val data: MoveGraphQLData?)
-    private data class MoveGraphQLData(@SerializedName("pokemon_v2_move") val moves: List<MoveGraphQLMove>?)
+    private data class MoveGraphQLData(val move: List<MoveGraphQLMove>?)
     private data class MoveGraphQLMove(
         val name: String,
         val power: Int?,
         val accuracy: Int?,
-        @SerializedName("pokemon_v2_type") val type: MoveGraphQLType?,
-        @SerializedName("pokemon_v2_movedamageclass") val damageClass: MoveGraphQLDamageClass?
+        val type: MoveGraphQLType?,
+        val movedamageclass: MoveGraphQLDamageClass?
     )
     private data class MoveGraphQLType(val name: String)
     private data class MoveGraphQLDamageClass(val name: String)

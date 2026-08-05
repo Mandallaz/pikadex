@@ -202,8 +202,11 @@ class PokedexRepository(private val api: PokeApiService) {
 
     private companion object {
         val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
-        const val BASE_STATS_CACHE_KEY = "base_stats"
-        const val MOVE_INFO_CACHE_KEY = "move_info"
+        // _v2: bumped alongside the GraphQL endpoint migration (v1beta -> v1beta2) so an
+        // upgrading install re-fetches under the new schema instead of reading back a week-old
+        // payload written under the old one, with no field to tell the two apart.
+        const val BASE_STATS_CACHE_KEY = "base_stats_v2"
+        const val MOVE_INFO_CACHE_KEY = "move_info_v2"
         val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)
 
         val BASE_STATS_TYPE: java.lang.reflect.Type =
