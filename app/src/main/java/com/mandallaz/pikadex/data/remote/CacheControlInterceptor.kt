@@ -16,6 +16,13 @@ import okhttp3.Response
 class CacheControlInterceptor(private val maxAgeSeconds: Int) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
+        // Only extend the lifetime of responses we actually want to reuse. Rewriting
+        // Cache-Control on an error makes OkHttp store codes it would otherwise refuse to
+        // cache by default (5xx have no default expiration; 404 does), so one transient
+        // upstream failure — the GraphQL host's daily reboot, a 429 from its 100/hour limit —
+        // would be replayed from disk for the whole max-age window, surviving even an app
+        // restart.
+        if (!response.isSuccessful) return response
         return response.newBuilder()
             .removeHeader("Pragma")
             .removeHeader("Cache-Control")
