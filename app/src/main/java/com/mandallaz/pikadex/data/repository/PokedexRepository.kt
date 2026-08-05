@@ -82,32 +82,32 @@ class PokedexRepository(private val api: PokeApiService) {
     /** Names of pokemon that have this type (the /type endpoint already does the reverse lookup). */
     suspend fun getPokemonNamesForType(type: String): Set<String> {
         val detail = getTypeDetail(type)
-        return detail.pokemon.map { it.pokemon.name }.toSet()
+        return detail.pokemon.orEmpty().map { it.pokemon.name }.toSet()
     }
 
     /** Names of pokemon that can learn this move. */
     suspend fun getPokemonNamesForMove(move: String): Set<String> {
         val detail = moveDetailCache.get(move) { api.getMove(move) }
-        return detail.learnedByPokemon.map { it.name }.toSet()
+        return detail.learnedByPokemon.orEmpty().map { it.name }.toSet()
     }
 
     /** Names of pokemon that can have this ability. */
     suspend fun getPokemonNamesForAbility(ability: String): Set<String> {
         val detail = abilityDetailCache.get(ability) { api.getAbility(ability) }
-        return detail.pokemon.map { it.pokemon.name }.toSet()
+        return detail.pokemon.orEmpty().map { it.pokemon.name }.toSet()
     }
 
     /** Plain-English description of an ability (e.g. "Levitate" -> "Gives full immunity to Ground
      *  type moves."), since PokeAPI's ability names alone are often unclear on their own. */
     suspend fun getAbilityDescription(ability: String): String? {
         val detail = abilityDetailCache.get(ability) { api.getAbility(ability) }
-        return detail.effectEntries.firstOrNull { it.language.name == "en" }?.shortEffect
+        return detail.effectEntries.orEmpty().firstOrNull { it.language.name == "en" }?.shortEffect
     }
 
     /** Just the type names for a pokemon, without pulling the full detail bundle (species, evolution chain). */
     suspend fun getPokemonTypes(nameOrId: String): List<String> {
         val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
-        return pokemon.types.map { it.type.name }
+        return pokemon.types.orEmpty().map { it.type.name }
     }
 
     /**

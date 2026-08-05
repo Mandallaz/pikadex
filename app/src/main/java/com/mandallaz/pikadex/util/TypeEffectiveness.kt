@@ -10,9 +10,9 @@ import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 fun computeDefensiveMultipliers(typeDetails: List<TypeDetailDto>): Map<String, Double> {
     val multipliers = TypeIds.standardTypeNames.associateWith { 1.0 }.toMutableMap()
     typeDetails.forEach { detail ->
-        detail.damageRelations.doubleDamageFrom.forEach { multipliers[it.name] = (multipliers[it.name] ?: 1.0) * 2.0 }
-        detail.damageRelations.halfDamageFrom.forEach { multipliers[it.name] = (multipliers[it.name] ?: 1.0) * 0.5 }
-        detail.damageRelations.noDamageFrom.forEach { multipliers[it.name] = (multipliers[it.name] ?: 1.0) * 0.0 }
+        detail.damageRelations.doubleDamageFrom.orEmpty().forEach { multipliers[it.name] = (multipliers[it.name] ?: 1.0) * 2.0 }
+        detail.damageRelations.halfDamageFrom.orEmpty().forEach { multipliers[it.name] = (multipliers[it.name] ?: 1.0) * 0.5 }
+        detail.damageRelations.noDamageFrom.orEmpty().forEach { multipliers[it.name] = (multipliers[it.name] ?: 1.0) * 0.0 }
     }
     return multipliers
 }
@@ -29,9 +29,9 @@ fun computeDefensiveMultipliers(typeDetails: List<TypeDetailDto>): Map<String, D
  */
 fun computeOffensiveMultipliers(typeDetail: TypeDetailDto): Map<String, Double> {
     val multipliers = TypeIds.standardTypeNames.associateWith { 1.0 }.toMutableMap()
-    typeDetail.damageRelations.doubleDamageTo.forEach { multipliers[it.name] = 2.0 }
-    typeDetail.damageRelations.halfDamageTo.forEach { multipliers[it.name] = 0.5 }
-    typeDetail.damageRelations.noDamageTo.forEach { multipliers[it.name] = 0.0 }
+    typeDetail.damageRelations.doubleDamageTo.orEmpty().forEach { multipliers[it.name] = 2.0 }
+    typeDetail.damageRelations.halfDamageTo.orEmpty().forEach { multipliers[it.name] = 0.5 }
+    typeDetail.damageRelations.noDamageTo.orEmpty().forEach { multipliers[it.name] = 0.0 }
     return multipliers
 }
 

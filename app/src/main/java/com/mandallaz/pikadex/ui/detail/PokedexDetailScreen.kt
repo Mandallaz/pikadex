@@ -282,7 +282,7 @@ private fun DetailContent(
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit
 ) {
-    val primaryType = pokemon.types.minByOrNull { it.slot }?.type?.name ?: "normal"
+    val primaryType = pokemon.types.orEmpty().minByOrNull { it.slot }?.type?.name ?: "normal"
     val primaryColor = TypeColors.of(primaryType)
 
     // Each category's moves computed once per pokemon (not on every recomposition — this is the
@@ -331,7 +331,7 @@ private fun DetailContent(
                     text = pokemon.name.toDisplayName(),
                     style = MaterialTheme.typography.titleLarge
                 )
-                val genus = species.genera.firstOrNull { it.language.name == "en" }?.genus
+                val genus = species.genera.orEmpty().firstOrNull { it.language.name == "en" }?.genus
                 if (genus != null) {
                     Text(text = genus, style = MaterialTheme.typography.bodyMedium)
                 }
@@ -339,7 +339,7 @@ private fun DetailContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    pokemon.types.sortedBy { it.slot }.forEach {
+                    pokemon.types.orEmpty().sortedBy { it.slot }.forEach {
                         TypeBadge(it.type.name, it.type.id ?: 0, height = 28.dp)
                     }
                 }
@@ -347,7 +347,7 @@ private fun DetailContent(
         }
 
         item {
-            val flavorText = species.flavorTextEntries.firstOrNull { it.language.name == "en" }?.flavorText
+            val flavorText = species.flavorTextEntries.orEmpty().firstOrNull { it.language.name == "en" }?.flavorText
             if (flavorText != null) {
                 Text(
                     // PokeAPI's raw flavor text carries over an old in-game font quirk where "é"
@@ -391,11 +391,11 @@ private fun DetailContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    pokemon.stats.forEach { stat ->
+                    pokemon.stats.orEmpty().forEach { stat ->
                         val percentile = statPercentiles[stat.stat.name] ?: 0.5
                         StatBar(statName = stat.stat.name, value = stat.baseStat, color = StatColors.forPercentile(percentile))
                     }
-                    val total = pokemon.stats.sumOf { it.baseStat }
+                    val total = pokemon.stats.orEmpty().sumOf { it.baseStat }
                     Text(
                         "Total: $total",
                         fontWeight = FontWeight.Bold,
@@ -431,7 +431,7 @@ private fun DetailContent(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    pokemon.abilities.sortedBy { it.slot }.forEach { slot ->
+                    pokemon.abilities.orEmpty().sortedBy { it.slot }.forEach { slot ->
                         Column(modifier = Modifier.padding(vertical = 4.dp)) {
                             Text(
                                 text = slot.ability.name.toDisplayName() + if (slot.isHidden) " (hidden)" else "",

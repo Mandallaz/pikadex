@@ -21,7 +21,7 @@ enum class MoveCategory(val apiMethodName: String, val label: String) {
  * recent game's data to avoid duplicates).
  */
 fun PokemonDto.movesForCategory(category: MoveCategory): List<LearnedMove> {
-    val learned = moves.mapNotNull { entry ->
+    val learned = moves.orEmpty().mapNotNull { entry ->
         val best = entry.versionGroupDetails
             .filter { it.moveLearnMethod.name == category.apiMethodName }
             .maxByOrNull { VersionGroups.rank(it.versionGroup.name) }

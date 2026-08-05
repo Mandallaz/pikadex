@@ -88,14 +88,14 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     val allStatsDeferred = async { repository.getAllBaseStats() }
 
                     val bundle = repository.getPokemonDetailBundle(nameOrId)
-                    val typeDetails = bundle.pokemon.types
+                    val typeDetails = bundle.pokemon.types.orEmpty()
                         .map { async { repository.getTypeDetail(it.type.name) } }
                         .awaitAll()
                     val matchups = computeDefensiveMultipliers(typeDetails)
-                    val pokemonTypes = bundle.pokemon.types.map { it.type.name }
+                    val pokemonTypes = bundle.pokemon.types.orEmpty().map { it.type.name }
                     val memberTriangles = TypeTriangles.containing(pokemonTypes)
                     val counteredTriangles = TypeTriangles.counteredBy(pokemonTypes)
-                    val abilityNames = bundle.pokemon.abilities.map { it.ability.name }
+                    val abilityNames = bundle.pokemon.abilities.orEmpty().map { it.ability.name }
                     val descriptionsDeferred = async {
                         abilityNames
                             .map { name -> async { name to repository.getAbilityDescription(name) } }
@@ -125,10 +125,10 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     // pokemon's values on every single detail load.
                     val percentiles = orNullUnlessCancelled {
                         allStatsDeferred.await() // warms the repository's cache before the per-key lookups below
-                        bundle.pokemon.stats.associate { stat ->
+                        bundle.pokemon.stats.orEmpty().associate { stat ->
                             stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
                         } + mapOf(
-                            "total" to repository.getStatPercentile("total", bundle.pokemon.stats.sumOf { it.baseStat })
+                            "total" to repository.getStatPercentile("total", bundle.pokemon.stats.orEmpty().sumOf { it.baseStat })
                         )
                     }.orEmpty()
 

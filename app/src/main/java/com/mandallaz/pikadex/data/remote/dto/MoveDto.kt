@@ -10,8 +10,9 @@ data class MoveDetailDto(
     val accuracy: Int?,
     val type: NamedApiResource,
     @SerializedName("damage_class") val damageClass: NamedApiResource,
-    @SerializedName("effect_entries") val effectEntries: List<EffectEntry>,
-    @SerializedName("learned_by_pokemon") val learnedByPokemon: List<NamedApiResource>
+    // Nullable — see the identical note on AbilityDetailDto.effectEntries.
+    @SerializedName("effect_entries") val effectEntries: List<EffectEntry>?,
+    @SerializedName("learned_by_pokemon") val learnedByPokemon: List<NamedApiResource>?
 )
 
 data class EffectEntry(
