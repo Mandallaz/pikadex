@@ -11,8 +11,8 @@ object VersionGroups {
         "red-blue", "yellow",
         "gold-silver", "crystal",
         "ruby-sapphire", "emerald", "firered-leafgreen",
+        "colosseum", "xd",                                   // Gen 3 spin-offs
         "diamond-pearl", "platinum", "heartgold-soulsilver",
-        "colosseum", "xd",
         "black-white", "black-2-white-2",
         "x-y", "omega-ruby-alpha-sapphire",
         "sun-moon", "ultra-sun-ultra-moon",
