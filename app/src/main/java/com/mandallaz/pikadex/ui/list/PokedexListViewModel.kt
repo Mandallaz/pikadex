@@ -83,7 +83,10 @@ data class PokedexListUiState(
 // internal, not private: lets PokedexListViewModelTest exercise the filter/sort pipeline directly,
 // pure-function-style, rather than only through the ViewModel's coroutine/StateFlow machinery.
 internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String): List<NamedApiResource> {
-    var list = state.allPokemon
+    // A resource with no id can't render a card (no sprite, no #number) — the grid used to filter
+    // these out one at a time with an early return inside each item, re-running the same check on
+    // every recomposition instead of once here.
+    var list = state.allPokemon.filter { it.id != null }
     if (debouncedQuery.isNotBlank()) {
         val trimmed = debouncedQuery.trim().lowercase()
         // Cards display the zero-padded dex number ("#0004"), but the old exact string match

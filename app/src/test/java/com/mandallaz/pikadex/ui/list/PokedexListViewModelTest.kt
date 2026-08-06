@@ -70,4 +70,14 @@ class PokedexListViewModelTest {
         val state = PokedexListUiState(allPokemon = unsorted, sortStat = SortStat.ATTACK, baseStats = stats)
         assertEquals("bulbasaur", computeDisplayed(state, "").first().name)
     }
+
+    // A resource whose url doesn't end in a numeric segment has no id (NamedApiResource.id is
+    // null) and can't render a card — filtered out here rather than the grid skipping it one item
+    // at a time on every recomposition.
+    @Test
+    fun `resources with no numeric id are filtered out`() {
+        val idless = NamedApiResource("weird-form", "https://pokeapi.co/api/v2/pokemon/not-a-number/")
+        val state = PokedexListUiState(allPokemon = unsorted + idless)
+        assertEquals(unsorted, computeDisplayed(state, ""))
+    }
 }

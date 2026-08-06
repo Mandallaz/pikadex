@@ -337,7 +337,9 @@ fun PokedexListScreen(
                                     item(span = { GridItemSpan(maxLineSpan) }) { resultCount() }
                                 }
                                 items(displayedPokemon, key = { it.name }) { resource ->
-                                    val id = resource.id ?: return@items
+                                    // Safe: computeDisplayed already filters out id-less resources,
+                                    // so every entry in displayedPokemon has one.
+                                    val id = resource.id!!
                                     val isInTeamAlready = team.any { it.name == resource.name }
                                     val isTeamFull = team.size >= TeamRepository.MAX_SIZE
                                     // Only alternate forms (hyphenated names) can lack their own
