@@ -50,7 +50,11 @@ data class PokedexDetailUiState(
     val statPercentiles: Map<String, Double> = emptyMap(),
     /** The form's own PokeAPI version group, used to decide which Smogon dex generations actually
      *  have a page for it. Null when unknown (not fetched yet, or the request failed). */
-    val formVersionGroup: String? = null
+    val formVersionGroup: String? = null,
+    /** Every pokemon name, for the "Compare with…" picker — loaded lazily (see
+     *  [PokedexDetailViewModel.loadCompareCandidatesIfNeeded]), not as part of [load], since most
+     *  visits to a detail page never open that picker. */
+    val compareCandidates: List<String> = emptyList()
 )
 
 /** Result of [block], or null if it failed — but never swallowing coroutine cancellation, which
@@ -185,5 +189,19 @@ class PokedexDetailViewModel @JvmOverloads constructor(
     fun toggleFavorite() {
         val pokemon = _uiState.value.pokemon ?: return
         FavoritesRepository.toggle(pokemon.name)
+    }
+
+    fun loadCompareCandidatesIfNeeded() {
+        if (_uiState.value.compareCandidates.isNotEmpty()) return
+        viewModelScope.launch {
+            try {
+                val names = repository.getMasterList().map { it.name }
+                _uiState.update { it.copy(compareCandidates = names) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Network error while loading the Pokémon list.") }
+            }
+        }
     }
 }

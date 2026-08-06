@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -78,6 +79,7 @@ import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
 import com.mandallaz.pikadex.ui.components.PokemonSprite
+import com.mandallaz.pikadex.ui.components.SearchableListDialog
 import com.mandallaz.pikadex.ui.components.StatBar
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.MoveCategory
@@ -120,6 +122,7 @@ fun PokedexDetailScreen(
     onBack: () -> Unit,
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit,
+    onCompare: (left: String, right: String) -> Unit,
     viewModel: PokedexDetailViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -132,6 +135,7 @@ fun PokedexDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     // rememberSaveable: rotating the screen used to silently drop back to the normal artwork.
     var shiny by rememberSaveable { mutableStateOf(false) }
+    var showCompareDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
 
@@ -187,6 +191,14 @@ fun PokedexDetailScreen(
                                 contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites"
                             )
                         }
+                        IconButton(
+                            onClick = {
+                                viewModel.loadCompareCandidatesIfNeeded()
+                                showCompareDialog = true
+                            }
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = "Compare with…")
+                        }
                     }
                 }
             )
@@ -238,6 +250,19 @@ fun PokedexDetailScreen(
                 )
             }
         }
+    }
+
+    val currentPokemon = uiState.pokemon
+    if (showCompareDialog && currentPokemon != null) {
+        SearchableListDialog(
+            title = "Compare with…",
+            options = uiState.compareCandidates.filterNot { it == currentPokemon.name },
+            onDismiss = { showCompareDialog = false },
+            onSelect = { name ->
+                if (name != null) onCompare(currentPokemon.name, name)
+                showCompareDialog = false
+            }
+        )
     }
 }
 

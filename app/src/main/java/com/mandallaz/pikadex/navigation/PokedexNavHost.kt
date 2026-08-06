@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mandallaz.pikadex.data.TeamRepository
+import com.mandallaz.pikadex.ui.compare.CompareScreen
 import com.mandallaz.pikadex.ui.detail.PokedexDetailScreen
 import com.mandallaz.pikadex.ui.list.PokedexListScreen
 import com.mandallaz.pikadex.ui.team.TeamScreen
@@ -36,6 +37,7 @@ private const val ROUTE_LIST = "list"
 private const val ROUTE_DETAIL = "detail/{pokemonName}"
 private const val ROUTE_TEAM = "team"
 private const val ROUTE_TYPE_TRIANGLES = "type-triangles"
+private const val ROUTE_COMPARE = "compare/{leftName}/{rightName}"
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
 
@@ -146,6 +148,29 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
                     // Triangles tab, so Back should return to this Pokémon, not to the Pokédex list.
                     onViewTypeTriangles = {
                         ifIdle { navController.navigate(ROUTE_TYPE_TRIANGLES) { launchSingleTop = true } }
+                    },
+                    onCompare = { left, right ->
+                        ifIdle { navController.navigate("compare/$left/$right") }
+                    }
+                )
+            }
+            composable(ROUTE_COMPARE) { backStackEntry ->
+                val left = backStackEntry.arguments?.getString("leftName").orEmpty()
+                val right = backStackEntry.arguments?.getString("rightName").orEmpty()
+                CompareScreen(
+                    leftName = left,
+                    rightName = right,
+                    onBack = { ifIdle { navController.popBackStack() } },
+                    // Re-navigates rather than mutating in-place state (swap, or picking a
+                    // different pokemon for either side) — popUpTo replaces this back-stack entry
+                    // instead of pushing another, so Back from a re-compared screen doesn't step
+                    // through every prior pairing on the way out.
+                    onRecompare = { newLeft, newRight ->
+                        ifIdle {
+                            navController.navigate("compare/$newLeft/$newRight") {
+                                popUpTo(ROUTE_COMPARE) { inclusive = true }
+                            }
+                        }
                     }
                 )
             }
