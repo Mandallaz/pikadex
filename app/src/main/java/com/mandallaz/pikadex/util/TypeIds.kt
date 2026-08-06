@@ -24,5 +24,5 @@ object TypeIds {
 
     fun of(typeName: String): Int = idOrNull(typeName) ?: 0
 
-    val standardTypeNames: List<String> get() = ids.keys.toList()
+    val standardTypeNames: List<String> = ids.keys.toList()
 }
