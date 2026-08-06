@@ -105,7 +105,21 @@ class TeamViewModel @JvmOverloads constructor(
         // the Pokédex list's filter jobs are.
         matrixJob?.cancel()
         if (members.isEmpty()) {
-            _uiState.update { TeamUiState() }
+            // Clear only what belongs to the team itself. presetSpriteIds is unrelated to team
+            // membership and expensive to rebuild (it resolves every preset roster's sprites
+            // against the master list) — a blanket TeamUiState() dropped it every time the user
+            // removed their last member, so the preset picker's previews fell back to bare names
+            // until preparePresetPreviews() re-ran on the next dialog open.
+            _uiState.update {
+                it.copy(
+                    members = emptyList(),
+                    isLoading = false,
+                    errorMessage = null,
+                    matrix = emptyMap(),
+                    offensiveMatrix = emptyMap(),
+                    matrixComputedFor = emptySet()
+                )
+            }
             return
         }
         _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null) }
