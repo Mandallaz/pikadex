@@ -89,7 +89,6 @@ import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
 import com.mandallaz.pikadex.util.openExternalLink
-import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.toDisplayName
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -222,6 +221,7 @@ fun PokedexDetailScreen(
                     moveInfo = uiState.moveInfo,
                     statPercentiles = uiState.statPercentiles,
                     formVersionGroup = uiState.formVersionGroup,
+                    groupedMoves = uiState.groupedMoves,
                     onPokemonClick = onPokemonClick,
                     onViewTypeTriangles = onViewTypeTriangles
                 )
@@ -279,22 +279,25 @@ private fun DetailContent(
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     statPercentiles: Map<String, Double>,
     formVersionGroup: String?,
+    groupedMoves: Map<MoveCategory, List<LearnedMove>>,
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit
 ) {
     val primaryType = pokemon.types.orEmpty().minByOrNull { it.slot }?.type?.name ?: "normal"
     val primaryColor = TypeColors.of(primaryType)
 
-    // Each category's moves computed once per pokemon (not on every recomposition — this is the
-    // exact same grouping/sorting work regardless of whether the section is expanded), and which
-    // sections are expanded is tracked here rather than inside each section, since expanded rows
-    // now need to be items() in *this* LazyColumn rather than a nested non-lazy Column (composing
-    // ~250 rows for a pokemon like Mew in one non-lazy Column, all at once on expand, was the
-    // actual performance problem — LazyColumn only composes what's on/near screen).
-    val levelUpMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.LEVEL_UP) }
-    val machineMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.MACHINE) }
-    val eggMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.EGG) }
-    val tutorMoves = remember(pokemon) { pokemon.movesForCategory(MoveCategory.TUTOR) }
+    // Each category's moves are computed once per load, off the main thread, in the ViewModel
+    // (see PokedexDetailUiState.groupedMoves) rather than here — this is the exact same
+    // grouping/sorting work regardless of whether the section is expanded, and for a pokemon with
+    // a large moveset (e.g. Mew) it was real work to redo on the main thread. Which sections are
+    // expanded is still tracked here rather than inside each section, since expanded rows need to
+    // be items() in *this* LazyColumn rather than a nested non-lazy Column (composing ~250 rows in
+    // one non-lazy Column, all at once on expand, was the actual performance problem —
+    // LazyColumn only composes what's on/near screen).
+    val levelUpMoves = groupedMoves[MoveCategory.LEVEL_UP].orEmpty()
+    val machineMoves = groupedMoves[MoveCategory.MACHINE].orEmpty()
+    val eggMoves = groupedMoves[MoveCategory.EGG].orEmpty()
+    val tutorMoves = groupedMoves[MoveCategory.TUTOR].orEmpty()
     var expandedCategories by rememberSaveable(saver = ExpandedCategoriesSaver) {
         mutableStateOf(emptySet<MoveCategory>())
     }

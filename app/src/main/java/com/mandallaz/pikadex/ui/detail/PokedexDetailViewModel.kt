@@ -11,10 +11,14 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.util.LearnedMove
+import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
+import com.mandallaz.pikadex.util.movesForCategory
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +39,11 @@ data class PokedexDetailUiState(
     val memberTriangles: List<TypeTriangle> = emptyList(),
     val counteredTriangles: List<TypeTriangle> = emptyList(),
     val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap(),
+    /** Learned moves grouped and sorted per [MoveCategory] — used to be recomputed by the screen
+     *  itself on every recomposition-surviving `remember(pokemon)`, which for a pokemon with a
+     *  large moveset (e.g. Mew) meant scanning/sorting hundreds of version-group-detail entries
+     *  on the main thread. Computed once here instead, off the main thread. */
+    val groupedMoves: Map<MoveCategory, List<LearnedMove>> = emptyMap(),
     /** statApiName (hp/attack/.../speed, plus a synthetic "total") -> this pokemon's percentile
      *  rank (0.0..1.0) among every other pokemon's same stat, for coloring stat bars by how good
      *  the value actually is rather than a fixed per-stat hue. */
@@ -88,6 +97,11 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     val allStatsDeferred = async { repository.getAllBaseStats() }
 
                     val bundle = repository.getPokemonDetailBundle(nameOrId)
+                    // Off Dispatchers.Default, not the caller's dispatcher (Main.immediate): this
+                    // is pure CPU work over a pokemon's full moveset, not I/O.
+                    val groupedMovesDeferred = async(Dispatchers.Default) {
+                        MoveCategory.entries.associateWith { bundle.pokemon.movesForCategory(it) }
+                    }
                     val typeDetails = bundle.pokemon.types.orEmpty()
                         .map { async { repository.getTypeDetail(it.type.name) } }
                         .awaitAll()
@@ -132,6 +146,8 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         )
                     }.orEmpty()
 
+                    val groupedMoves = groupedMovesDeferred.await()
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -144,7 +160,8 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             counteredTriangles = counteredTriangles,
                             moveInfo = moveInfo,
                             statPercentiles = percentiles,
-                            formVersionGroup = formVersionGroup
+                            formVersionGroup = formVersionGroup,
+                            groupedMoves = groupedMoves
                         )
                     }
                 }
