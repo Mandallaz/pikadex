@@ -45,12 +45,22 @@ object JsonDiskCache {
             }
         }
 
+    /** Writes to a `.tmp` file and renames it over the real one only once it's fully written —
+     *  writing `file` directly left a reader (or the next app launch) able to see a truncated,
+     *  half-gzipped file if the process died mid-write (e.g. backgrounded and killed right after a
+     *  bulk fetch completes). A same-directory rename is atomic, so [read] never observes a
+     *  partial file: either the old complete one or the new complete one, never in between. */
     suspend fun write(key: String, value: Any) = withContext(Dispatchers.IO) {
         val file = File(cacheDir, "$key.json.gz")
+        val tempFile = File(cacheDir, "$key.json.gz.tmp")
         try {
-            GZIPOutputStream(file.outputStream()).bufferedWriter().use { gson.toJson(value, it) }
+            GZIPOutputStream(tempFile.outputStream()).bufferedWriter().use { gson.toJson(value, it) }
+            if (!tempFile.renameTo(file)) {
+                tempFile.delete()
+            }
         } catch (e: Exception) {
             // Best-effort — a failed write just means the next cold start re-fetches from network.
+            tempFile.delete()
         }
     }
 }
