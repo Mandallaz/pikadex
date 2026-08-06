@@ -12,7 +12,8 @@ import java.io.IOException
  */
 class RetryInterceptor(
     private val maxAttempts: Int = 3,
-    private val initialDelayMs: Long = 500
+    private val initialDelayMs: Long = 500,
+    private val sleepSliceMs: Long = 100
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         var delayMs = initialDelayMs
@@ -28,19 +29,36 @@ class RetryInterceptor(
                 lastIoException = e
                 if (isLastAttempt) throw e
             }
-            // Cancelling the coroutine that made this call cancels the OkHttp Call, but that does
-            // not interrupt a thread already sitting in Thread.sleep below — without this check a
-            // call abandoned during backoff kept sleeping, then retried only to fail instantly with
-            // "Canceled", then slept again, tying up a dispatcher thread for the full backoff chain.
-            if (chain.call().isCanceled()) throw lastIoException ?: IOException("Canceled")
-            try {
-                Thread.sleep(delayMs)
-            } catch (e: InterruptedException) {
-                Thread.currentThread().interrupt()
-                throw lastIoException ?: IOException("Retry interrupted")
-            }
+            // Cancelling the coroutine that made this call cancels the OkHttp Call, but that alone
+            // does not interrupt a thread already sitting in Thread.sleep — sleepInterruptibly
+            // rechecks cancellation between short slices instead of one long sleep, so a call
+            // abandoned mid-backoff (a multi-second wait by the last attempt) doesn't tie up a
+            // dispatcher thread for the rest of it.
+            val wasCanceled = sleepInterruptibly(delayMs, sleepSliceMs) { chain.call().isCanceled() }
+            if (wasCanceled) throw lastIoException ?: IOException("Canceled")
             delayMs *= 2
         }
         throw lastIoException ?: IOException("Request failed after $maxAttempts attempts")
     }
+}
+
+/** Sleeps for [totalMs], polling [isCanceled] every [sliceMs] instead of one uninterruptible
+ *  [Thread.sleep] call. Returns `true` if cancellation (or thread interruption) was observed
+ *  before the full duration elapsed. A free function taking a plain lambda, not a method on
+ *  [RetryInterceptor] reading `chain.call()` directly, so it's testable without a real OkHttp
+ *  Interceptor.Chain/Call. */
+internal fun sleepInterruptibly(totalMs: Long, sliceMs: Long, isCanceled: () -> Boolean): Boolean {
+    var remaining = totalMs
+    while (remaining > 0) {
+        if (isCanceled()) return true
+        val slice = minOf(sliceMs, remaining)
+        try {
+            Thread.sleep(slice)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            return true
+        }
+        remaining -= slice
+    }
+    return false
 }
