@@ -1,6 +1,7 @@
 package com.mandallaz.pikadex.ui.list
 
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
+import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.SortStat
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -78,6 +79,47 @@ class PokedexListViewModelTest {
     fun `resources with no numeric id are filtered out`() {
         val idless = NamedApiResource("weird-form", "https://pokeapi.co/api/v2/pokemon/not-a-number/")
         val state = PokedexListUiState(allPokemon = unsorted + idless)
+        assertEquals(unsorted, computeDisplayed(state, ""))
+    }
+
+    // --- Rarity filter -------------------------------------------------------
+
+    @Test
+    fun `legendary filter keeps only names in legendaryNames`() {
+        val state = PokedexListUiState(
+            allPokemon = unsorted,
+            rarityFilter = RarityFilter.LEGENDARY,
+            legendaryNames = setOf("charmander")
+        )
+        assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
+    }
+
+    @Test
+    fun `mythical filter keeps only names in mythicalNames`() {
+        val state = PokedexListUiState(
+            allPokemon = unsorted,
+            rarityFilter = RarityFilter.MYTHICAL,
+            mythicalNames = setOf("bulbasaur")
+        )
+        assertEquals(listOf("bulbasaur"), computeDisplayed(state, "").map { it.name })
+    }
+
+    @Test
+    fun `ordinary filter excludes both legendary and mythical names`() {
+        val state = PokedexListUiState(
+            allPokemon = unsorted,
+            rarityFilter = RarityFilter.ORDINARY,
+            legendaryNames = setOf("charmander"),
+            mythicalNames = setOf("bulbasaur")
+        )
+        assertEquals(listOf("squirtle"), computeDisplayed(state, "").map { it.name })
+    }
+
+    // legendaryNames/mythicalNames come from the same bulk fetch as baseStats — both empty means
+    // "not loaded yet", not "no legendaries exist", so the filter must not apply and hide everything.
+    @Test
+    fun `a rarity filter with no legendary or mythical data loaded yet leaves the list untouched`() {
+        val state = PokedexListUiState(allPokemon = unsorted, rarityFilter = RarityFilter.LEGENDARY)
         assertEquals(unsorted, computeDisplayed(state, ""))
     }
 }

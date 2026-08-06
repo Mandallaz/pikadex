@@ -74,6 +74,7 @@ import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
+import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.openExternalLink
@@ -91,7 +92,7 @@ private val POKEMON_CARD_MIN_WIDTH = 120.dp
 /** Below this content height the list header stops being pinned — see [PokedexListScreen]. */
 private val COMPACT_HEADER_MAX_HEIGHT = 400.dp
 
-private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT }
+private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT, RARITY }
 
 /** Round-trips through the constant name rather than the ordinal, which would silently re-map if
  *  [ActiveDialog]'s declaration order ever changed — the same reasoning as the
@@ -222,7 +223,10 @@ fun PokedexListScreen(
                     val filterCount = uiState.activeFilterCount
                     FilterChip(
                         selected = filterCount > 0,
-                        onClick = { showFilterSheet = true },
+                        onClick = {
+                            viewModel.loadBaseStatsIfNeeded()
+                            showFilterSheet = true
+                        },
                         label = { Text(if (filterCount > 0) "Filters ($filterCount)" else "Filters") },
                         leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp)) }
                     )
@@ -412,7 +416,8 @@ fun PokedexListScreen(
                 onOpenTier = {
                     viewModel.loadTierOptionsIfNeeded()
                     activeDialog = ActiveDialog.FORMAT_TIER
-                }
+                },
+                onOpenRarity = { activeDialog = ActiveDialog.RARITY }
             )
         }
     }
@@ -476,6 +481,18 @@ fun PokedexListScreen(
             }
         )
 
+        ActiveDialog.RARITY -> OptionsDialog(
+            title = "Rarity",
+            options = listOf<RarityFilter?>(null) + RarityFilter.entries,
+            labelFor = { it?.label ?: "Any rarity" },
+            selected = uiState.rarityFilter,
+            onDismiss = { activeDialog = ActiveDialog.NONE },
+            onSelect = { rarity ->
+                viewModel.onRarityFilterSelected(rarity)
+                activeDialog = ActiveDialog.NONE
+            }
+        )
+
         ActiveDialog.NONE -> Unit
     }
 }
@@ -492,7 +509,8 @@ private fun FilterSheetContent(
     onOpenMove: () -> Unit,
     onOpenAbility: () -> Unit,
     onOpenFormat: () -> Unit,
-    onOpenTier: () -> Unit
+    onOpenTier: () -> Unit,
+    onOpenRarity: () -> Unit
 ) {
     // verticalScroll: a plain Column here could overflow the sheet's available height in
     // landscape or at large font scales — 18 type chips plus 5 "other filters" chips is enough
@@ -571,6 +589,11 @@ private fun FilterSheetContent(
                 label = uiState.selectedFormatTier?.let { SmogonTierLabels.labelFor(it) } ?: "Tier",
                 selected = uiState.selectedFormatTier != null,
                 onClick = onOpenTier
+            )
+            SelectableChip(
+                label = uiState.rarityFilter?.label ?: "Rarity",
+                selected = uiState.rarityFilter != null,
+                onClick = onOpenRarity
             )
         }
     }

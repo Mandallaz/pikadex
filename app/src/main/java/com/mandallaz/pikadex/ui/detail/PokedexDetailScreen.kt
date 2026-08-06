@@ -351,6 +351,21 @@ private fun DetailContent(
                 if (genus != null) {
                     Text(text = genus, style = MaterialTheme.typography.bodyMedium)
                 }
+                // Both can be true at once in PokeAPI's data (there's no species where they are,
+                // today, but nothing rules it out), so this shows both rather than picking one.
+                if (species.isLegendary || species.isMythical) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        if (species.isLegendary) {
+                            AssistChip(onClick = {}, label = { Text("Legendary") })
+                        }
+                        if (species.isMythical) {
+                            AssistChip(onClick = {}, label = { Text("Mythical") })
+                        }
+                    }
+                }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 8.dp)

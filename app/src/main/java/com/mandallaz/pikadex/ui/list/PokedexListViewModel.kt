@@ -7,6 +7,7 @@ import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.remote.SmogonTierDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
@@ -54,11 +55,18 @@ data class PokedexListUiState(
     val baseStats: Map<String, Map<String, Int>> = emptyMap(),
     val isStatsLoading: Boolean = false,
     val showFavoritesOnly: Boolean = false,
-    val favorites: Set<String> = emptySet()
+    val favorites: Set<String> = emptySet(),
+    val rarityFilter: RarityFilter? = null,
+    // Populated alongside baseStats (same bulk fetch, see loadBaseStatsIfNeeded) — kept as two
+    // name sets rather than exposing the full PokemonBasics map, since that's all this filter
+    // needs and it keeps this ViewModel's state decoupled from the GraphQL data source's types.
+    val legendaryNames: Set<String> = emptySet(),
+    val mythicalNames: Set<String> = emptySet()
 ) {
     val hasActiveFilters: Boolean
         get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
-            selectedFormatGen != null || selectedFormatTier != null || showFavoritesOnly || sortStat != null
+            selectedFormatGen != null || selectedFormatTier != null || showFavoritesOnly ||
+            sortStat != null || rarityFilter != null
 
     /** How many of the filter controls (not counting sort) are currently set — shown as a badge
      *  count on the "Filters" button so it's clear at a glance whether/how much filtering is active
@@ -68,7 +76,8 @@ data class PokedexListUiState(
             (if (selectedMove != null) 1 else 0) +
             (if (selectedAbility != null) 1 else 0) +
             (if (selectedFormatGen != null || selectedFormatTier != null) 1 else 0) +
-            (if (showFavoritesOnly) 1 else 0)
+            (if (showFavoritesOnly) 1 else 0) +
+            (if (rarityFilter != null) 1 else 0)
 
     /** The tier filter works standalone (e.g. picking "Uber" with no generation chosen), so it
      *  needs a generation to look up regardless — this defaults to the current one. */
@@ -109,6 +118,20 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
     state.abilityFilterNames?.let { set -> list = list.filter { it.name in set } }
     state.formatFilterNames?.let { set -> list = list.filter { it.name in set } }
     if (state.showFavoritesOnly) list = list.filter { it.name in state.favorites }
+
+    // Same reasoning as the stat-sort guard below: legendaryNames/mythicalNames come from the same
+    // bulk fetch as baseStats, so both empty means "not loaded yet", not "no legendaries exist" —
+    // applying the filter against that would silently empty the whole grid instead of just not
+    // filtering yet.
+    if (state.rarityFilter != null && (state.legendaryNames.isNotEmpty() || state.mythicalNames.isNotEmpty())) {
+        list = list.filter { resource ->
+            when (state.rarityFilter) {
+                RarityFilter.LEGENDARY -> resource.name in state.legendaryNames
+                RarityFilter.MYTHICAL -> resource.name in state.mythicalNames
+                RarityFilter.ORDINARY -> resource.name !in state.legendaryNames && resource.name !in state.mythicalNames
+            }
+        }
+    }
 
     state.sortStat?.let { stat ->
         // A stat sort with no bulk stats loaded used to compute an all-equal Int.MIN_VALUE key set,
@@ -409,8 +432,17 @@ class PokedexListViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isStatsLoading = true) }
             try {
-                val stats = repository.getAllBaseStats()
-                _uiState.update { it.copy(baseStats = stats, isStatsLoading = false) }
+                // One bulk fetch feeds both stats (for sorting) and legendary/mythical status (for
+                // the rarity filter) — they're the same GraphQL payload (see S-1/PokemonBasics).
+                val basics = repository.getAllBasics()
+                _uiState.update {
+                    it.copy(
+                        baseStats = basics.mapValues { (_, b) -> b.stats },
+                        legendaryNames = basics.filterValues { b -> b.isLegendary }.keys,
+                        mythicalNames = basics.filterValues { b -> b.isMythical }.keys,
+                        isStatsLoading = false
+                    )
+                }
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
@@ -451,6 +483,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 selectedFormatGen = null, formatTierOptions = emptyList(),
                 selectedFormatTier = null, formatFilterNames = null,
                 showFavoritesOnly = false,
+                rarityFilter = null,
                 // Same reason as the individual cancel sites: whichever of the four jobs just got
                 // cancelled will never clear this itself, so Reset while a filter was still
                 // resolving used to leave the grid's spinner up permanently.
@@ -461,6 +494,10 @@ class PokedexListViewModel @JvmOverloads constructor(
                 sortStat = null, sortAscending = false
             )
         }
+    }
+
+    fun onRarityFilterSelected(filter: RarityFilter?) {
+        _uiState.update { it.copy(rarityFilter = filter) }
     }
 
     fun dismissError() {
