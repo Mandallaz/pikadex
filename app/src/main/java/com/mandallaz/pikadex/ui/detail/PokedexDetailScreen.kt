@@ -941,7 +941,7 @@ private fun MoveRow(move: LearnedMove, category: MoveCategory, moveInfo: Map<Str
     }
 }
 
-private fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
+internal fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
     val category = when (info.damageClass) {
         "physical" -> "Physical"
         "special" -> "Special"
@@ -949,7 +949,8 @@ private fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
     }
     val power = info.power?.toString() ?: "—"
     val accuracy = info.accuracy?.let { "$it%" } ?: "—"
-    return "$category · Power $power · Accuracy $accuracy"
+    val pp = info.pp?.toString() ?: "—"
+    return "$category · Power $power · Accuracy $accuracy · PP $pp"
 }
 
 /** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would

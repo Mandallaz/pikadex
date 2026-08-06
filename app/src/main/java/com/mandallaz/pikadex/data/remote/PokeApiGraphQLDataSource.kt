@@ -59,6 +59,7 @@ object PokeApiGraphQLDataSource {
             name
             power
             accuracy
+            pp
             type { name }
             movedamageclass { name }
           }
@@ -149,8 +150,10 @@ object PokeApiGraphQLDataSource {
     )
 
     /** A move's type, damage class (physical/special = an attack, status = a buff/debuff/other
-     *  non-damaging effect), power and accuracy — null power/accuracy is normal for status moves. */
-    data class MoveInfo(val type: String, val damageClass: String, val power: Int?, val accuracy: Int?)
+     *  non-damaging effect), power and accuracy — null power/accuracy is normal for status moves.
+     *  pp is nullable for the same reason as everything else here: a response missing the field
+     *  must degrade at the read site, not crash. */
+    data class MoveInfo(val type: String, val damageClass: String, val power: Int?, val accuracy: Int?, val pp: Int?)
 
     /** moveName -> info for every move, fetched once in bulk via GraphQL, since showing this
      *  alongside each move in a pokemon's Level Up / TM-HM / Breeding / Tutor lists would otherwise
@@ -164,7 +167,8 @@ object PokeApiGraphQLDataSource {
                 type = m.type?.name ?: "normal",
                 damageClass = m.movedamageclass?.name ?: "status",
                 power = m.power,
-                accuracy = m.accuracy
+                accuracy = m.accuracy,
+                pp = m.pp
             )
         }
     }
@@ -175,6 +179,7 @@ object PokeApiGraphQLDataSource {
         val name: String,
         val power: Int?,
         val accuracy: Int?,
+        val pp: Int?,
         val type: MoveGraphQLType?,
         val movedamageclass: MoveGraphQLDamageClass?
     )

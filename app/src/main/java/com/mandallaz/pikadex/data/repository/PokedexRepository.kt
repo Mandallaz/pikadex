@@ -216,7 +216,9 @@ class PokedexRepository(private val api: PokeApiService) {
         // just stats), so an upgrading install must re-fetch rather than trying to read the old
         // shape back as the new one.
         const val BASICS_CACHE_KEY = "pokemon_basics_v1"
-        const val MOVE_INFO_CACHE_KEY = "move_info_v2"
+        // _v3: MoveInfo gained a `pp` field — bumped so an upgrading install re-fetches instead of
+        // reading back an old cached payload with no pp in it and showing "—" for every move.
+        const val MOVE_INFO_CACHE_KEY = "move_info_v3"
         val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)
 
         val BASICS_TYPE: java.lang.reflect.Type =
