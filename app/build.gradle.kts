@@ -34,8 +34,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -66,7 +66,13 @@ dependencies {
     // Réseau : appels vers PokeAPI
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
-    implementation(libs.okhttp.logging.interceptor)
+    // okhttp3 classes (OkHttpClient, Interceptor, Cache...) are imported directly across several
+    // data/remote files — this used to rely entirely on retrofit's transitive okhttp dependency,
+    // with no guarantee retrofit keeps pulling in a compatible version.
+    implementation(libs.okhttp)
+    // Logging every request/response body is debug-only noise (and a minor info leak) in a
+    // release build; it has no place shipping to users.
+    debugImplementation(libs.okhttp.logging.interceptor)
 
     // Chargement des sprites/artworks des Pokémon
     implementation(libs.coil.compose)

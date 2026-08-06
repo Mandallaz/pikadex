@@ -1,14 +1,12 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
-import com.mandallaz.pikadex.BuildConfig
 import com.mandallaz.pikadex.data.remote.CacheControlInterceptor
 import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.RetryInterceptor
 import com.mandallaz.pikadex.data.repository.PokedexRepository
 import okhttp3.Cache
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
@@ -42,13 +40,10 @@ object AppContainer {
             .addInterceptor(RetryInterceptor())
             .addNetworkInterceptor(CacheControlInterceptor(HTTP_CACHE_MAX_AGE_SECONDS))
             .apply {
-                // Formats every request/response body — pure overhead in release, where nothing
-                // reads logcat.
-                if (BuildConfig.DEBUG) {
-                    addInterceptor(HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                    })
-                }
+                // Null in a release build (see the release-variant source set of
+                // debugLoggingInterceptor) — formatting every request/response body is pure
+                // overhead where nothing reads logcat.
+                debugLoggingInterceptor()?.let { addInterceptor(it) }
             }
             .build()
     }
