@@ -40,7 +40,9 @@ class PokedexRepository(private val api: PokeApiService) {
     private val abilityNamesCache = AsyncValueCache<List<String>>()
     private val typesCache = AsyncValueCache<List<NamedApiResource>>()
 
-    private val pokemonDetailCache = AsyncCache<String, PokemonDto>()
+    // Bounded: one entry per pokemon, ~1300 of them and growing, so unbounded meant a full
+    // browse of the dex kept every single detail response alive for the rest of the process.
+    private val pokemonDetailCache = AsyncCache<String, PokemonDto>(maxSize = 200)
     private val speciesCache = AsyncCache<Int, PokemonSpeciesDto>()
     private val evolutionChainCache = AsyncCache<Int, EvolutionChainDto>()
     private val typeDetailCache = AsyncCache<String, TypeDetailDto>()

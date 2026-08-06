@@ -37,11 +37,20 @@ import kotlinx.coroutines.async
  * atomic against other *coroutines*, but not against another *thread* — leaving a plain HashMap
  * open to concurrent structural modification, and losing the single-flight guarantee this class
  * exists to provide.
+ *
+ * [maxSize], when non-null, caps the map at that many entries and evicts the least-recently-used
+ * one past that — for a key space large enough that "cache everything forever" is itself the
+ * problem (e.g. one entry per pokemon, ~1300 of them and growing). Left null for caches whose key
+ * space is small enough that unbounded really does mean bounded in practice (e.g. one entry per
+ * type, of which there are 18).
  */
-class AsyncCache<K, V> {
+class AsyncCache<K, V>(private val maxSize: Int? = null) {
     private val scope = CoroutineScope(SupervisorJob())
     private val lock = Any()
-    private val deferreds = mutableMapOf<K, Deferred<V>>()
+    private val deferreds = object : LinkedHashMap<K, Deferred<V>>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, Deferred<V>>): Boolean =
+            maxSize != null && size > maxSize
+    }
 
     suspend fun get(key: K, fetch: suspend () -> V): V {
         // async{} never suspends, so starting it inside the lock can't block another thread on IO.
