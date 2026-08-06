@@ -157,9 +157,12 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         }
     }
 
-    fun toggleTeamMembership() {
-        val pokemon = _uiState.value.pokemon ?: return
-        TeamRepository.toggle(NamedApiResource(pokemon.name, "https://pokeapi.co/api/v2/pokemon/${pokemon.id}/"))
+    /** Returns null only when there's no pokemon loaded yet to toggle — the screen uses the real
+     *  result to decide whether to show the "team is full" snackbar, instead of re-deriving
+     *  isTeamFull itself right after the fact. */
+    fun toggleTeamMembership(): TeamRepository.ToggleResult? {
+        val pokemon = _uiState.value.pokemon ?: return null
+        return TeamRepository.toggle(NamedApiResource(pokemon.name, "https://pokeapi.co/api/v2/pokemon/${pokemon.id}/"))
     }
 
     fun toggleFavorite() {

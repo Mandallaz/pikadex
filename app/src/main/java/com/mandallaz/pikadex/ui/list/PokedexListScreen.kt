@@ -359,14 +359,16 @@ fun PokedexListScreen(
                                         isTeamFull = isTeamFull,
                                         onClick = { onPokemonClick(resource.name) },
                                         onToggleTeam = {
-                                            if (!isInTeamAlready && isTeamFull) {
+                                            // The result, not a re-derived isTeamFull, decides
+                                            // whether this was actually rejected — see
+                                            // TeamRepository.ToggleResult.
+                                            val result = TeamRepository.toggle(NamedApiResource(resource.name, "https://pokeapi.co/api/v2/pokemon/$id/"))
+                                            if (result == TeamRepository.ToggleResult.RejectedTeamFull) {
                                                 // The button used to just render disabled with zero
                                                 // explanation of why tapping it did nothing.
                                                 coroutineScope.launch {
                                                     snackbarHostState.showSnackbar("Your team is full (${TeamRepository.MAX_SIZE}/${TeamRepository.MAX_SIZE}). Remove one first.")
                                                 }
-                                            } else {
-                                                TeamRepository.toggle(NamedApiResource(resource.name, "https://pokeapi.co/api/v2/pokemon/$id/"))
                                             }
                                         },
                                         onToggleFavorite = { FavoritesRepository.toggle(resource.name) }

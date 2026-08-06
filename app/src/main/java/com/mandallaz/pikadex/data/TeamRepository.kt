@@ -71,12 +71,26 @@ object TeamRepository {
         persist()
     }
 
-    fun toggle(pokemon: NamedApiResource): Boolean {
-        return if (contains(pokemon.name)) {
+    /** What [toggle] actually did — a plain Boolean return couldn't distinguish "removed" from
+     *  "added successfully", and "rejected, team full" collapsed onto the same `false` as a
+     *  successful removal ever returning `false` would (it never does today, but nothing in the
+     *  type said so). Every caller had already worked around this by pre-checking [isFull]
+     *  themselves before calling [toggle] at all, duplicating that guard in three places. */
+    sealed interface ToggleResult {
+        data object Added : ToggleResult
+        data object Removed : ToggleResult
+        data object RejectedTeamFull : ToggleResult
+    }
+
+    fun toggle(pokemon: NamedApiResource): ToggleResult = when {
+        contains(pokemon.name) -> {
             remove(pokemon)
-            true
-        } else {
+            ToggleResult.Removed
+        }
+        isFull() -> ToggleResult.RejectedTeamFull
+        else -> {
             add(pokemon)
+            ToggleResult.Added
         }
     }
 }

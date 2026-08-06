@@ -151,14 +151,14 @@ fun PokedexDetailScreen(
                             // icon here just did nothing on tap, with no hint that the reason was a
                             // full team rather than a broken button.
                             onClick = {
-                                if (!isInTeam && isTeamFull) {
+                                // The result, not a re-derived isTeamFull, decides whether this
+                                // was actually rejected — see TeamRepository.ToggleResult.
+                                if (viewModel.toggleTeamMembership() == com.mandallaz.pikadex.data.TeamRepository.ToggleResult.RejectedTeamFull) {
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar(
                                             "Your team is full (${com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE}/${com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE}). Remove one first."
                                         )
                                     }
-                                } else {
-                                    viewModel.toggleTeamMembership()
                                 }
                             }
                         ) {
