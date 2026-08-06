@@ -80,7 +80,9 @@ data class PokedexListUiState(
  *  plain function fed by a debounced query — a getter re-ran this (up to 5 chained `.filter{}`
  *  passes, plus a full sort, over ~1300 items) on every single recomposition; now it only runs
  *  once per actual state change, off the main thread (see [PokedexListViewModel.displayedPokemon]). */
-private fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String): List<NamedApiResource> {
+// internal, not private: lets PokedexListViewModelTest exercise the filter/sort pipeline directly,
+// pure-function-style, rather than only through the ViewModel's coroutine/StateFlow machinery.
+internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String): List<NamedApiResource> {
     var list = state.allPokemon
     if (debouncedQuery.isNotBlank()) {
         val trimmed = debouncedQuery.trim().lowercase()
@@ -106,6 +108,11 @@ private fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String):
     if (state.showFavoritesOnly) list = list.filter { it.name in state.favorites }
 
     state.sortStat?.let { stat ->
+        // A stat sort with no bulk stats loaded used to compute an all-equal Int.MIN_VALUE key set,
+        // which a stable sort leaves untouched — the grid silently ignored the sort while the chip
+        // still claimed "Sort: Attack", with no indication anything was wrong. Dex-number sort needs
+        // no stats and is unaffected by this early return.
+        if (stat != SortStat.DEX_NUMBER && state.baseStats.isEmpty()) return@let
         val keyOf: (NamedApiResource) -> Int = { resource ->
             // Checked before the stats lookup, not inside it: sorting by dex number doesn't need
             // the bulk stats map at all, so it must not fall into the "no stats loaded -> every key
@@ -266,6 +273,8 @@ class PokedexListViewModel @JvmOverloads constructor(
             try {
                 val moves = repository.getMoveNames()
                 _uiState.update { it.copy(moveOptions = moves) }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = "Network error while loading moves.") }
             }
@@ -295,6 +304,8 @@ class PokedexListViewModel @JvmOverloads constructor(
             try {
                 val abilities = repository.getAbilityNames()
                 _uiState.update { it.copy(abilityOptions = abilities) }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = "Network error while loading abilities.") }
             }
@@ -343,6 +354,8 @@ class PokedexListViewModel @JvmOverloads constructor(
                 val options = SmogonTierLabels.sortedTiers(tiers.values.toSet())
                 tierOptionsGen = gen
                 _uiState.update { it.copy(formatTierOptions = options, isFilterLoading = false) }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
             } catch (e: Exception) {
                 _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while loading tiers.") }
             }
@@ -395,8 +408,20 @@ class PokedexListViewModel @JvmOverloads constructor(
             try {
                 val stats = repository.getAllBaseStats()
                 _uiState.update { it.copy(baseStats = stats, isStatsLoading = false) }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
             } catch (e: Exception) {
-                _uiState.update { it.copy(isStatsLoading = false, errorMessage = "Network error while loading stats.") }
+                // Also clears sortStat: leaving a stat sort selected here left the chip reading
+                // "Sort: Attack" while the grid — now that computeDisplayed refuses to apply a
+                // stat sort with no data behind it — silently stayed in whatever order it was in,
+                // with no indication the sort never actually happened.
+                _uiState.update {
+                    it.copy(
+                        isStatsLoading = false,
+                        sortStat = null,
+                        errorMessage = "Couldn't load base stats — sorting by stat is unavailable."
+                    )
+                }
             }
         }
     }
