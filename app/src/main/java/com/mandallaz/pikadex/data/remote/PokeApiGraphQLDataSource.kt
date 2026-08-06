@@ -42,6 +42,13 @@ object PokeApiGraphQLDataSource {
               base_stat
               stat { name }
             }
+            pokemontypes {
+              type { name }
+            }
+            pokemonspecy {
+              is_legendary
+              is_mythical
+            }
           }
         }
     """
@@ -90,22 +97,56 @@ object PokeApiGraphQLDataSource {
         }
     }
 
-    /** pokemonName -> (statApiName -> baseStat), e.g. "bulbasaur" -> {"hp" to 45, "attack" to 49, ...}. */
-    suspend fun fetchAllBaseStats(): Map<String, Map<String, Int>> = runQuery(QUERY) { body ->
+    /** Base stats, types and legendary/mythical status for one pokemon, fetched in bulk — the
+     *  shared prerequisite for every feature that needs typing or rarity across the whole dex
+     *  (weakness/resistance filtering, legendary badges, team suggestions) without a per-pokemon
+     *  REST call. */
+    data class PokemonBasics(
+        val stats: Map<String, Int>,
+        val types: List<String>,
+        val isLegendary: Boolean,
+        val isMythical: Boolean
+    )
+
+    /** pokemonName -> [PokemonBasics], e.g. "bulbasaur" -> stats={"hp" to 45, ...}, types=[grass,
+     *  poison], isLegendary=false, isMythical=false. */
+    suspend fun fetchAllBasics(): Map<String, PokemonBasics> = runQuery(QUERY, ::parseBasics)
+
+    /** Parses [QUERY]'s response body. A separate function (not inlined into [fetchAllBasics])
+     *  purely so it's unit-testable against a hand-written JSON body, without a real network call. */
+    internal fun parseBasics(body: String): Map<String, PokemonBasics> {
         val pokemon = gson.fromJson(body, GraphQLResponse::class.java)?.data?.pokemon
             ?: throw IOException("GraphQL response had no pokemon data")
         logIfTruncated("pokemon", pokemon.size)
-        pokemon.associate { p -> p.name to p.pokemonstats.associate { it.stat.name to it.baseStat } }
+        return pokemon.associate { p ->
+            p.name to PokemonBasics(
+                stats = p.pokemonstats.associate { it.stat.name to it.baseStat },
+                types = p.pokemontypes.orEmpty().mapNotNull { it.type?.name },
+                isLegendary = p.pokemonspecy?.isLegendary ?: false,
+                isMythical = p.pokemonspecy?.isMythical ?: false
+            )
+        }
     }
 
     private data class GraphQLResponse(val data: GraphQLData?)
     private data class GraphQLData(val pokemon: List<GraphQLPokemon>?)
-    private data class GraphQLPokemon(val name: String, val pokemonstats: List<GraphQLStat>)
+    private data class GraphQLPokemon(
+        val name: String,
+        val pokemonstats: List<GraphQLStat>,
+        val pokemontypes: List<GraphQLPokemonType>?,
+        val pokemonspecy: GraphQLSpecy?
+    )
     private data class GraphQLStat(
         @SerializedName("base_stat") val baseStat: Int,
         val stat: GraphQLStatName
     )
     private data class GraphQLStatName(val name: String)
+    private data class GraphQLPokemonType(val type: GraphQLTypeName?)
+    private data class GraphQLTypeName(val name: String)
+    private data class GraphQLSpecy(
+        @SerializedName("is_legendary") val isLegendary: Boolean?,
+        @SerializedName("is_mythical") val isMythical: Boolean?
+    )
 
     /** A move's type, damage class (physical/special = an attack, status = a buff/debuff/other
      *  non-damaging effect), power and accuracy — null power/accuracy is normal for status moves. */

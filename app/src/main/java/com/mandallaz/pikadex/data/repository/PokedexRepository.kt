@@ -50,7 +50,7 @@ class PokedexRepository(private val api: PokeApiService) {
     private val moveDetailCache = AsyncCache<String, MoveDetailDto>()
     private val abilityDetailCache = AsyncCache<String, AbilityDetailDto>()
     private val smogonTierCache = AsyncCache<String, Map<String, String>>()
-    private val allBaseStatsCache = AsyncValueCache<Map<String, Map<String, Int>>>()
+    private val allBasicsCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>()
     private val allMoveInfoCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.MoveInfo>>()
     private val sortedStatArraysCache = AsyncValueCache<Map<String, IntArray>>()
 
@@ -134,13 +134,17 @@ class PokedexRepository(private val api: PokeApiService) {
     suspend fun getSmogonTiers(genCode: String): Map<String, String> =
         smogonTierCache.get(genCode) { SmogonTierDataSource.fetchTiers(genCode) }
 
-    /** pokemonName -> (statApiName -> baseStat), fetched once in bulk via GraphQL for sorting.
-     *  Also persisted to disk (GraphQL is POST, so the shared HTTP cache can't cover it) — this
-     *  data only changes when a new generation ships, so there's no reason to re-fetch ~1300
-     *  entries worth of stats every cold start. */
-    suspend fun getAllBaseStats(): Map<String, Map<String, Int>> = allBaseStatsCache.get {
-        diskCached(BASE_STATS_CACHE_KEY, BASE_STATS_TYPE) { PokeApiGraphQLDataSource.fetchAllBaseStats() }
+    /** pokemonName -> [PokeApiGraphQLDataSource.PokemonBasics] (stats, types, legendary/mythical),
+     *  fetched once in bulk via GraphQL. Also persisted to disk (GraphQL is POST, so the shared
+     *  HTTP cache can't cover it) — this data only changes when a new generation ships, so there's
+     *  no reason to re-fetch ~1300 entries every cold start. */
+    suspend fun getAllBasics(): Map<String, PokeApiGraphQLDataSource.PokemonBasics> = allBasicsCache.get {
+        diskCached(BASICS_CACHE_KEY, BASICS_TYPE) { PokeApiGraphQLDataSource.fetchAllBasics() }
     }
+
+    /** Thin derived view of [getAllBasics] kept for callers that only care about stats (sorting) —
+     *  they don't need to know types/rarity exist at all. */
+    suspend fun getAllBaseStats(): Map<String, Map<String, Int>> = getAllBasics().mapValues { it.value.stats }
 
     /** Serves [key] from the disk cache if it's still fresh, otherwise runs [fetch] and persists the
      *  result. [fetch] throwing propagates without writing anything, so a failed request can never
@@ -208,15 +212,15 @@ class PokedexRepository(private val api: PokeApiService) {
 
     private companion object {
         val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
-        // _v2: bumped alongside the GraphQL endpoint migration (v1beta -> v1beta2) so an
-        // upgrading install re-fetches under the new schema instead of reading back a week-old
-        // payload written under the old one, with no field to tell the two apart.
-        const val BASE_STATS_CACHE_KEY = "base_stats_v2"
+        // New key (not base_stats_v2 renamed): the payload shape changed (stats+types+rarity, not
+        // just stats), so an upgrading install must re-fetch rather than trying to read the old
+        // shape back as the new one.
+        const val BASICS_CACHE_KEY = "pokemon_basics_v1"
         const val MOVE_INFO_CACHE_KEY = "move_info_v2"
         val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)
 
-        val BASE_STATS_TYPE: java.lang.reflect.Type =
-            object : TypeToken<Map<String, Map<String, Int>>>() {}.type
+        val BASICS_TYPE: java.lang.reflect.Type =
+            object : TypeToken<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>() {}.type
         val MOVE_INFO_TYPE: java.lang.reflect.Type =
             object : TypeToken<Map<String, PokeApiGraphQLDataSource.MoveInfo>>() {}.type
     }
