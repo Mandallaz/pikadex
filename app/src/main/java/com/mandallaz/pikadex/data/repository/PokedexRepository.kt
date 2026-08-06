@@ -59,7 +59,11 @@ class PokedexRepository(private val api: PokeApiService) {
         val order = TypeIds.standardTypeNames
         api.getTypeList().results
             .filterNot { it.name == "unknown" || it.name == "stellar" || it.name == "shadow" }
-            .sortedBy { order.indexOf(it.name) }
+            // indexOf returns -1 for a type this app doesn't know about (one PokeAPI adds after
+            // this list was written), which sorted it ahead of Normal. Unknown types belong at
+            // the end — they're already absent from every matchup calculation, since those
+            // iterate standardTypeNames rather than this fetched list.
+            .sortedBy { order.indexOf(it.name).takeIf { i -> i >= 0 } ?: Int.MAX_VALUE }
     }
 
     // Sorted alphabetically — PokeAPI returns these in id order (Pound, Karate Chop, Double

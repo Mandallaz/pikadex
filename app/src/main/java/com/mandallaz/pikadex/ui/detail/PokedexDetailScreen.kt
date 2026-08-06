@@ -742,7 +742,7 @@ private fun TriangleRow(triangle: TypeTriangle, isCounter: Boolean = false) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            triangle.types.forEach { type -> TypeBadge(type, TypeIds.of(type)) }
+            triangle.types.forEach { type -> TypeBadge(type, TypeIds.idOrNull(type)) }
         }
         Text(
             text = triangle.title + if (triangle.isPerfect) " (Perfect)" else " (Imperfect)",
@@ -893,7 +893,7 @@ private fun MoveRow(move: LearnedMove, category: MoveCategory, moveInfo: Map<Str
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 4.dp)
         ) {
-            TypeBadge(info.type, TypeIds.of(info.type), height = 18.dp)
+            TypeBadge(info.type, TypeIds.idOrNull(info.type), height = 18.dp)
             Text(
                 text = moveStatsLabel(info),
                 style = MaterialTheme.typography.bodySmall,

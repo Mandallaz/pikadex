@@ -16,7 +16,13 @@ object TypeIds {
         "steel" to 9, "fairy" to 18
     )
 
-    fun of(typeName: String): Int = ids[typeName.lowercase()] ?: 0
+    /** PokeAPI type id, or null for a type this app has no icon for (e.g. a type added upstream
+     *  after this map was written). Prefer this over [of] at any new call site — [TypeBadge]
+     *  degrades a null id to a text pill, where [of]'s `0` sentinel built a URL guaranteed to
+     *  404. */
+    fun idOrNull(typeName: String): Int? = ids[typeName.lowercase()]
+
+    fun of(typeName: String): Int = idOrNull(typeName) ?: 0
 
     val standardTypeNames: List<String> get() = ids.keys.toList()
 }

@@ -33,7 +33,7 @@ fun TypeMatchupGroups(multipliers: Map<String, Double>, modifier: Modifier = Mod
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 bucket.types.forEach { typeName ->
-                    TypeBadge(typeName, TypeIds.of(typeName), height = 22.dp)
+                    TypeBadge(typeName, TypeIds.idOrNull(typeName), height = 22.dp)
                 }
             }
         }

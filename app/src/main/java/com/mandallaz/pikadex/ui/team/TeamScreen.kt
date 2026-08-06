@@ -291,7 +291,7 @@ fun TeamScreen(
                                 modifier = Modifier.width(TYPE_COLUMN_WIDTH).height(rowHeight),
                                 contentAlignment = Alignment.CenterStart
                             ) {
-                                TypeBadge(typeName, TypeIds.of(typeName), height = 20.dp)
+                                TypeBadge(typeName, TypeIds.idOrNull(typeName), height = 20.dp)
                             }
                         }
                     }

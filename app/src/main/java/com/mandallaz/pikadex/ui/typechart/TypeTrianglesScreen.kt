@@ -120,7 +120,7 @@ private fun TriangleCard(triangle: TypeTriangle) {
                 modifier = Modifier.padding(top = 4.dp)
             ) {
                 triangle.counter.types.forEach { type ->
-                    TypeBadge(type, TypeIds.of(type))
+                    TypeBadge(type, TypeIds.idOrNull(type))
                 }
             }
             Text(
