@@ -47,11 +47,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -91,6 +93,16 @@ private val COMPACT_HEADER_MAX_HEIGHT = 400.dp
 
 private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT }
 
+/** Round-trips through the constant name rather than the ordinal, which would silently re-map if
+ *  [ActiveDialog]'s declaration order ever changed — the same reasoning as the
+ *  ExpandedCategoriesSaver pattern in PokedexDetailScreen.kt. Saves a MutableState<ActiveDialog>,
+ *  not a bare ActiveDialog, to match what `rememberSaveable(saver) { mutableStateOf(...) }`
+ *  actually produces. */
+private val ActiveDialogSaver = Saver<MutableState<ActiveDialog>, String>(
+    save = { it.value.name },
+    restore = { mutableStateOf(ActiveDialog.valueOf(it)) }
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokedexListScreen(
@@ -101,7 +113,10 @@ fun PokedexListScreen(
     val displayedPokemon by viewModel.displayedPokemon.collectAsState()
     val team by TeamRepository.team.collectAsState()
     val favorites by FavoritesRepository.favorites.collectAsState()
-    var activeDialog by remember { mutableStateOf(ActiveDialog.NONE) }
+    // rememberSaveable: rotating with the move/ability picker open used to close it while leaving
+    // the filter sheet behind it restored — an odd half-restored state, and rotating inside the
+    // picker separately cleared its own search text (see SearchableListDialog.kt).
+    var activeDialog by rememberSaveable(saver = ActiveDialogSaver) { mutableStateOf(ActiveDialog.NONE) }
     // rememberSaveable: rotating the device with the filter sheet open used to dismiss it outright
     // (it reads everything it shows from the ViewModel, so nothing else is lost by restoring it).
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }

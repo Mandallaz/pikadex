@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -49,7 +50,9 @@ fun SearchableListDialog(
     onDismiss: () -> Unit,
     onSelect: (String?) -> Unit
 ) {
-    var query by remember { mutableStateOf("") }
+    // rememberSaveable: rotating while this dialog was open used to silently clear whatever the
+    // user had already typed.
+    var query by rememberSaveable { mutableStateOf("") }
     val filtered = remember(query, options) {
         if (query.isBlank()) {
             options
