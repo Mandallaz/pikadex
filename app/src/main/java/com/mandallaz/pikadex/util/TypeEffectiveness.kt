@@ -1,6 +1,7 @@
 package com.mandallaz.pikadex.util
 
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
+import kotlin.math.abs
 
 /**
  * Combines the damage_relations of one or two types into a single defensive multiplier per
@@ -83,9 +84,17 @@ private val BUCKET_ORDER = listOf(
     0.0 to "Immune to"
 )
 
+// The multipliers actually computed today are all products of exact powers of two (2.0, 0.5, 0.0),
+// which IEEE 754 represents and multiplies with zero rounding error — so exact `==` has never
+// actually misfired yet. It's still the wrong tool: a future contributor adding, say, a 1.5x
+// weather/terrain modifier or any other non-power-of-two factor would silently and confusingly
+// break bucketing, since two mathematically-equal multipliers reached via different type
+// combinations could then land a bit apart.
+private const val EPSILON = 1e-9
+
 /** Groups a defensive-multiplier map into display buckets, skipping neutral (x1) types. */
 fun bucketizeMatchups(multipliers: Map<String, Double>): List<MatchupBucket> =
     BUCKET_ORDER.mapNotNull { (multiplier, label) ->
-        val types = multipliers.filterValues { it == multiplier }.keys.sorted()
+        val types = multipliers.filterValues { abs(it - multiplier) < EPSILON }.keys.sorted()
         if (types.isEmpty()) null else MatchupBucket(label, multiplier, types)
     }

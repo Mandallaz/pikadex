@@ -109,6 +109,15 @@ class TypeEffectivenessTest {
         assertTrue(buckets.any { it.label.contains("×½") })
     }
 
+    // A tiny drift off the bucket's exact value — the kind a non-power-of-two modifier could
+    // introduce in the future — must still land in its bucket rather than being silently dropped.
+    @Test
+    fun `a multiplier within floating-point tolerance of a bucket still lands in it`() {
+        val buckets = bucketizeMatchups(mapOf("electric" to 0.5 + 1e-12, "fire" to 2.0 - 1e-12))
+        assertEquals(listOf("electric"), buckets.single { it.multiplier == 0.5 }.types)
+        assertEquals(listOf("fire"), buckets.single { it.multiplier == 2.0 }.types)
+    }
+
     // --- Offensive coverage -------------------------------------------------
 
     private fun attacker(
