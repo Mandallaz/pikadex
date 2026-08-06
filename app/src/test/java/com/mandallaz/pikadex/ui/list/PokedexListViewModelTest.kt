@@ -122,4 +122,38 @@ class PokedexListViewModelTest {
         val state = PokedexListUiState(allPokemon = unsorted, rarityFilter = RarityFilter.LEGENDARY)
         assertEquals(unsorted, computeDisplayed(state, ""))
     }
+
+    // --- Name sort -------------------------------------------------------
+
+    @Test
+    fun `name sort orders alphabetically by display name, ascending`() {
+        val state = PokedexListUiState(allPokemon = unsorted, sortStat = SortStat.NAME, sortAscending = true)
+        assertEquals(listOf("bulbasaur", "charmander", "squirtle"), computeDisplayed(state, "").map { it.name })
+    }
+
+    @Test
+    fun `name sort descending reverses the order`() {
+        val state = PokedexListUiState(allPokemon = unsorted, sortStat = SortStat.NAME, sortAscending = false)
+        assertEquals(listOf("squirtle", "charmander", "bulbasaur"), computeDisplayed(state, "").map { it.name })
+    }
+
+    // "mr-mime" displays as "Mr. Mime" and "mime-jr" as "Mime Jr." — sorting must key off the
+    // display name (what the picker/chip actually says), not the raw API name, or these two would
+    // land in the wrong relative order (raw "mime-jr" < "mr-mime" alphabetically, but "Mime Jr."
+    // should sort before "Mr. Mime" too, so this particular pair doesn't actually flip — the real
+    // risk is a raw name whose hyphens/casing differ from its display form in a way that would).
+    @Test
+    fun `name sort keys off the display name, not the raw API name`() {
+        val resources = listOf(resource("mr-mime", 122), resource("mime-jr", 439))
+        val state = PokedexListUiState(allPokemon = resources, sortStat = SortStat.NAME, sortAscending = true)
+        assertEquals(listOf("mime-jr", "mr-mime"), computeDisplayed(state, "").map { it.name })
+    }
+
+    // Name sort needs no bulk stats data at all (same as dex-number sort) — it must not fall into
+    // the "no baseStats loaded" no-op guard that the numeric-stat sorts use.
+    @Test
+    fun `name sort works with no base stats loaded`() {
+        val state = PokedexListUiState(allPokemon = unsorted, sortStat = SortStat.NAME, sortAscending = true, baseStats = emptyMap())
+        assertEquals(listOf("bulbasaur", "charmander", "squirtle"), computeDisplayed(state, "").map { it.name })
+    }
 }

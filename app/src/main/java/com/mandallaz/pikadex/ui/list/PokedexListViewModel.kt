@@ -12,6 +12,7 @@ import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
+import com.mandallaz.pikadex.util.toDisplayName
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import java.text.Collator
 
 data class PokedexListUiState(
     val isLoading: Boolean = true,
@@ -134,6 +136,14 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
     }
 
     state.sortStat?.let { stat ->
+        if (stat == SortStat.NAME) {
+            // decorate-sort-undecorate again: toDisplayName() does real work (special-case lookup,
+            // hyphen splitting/joining), no reason to redo it on every comparison.
+            val decorated = list.map { it to it.name.toDisplayName() }
+            val comparator = compareBy(NAME_COLLATOR) { pair: Pair<NamedApiResource, String> -> pair.second }
+            list = decorated.sortedWith(if (state.sortAscending) comparator else comparator.reversed()).map { it.first }
+            return@let
+        }
         // A stat sort with no bulk stats loaded used to compute an all-equal Int.MIN_VALUE key set,
         // which a stable sort leaves untouched — the grid silently ignored the sort while the chip
         // still claimed "Sort: Attack", with no indication anything was wrong. Dex-number sort needs
@@ -166,6 +176,11 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
     }
     return list
 }
+
+// PRIMARY strength: base-letter-only comparison, so accented display names (Flabébé, Ho-Oh's
+// hyphen aside) sort next to their unaccented neighbors instead of Java's default ordering, which
+// would put every non-ASCII character in its own separate bucket after all plain-ASCII names.
+private val NAME_COLLATOR: Collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
 
 class PokedexListViewModel @JvmOverloads constructor(
     private val repository: PokedexRepository = AppContainer.repository
@@ -462,7 +477,10 @@ class PokedexListViewModel @JvmOverloads constructor(
     }
 
     fun onSortStatSelected(stat: SortStat?) {
-        _uiState.update { it.copy(sortStat = stat, sortAscending = false) }
+        // Every stat sort's natural first look is "biggest first" (descending), but a name sort's
+        // natural first look is A-Z (ascending) — defaulting it to descending too would show Z-A
+        // on first pick, backwards from what "Name (A-Z)" itself says.
+        _uiState.update { it.copy(sortStat = stat, sortAscending = stat == SortStat.NAME) }
     }
 
     fun toggleSortDirection() {
