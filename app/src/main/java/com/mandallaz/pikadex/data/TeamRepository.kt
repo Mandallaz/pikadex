@@ -42,7 +42,7 @@ object TeamRepository {
     }
 
     private fun persist() {
-        val encoded = _team.value.joinToString(ENTRY_DELIMITER) { "${it.name}$FIELD_DELIMITER${it.id ?: 0}" }
+        val encoded = persistableMembers(_team.value).joinToString(ENTRY_DELIMITER) { "${it.name}$FIELD_DELIMITER${it.id}" }
         prefs?.edit { putString(KEY_MEMBERS, encoded) }
     }
 
@@ -94,3 +94,11 @@ object TeamRepository {
         }
     }
 }
+
+/** The members of [team] actually worth writing to storage. An id-less resource has no numeric id
+ *  to reconstruct a url from on the way back in — encoding it with the old `it.id ?: 0` fallback
+ *  meant [TeamRepository.decode] read it back as a real (and wrong) id 0 next launch, instead of
+ *  the id-less resource it actually was. A free function, not private logic inline in persist(),
+ *  so it's testable without a real Context/SharedPreferences. */
+internal fun persistableMembers(team: List<NamedApiResource>): List<NamedApiResource> =
+    team.filter { it.id != null }
