@@ -78,9 +78,10 @@ private fun FallbackImage(
         model = candidates.getOrNull(attempt),
         contentDescription = contentDescription,
         contentScale = contentScale,
-        // Stops once past the last candidate, so an entry with no image anywhere settles instead of
-        // re-requesting a URL that already failed.
-        onError = { if (attempt < candidates.size) attempt++ },
+        // `size - 1`, not `size`: incrementing on the last candidate's failure handed AsyncImage a
+        // null model, which Coil reports as another error — an extra recomposition to reach the
+        // same settled state (a permanently empty cell) instead of stopping there directly.
+        onError = { if (attempt < candidates.size - 1) attempt++ },
         modifier = modifier
     )
 }
