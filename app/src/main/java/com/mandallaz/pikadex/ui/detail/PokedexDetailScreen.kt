@@ -405,6 +405,13 @@ private fun DetailContent(
                     Text("Weight", style = MaterialTheme.typography.labelLarge)
                     Text("${pokemon.weight / 10.0} kg")
                 }
+                val eggGroups = species.eggGroups.orEmpty()
+                if (eggGroups.isNotEmpty()) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Egg Groups", style = MaterialTheme.typography.labelLarge)
+                        Text(eggGroups.joinToString(", ") { eggGroupDisplayName(it.name) })
+                    }
+                }
             }
         }
 
@@ -943,5 +950,13 @@ private fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
     val power = info.power?.toString() ?: "—"
     val accuracy = info.accuracy?.let { "$it%" } ?: "—"
     return "$category · Power $power · Accuracy $accuracy"
+}
+
+/** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would
+ *  render that as "No Eggs", which reads like a typo rather than the actual game term. Internal,
+ *  not private, so it's unit-testable directly. */
+internal fun eggGroupDisplayName(name: String): String = when (name) {
+    "no-eggs" -> "Undiscovered"
+    else -> name.toDisplayName()
 }
 
