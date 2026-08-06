@@ -53,5 +53,6 @@ class SpritesTest {
         assertTrue(Sprites.officialArtworkUrl(25).endsWith("/official-artwork/25.png"))
         assertTrue(Sprites.defaultSpriteUrl(25).endsWith("/pokemon/25.png"))
         assertTrue(Sprites.shinySpriteUrl(25).endsWith("/shiny/25.png"))
+        assertTrue(Sprites.shinyOfficialArtworkUrl(25).endsWith("/official-artwork/shiny/25.png"))
     }
 }

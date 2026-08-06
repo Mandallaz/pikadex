@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -129,6 +130,8 @@ fun PokedexDetailScreen(
     val isFavorite = uiState.pokemon?.let { p -> favorites.contains(p.name) } ?: false
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    // rememberSaveable: rotating the screen used to silently drop back to the normal artwork.
+    var shiny by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
 
@@ -144,6 +147,13 @@ fun PokedexDetailScreen(
                 },
                 actions = {
                     if (uiState.pokemon != null) {
+                        IconButton(onClick = { shiny = !shiny }) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                contentDescription = if (shiny) "Show normal coloring" else "Show shiny coloring",
+                                tint = if (shiny) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                            )
+                        }
                         IconButton(
                             // Stays enabled when the team is full and explains itself instead, the
                             // same way the Pokédex grid's own add button does — a disabled top-bar
@@ -222,6 +232,7 @@ fun PokedexDetailScreen(
                     statPercentiles = uiState.statPercentiles,
                     formVersionGroup = uiState.formVersionGroup,
                     groupedMoves = uiState.groupedMoves,
+                    shiny = shiny,
                     onPokemonClick = onPokemonClick,
                     onViewTypeTriangles = onViewTypeTriangles
                 )
@@ -280,6 +291,7 @@ private fun DetailContent(
     statPercentiles: Map<String, Double>,
     formVersionGroup: String?,
     groupedMoves: Map<MoveCategory, List<LearnedMove>>,
+    shiny: Boolean,
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit
 ) {
@@ -323,7 +335,8 @@ private fun DetailContent(
                     contentDescription = pokemon.name,
                     // Exact here, no name-based guessing: the payload already names this form's species.
                     baseSpeciesId = pokemon.species.id,
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier.size(200.dp),
+                    shiny = shiny
                 )
                 Text(
                     text = "#${pokemon.id.toString().padStart(4, '0')}",

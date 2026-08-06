@@ -27,10 +27,14 @@ fun PokemonArtwork(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     baseSpeciesId: Int? = null,
-    contentScale: ContentScale = ContentScale.Fit
+    contentScale: ContentScale = ContentScale.Fit,
+    // Only the detail screen's header offers a shiny toggle — evolution-chain tiles and team
+    // chips (which use PokemonSprite, not this) always show the regular form.
+    shiny: Boolean = false
 ) {
     FallbackImage(
         candidates = listOfNotNull(
+            if (shiny) Sprites.shinyOfficialArtworkUrl(id) else null,
             Sprites.officialArtworkUrl(id),
             Sprites.defaultSpriteUrl(id),
             baseSpeciesId?.let { Sprites.officialArtworkUrl(it) }

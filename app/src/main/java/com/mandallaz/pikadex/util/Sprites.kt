@@ -13,6 +13,11 @@ object Sprites {
     fun shinySpriteUrl(id: Int): String =
         "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/$id.png"
 
+    /** Shiny counterpart of [officialArtworkUrl] — checked to actually exist on the CDN (e.g.
+     *  #1, #25, #10043) before this was added, same as every other hardcoded path here. */
+    fun shinyOfficialArtworkUrl(id: Int): String =
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/$id.png"
+
     /** Official Scarlet/Violet-style type badge (icon + name baked into the image). */
     fun typeIconUrl(typeId: Int): String =
         "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/$typeId.png"
