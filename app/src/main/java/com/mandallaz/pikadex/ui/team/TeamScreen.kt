@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.ui.team
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
@@ -92,14 +94,26 @@ fun TeamScreen(
     viewModel: TeamViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val teams by viewModel.teams.collectAsState()
+    val activeTeamId by viewModel.activeTeamId.collectAsState()
+    val activeTeamName = teams.firstOrNull { it.id == activeTeamId }?.name ?: "Team"
     var showPresetPicker by rememberSaveable { mutableStateOf(false) }
+    var showTeamSlots by rememberSaveable { mutableStateOf(false) }
     // rememberSaveable, so rotating doesn't silently drop the user back to Defense.
     var matrixMode by rememberSaveable { mutableStateOf(MatrixMode.DEFENSE) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Team (${uiState.members.size}/${TeamRepository.MAX_SIZE})") },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { showTeamSlots = true }
+                    ) {
+                        Text("$activeTeamName (${uiState.members.size}/${TeamRepository.MAX_SIZE})")
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = "Switch team")
+                    }
+                },
                 actions = {
                     IconButton(onClick = {
                         viewModel.preparePresetPreviews()
@@ -355,7 +369,30 @@ fun TeamScreen(
             onSelect = { preset ->
                 viewModel.loadPreset(preset)
                 showPresetPicker = false
+            },
+            onSelectIntoNewTeam = { preset ->
+                viewModel.loadPresetIntoNewTeam(preset)
+                showPresetPicker = false
             }
+        )
+    }
+
+    if (showTeamSlots) {
+        TeamSlotsDialog(
+            teams = teams,
+            activeTeamId = activeTeamId,
+            onDismiss = { showTeamSlots = false },
+            onSelect = { id ->
+                viewModel.setActiveTeam(id)
+                showTeamSlots = false
+            },
+            onCreate = {
+                val newId = viewModel.createTeam("New Team")
+                viewModel.setActiveTeam(newId)
+                showTeamSlots = false
+            },
+            onRename = viewModel::renameTeam,
+            onDelete = viewModel::deleteTeam
         )
     }
 }

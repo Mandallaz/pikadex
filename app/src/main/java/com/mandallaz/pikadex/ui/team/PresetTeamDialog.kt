@@ -62,7 +62,8 @@ fun PresetTeamDialog(
     currentTeamSize: Int,
     spriteIds: Map<String, Int>,
     onDismiss: () -> Unit,
-    onSelect: (PresetTeam) -> Unit
+    onSelect: (PresetTeam) -> Unit,
+    onSelectIntoNewTeam: (PresetTeam) -> Unit
 ) {
     var pendingConfirmation by remember { mutableStateOf<PresetTeam?>(null) }
 
@@ -116,11 +117,11 @@ fun PresetTeamDialog(
     pendingConfirmation?.let { team ->
         AlertDialog(
             onDismissRequest = { pendingConfirmation = null },
-            title = { Text("Replace your team?") },
+            title = { Text("Load ${team.trainer}'s team?") },
             text = {
                 Text(
-                    "Loading ${team.trainer}'s team will discard the " +
-                        "${currentTeamSize} Pokémon currently on your team."
+                    "Your current team has $currentTeamSize Pokémon. Replace it with " +
+                        "${team.trainer}'s team, or load it into a new team instead?"
                 )
             },
             confirmButton = {
@@ -130,7 +131,13 @@ fun PresetTeamDialog(
                 }) { Text("Replace") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingConfirmation = null }) { Text("Cancel") }
+                Row {
+                    TextButton(onClick = { pendingConfirmation = null }) { Text("Cancel") }
+                    TextButton(onClick = {
+                        pendingConfirmation = null
+                        onSelectIntoNewTeam(team)
+                    }) { Text("New team") }
+                }
             }
         )
     }

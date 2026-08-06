@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.TeamRepository
+import com.mandallaz.pikadex.data.TeamSlot
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepository
 import com.mandallaz.pikadex.util.PresetTeam
@@ -85,6 +86,9 @@ class TeamViewModel @JvmOverloads constructor(
 
     private val _uiState = MutableStateFlow(TeamUiState())
     val uiState: StateFlow<TeamUiState> = _uiState.asStateFlow()
+
+    val teams: StateFlow<List<TeamSlot>> = TeamRepository.teams
+    val activeTeamId: StateFlow<Int> = TeamRepository.activeTeamId
 
     private var matrixJob: Job? = null
 
@@ -213,6 +217,11 @@ class TeamViewModel @JvmOverloads constructor(
 
     fun removeFromTeam(member: NamedApiResource) = TeamRepository.remove(member)
 
+    fun createTeam(name: String): Int = TeamRepository.createTeam(name)
+    fun renameTeam(id: Int, name: String) = TeamRepository.renameTeam(id, name)
+    fun deleteTeam(id: Int) = TeamRepository.deleteTeam(id)
+    fun setActiveTeam(id: Int) = TeamRepository.setActiveTeam(id)
+
     /** Resolves sprite ids for every preset roster, for the picker's previews. Best-effort: with no
      *  master list (offline, first run) the picker just lists names instead. */
     fun preparePresetPreviews() {
@@ -262,5 +271,13 @@ class TeamViewModel @JvmOverloads constructor(
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Couldn't load ${preset.trainer}'s team. Check your connection.") }
             }
         }
+    }
+
+    /** Same as [loadPreset], but into a brand new team slot (named after the trainer) instead of
+     *  overwriting the active one — the "Load into a new team" choice in the preset confirmation. */
+    fun loadPresetIntoNewTeam(preset: PresetTeam) {
+        val newId = TeamRepository.createTeam(preset.trainer)
+        TeamRepository.setActiveTeam(newId)
+        loadPreset(preset)
     }
 }
