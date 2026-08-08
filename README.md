@@ -24,7 +24,7 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 
 - Up to 6 Pokémon, with the combined defensive matrix across all 18 attacking types
 - A callout for types at least half the team is weak to, and one for coverage gaps — types nothing on the team can hit for more than neutral damage
-- Suggestions: up to 10 Pokémon (sorted by base stat total) that would fix both a shared weakness and a coverage gap at once, shown whenever the team has room to grow
+- Suggestions: up to 6 Pokémon that would fix both a shared weakness and a coverage gap at once, sorted by total impact (weaknesses resisted plus gaps hit, most useful first) with each tile explaining exactly which ones; shown whenever the team has room to grow, and optionally capped to a competitive tier and below via a Settings toggle
 - 81 preset teams — 70 gym leaders and 11 champions, from Red/Blue through Scarlet/Violet — loadable in one tap
 
 ### Type Triangles
@@ -35,6 +35,7 @@ A reference screen for the 16 rock-paper-scissors type cycles, including the 4 "
 
 - Offline prefetch, tiered: Essentials (base stats, moves, type chart, Smogon tiers, ~1MB), Sprites (artwork and sprites for every entry, 50-150MB), and an opt-in Full detail tier (every Pokémon's complete data) — each with live progress and partial-failure reporting that never aborts the run
 - Storage accounting for the API and image caches, with a one-tap "Clear downloaded data"
+- Team Suggestions tier limit: cap suggested Pokémon to a Gen 9 Smogon tier and below (e.g. UU also allows RU, NU...), off by default
 
 ### Throughout
 

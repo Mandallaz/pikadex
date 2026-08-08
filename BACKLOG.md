@@ -1,25 +1,82 @@
 # PikaDex — Backlog
 
-Features discussed with the user but not yet implemented. Each entry stays here until it's built
-(then it moves into the README's feature list and this entry is removed) or the user explicitly
-cancels it (then it moves to the "Cancelled" section at the bottom, full spec kept intact — the user
-may change their mind later, and re-deriving a spec from scratch is wasted effort a kept description
-avoids).
-
 ## Priority (reviewed 2026-08-08)
 
-| Feature | Priority |
-|---|---|
-| F15 — Team coverage impact preview | **High** |
-| F12 — Match team against a preset trainer | Low |
-| F16 — Swipe between Pokémon on the detail screen | Not yet prioritized |
+| Feature | Priority | Status |
+|---|---|---|
+| F18 — Fix ExperimentalCoilApi warnings at compile time | **High** | To groom |
+| F15 — Team coverage impact preview | **High** | Plan ready |
+| F16 — Swipe between Pokémon on the detail screen | **High** | Plan ready |
+| F20 — Add Radical Red trainer teams | Medium | To groom |
+| F19 — Black/AMOLED mode | Medium | To groom |
+| F17 — Filter dex by "is legendary" | Medium | To groom |
+| F12 — Match team against a preset trainer | Low | Plan ready |
+| F22 — Suggestion "why" text and impact-based sort | — | Done |
+| F21 — Suggestion tier ceiling filter | — | Done |
+| F9 — Showdown export | — | Cancelled |
+| F10 — Filter dex by resistance/weakness | — | Cancelled |
 
-F10 is cancelled — see the Cancelled section at the bottom.
+Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
+implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
+README's feature list — entry kept here rather than removed, as a log of what shipped and why) ·
+**Cancelled** (spec kept in the Cancelled section below in case the user revisits it).
+
+Features discussed with the user, whether or not yet implemented. An entry stays here permanently:
+once built it's marked **Done** (and also added to the README's feature list) rather than removed,
+so this file doubles as a log of what shipped and why — removing it once done would lose the
+rationale behind it. A cancelled entry instead moves to the "Cancelled" section at the bottom, full
+spec kept intact — the user may change their mind later, and re-deriving a spec from scratch is
+wasted effort a kept description avoids.
+
+## F18 — Fix ExperimentalCoilApi warnings at compile time
+
+**To groom** — raised but no implementation plan agreed yet.
+
+`./gradlew compileDebugKotlin` currently emits two `This declaration needs opt-in` warnings from
+`SettingsViewModel.kt` (`measureStorage()` and `clearDownloadedData()`), both from calling
+`ImageLoader.diskCache` (a Coil API marked `@ExperimentalCoilApi`). Currently silent (build still
+succeeds), but real cleanup, not just suppression: either wrap both call sites in
+`@OptIn(ExperimentalCoilApi::class)` with a comment on why the experimental surface is accepted, or
+check whether the installed Coil version has since stabilized a non-experimental accessor for the
+disk cache. Open question to resolve before this moves to "Plan ready": which of the two.
+
+## F20 — Add Radical Red trainer teams
+
+**To groom** — raised but no implementation plan agreed yet.
+
+Extend `util/PresetTeams.kt` (currently the 70 gym leaders + 11 champions from the official games,
+Red/Blue through Scarlet/Violet — see `PresetTeam`/`PresetRole`) with the trainer rosters from the
+[Radical Red](https://dex.radicalred.net/) ROM hack, which already inspired this app's Pokédex
+presentation per the README's intro. Open questions to resolve before this moves to "Plan ready":
+which Radical Red version/difficulty's rosters to use (they're reportedly rebalanced and differ by
+difficulty mode), whether `PresetRole`/`game` need a new case or Radical Red's trainers fit the
+existing `GYM_LEADER`/`CHAMPION` split, and where the roster data itself would be sourced from (no
+official API, unlike PokeAPI-backed official-game teams).
+
+## F19 — Black/AMOLED mode
+
+**To groom** — raised but no implementation plan agreed yet.
+
+The app already has dark mode following the system setting (see README's "Throughout" section).
+This is understood as a distinct ask, not a duplicate: either a true-black (pure `#000000`
+background, not just Material's dark grey) variant for AMOLED screens, and/or a manual
+light/dark/system toggle independent of the OS setting — which of the two (or both) needs
+confirming with the user before this moves to "Plan ready".
+
+## F17 — Filter dex by "is legendary"
+
+**To groom** — raised but no implementation plan agreed yet.
+
+Add a filter to the Pokédex list letting the user show only legendary (and/or mythical) Pokémon.
+Open questions to resolve before this moves to "Plan ready": legendary vs. mythical as one toggle or
+two, where the filter sits relative to the existing type filters in `FilterSheetContent`, and whether
+PokeAPI's per-species `is_legendary`/`is_mythical` flags require a new fetch path or are already
+pulled in by an existing call.
 
 ## F12 — Match team against a preset trainer
 
-**Priority: Low.** **Plan finalized 2026-08-08** — simplest option chosen for every open question;
-implement when asked. "How does my team fare against Cynthia's?"
+**Plan finalized 2026-08-08** — simplest option chosen for every open question; implement when asked.
+"How does my team fare against Cynthia's?"
 
 - `util/TeamVersus.kt` (+ test): pure. Simplified from the original sketch — `offensiveByType` turned
   out to be unnecessary: with a defensive multiplier per Pokémon already in hand, "best I deal to
@@ -63,8 +120,8 @@ implement when asked. "How does my team fare against Cynthia's?"
 
 ## F15 — Preview a Pokémon's impact on the current team's coverage
 
-**Priority: High.** **Plan finalized 2026-08-08** — simplest option chosen for every open question;
-implement when asked. Entry point and output format agreed with the user.
+**Plan finalized 2026-08-08** — simplest option chosen for every open question; implement when asked.
+Entry point and output format agreed with the user.
 
 From a Pokémon's detail screen (`PokedexDetailScreen.kt`), a new top-bar icon — same slot pattern as
 the existing shiny toggle and the Compare entry point (`showCompareDialog` /
@@ -130,18 +187,85 @@ gap: Dragon."
 
 ## F16 — Swipe between Pokémon on the detail screen
 
-**Priority: not yet discussed.** Added to the backlog 2026-08-08.
+**Plan finalized 2026-08-08** — simplest option chosen for every open question; implement when asked.
 
-From `PokedexDetailScreen.kt`, swipe left/right (or a prev/next arrow) to move to the adjacent
-Pokémon without backing out to the list and re-selecting — currently the only way to see the next
-entry is Back, scroll/search, tap again.
+From `PokedexDetailScreen.kt`, swipe left/right to move to the adjacent Pokémon without backing out
+to the list and re-selecting — currently the only way to see the next entry is Back, scroll/search,
+tap again.
 
-Open question for when this gets planned: "adjacent" by what ordering? The screen is reached from
-several places (the grid under its active filter/sort, an evolution chain tap, Compare, a team
-member chip...), and threading whichever ordering was active at the entry point through navigation
-args is real plumbing. Simplest candidate: always step by dex number regardless of entry point —
-predictable, needs no extra nav state, matches "Pokédex" as a numbered reference work. Not yet
-confirmed with the user.
+"Adjacent" by what ordering, given the screen is reached from several places (the grid under its
+active filter/sort, an evolution chain tap, Compare, a team member chip...)? Simplest option, chosen
+over threading whichever ordering was active at the entry point through navigation args: always step
+by `getMasterList()`'s own order (PokeAPI's `/pokemon` list, already effectively ascending id
+including alt forms) regardless of entry point — predictable, matches "Pokédex" as a numbered
+reference work, and needs no extra nav state.
+
+- New pure `util/AdjacentPokemon.kt`: `fun adjacentNames(masterList: List<NamedApiResource>,
+  currentName: String): Pair<String?, String?>` (previous, next; null at either end of the list or
+  if `currentName` isn't found). Tests: empty list, single entry, first/last boundary, name absent.
+- `PokedexDetailViewModel`: add `previousPokemonName: String?`/`nextPokemonName: String?` to
+  `PokedexDetailUiState`, computed in `load()` via `repository.getMasterList()` (already cached by
+  the time most detail screens open — Pokédex list, Compare, and this screen's own `Add to team`
+  path all warm it first) + `adjacentNames`. Best-effort: a failure here leaves both null rather than
+  blocking the rest of `load()`.
+- `PokedexDetailScreen.kt`: new `onNavigateAdjacent: (String) -> Unit` param, distinct from the
+  existing `onPokemonClick` (which *pushes* a new detail screen — used for cross-references like
+  evolution stages, where Back should return to the page you tapped from). Two pieces:
+  - `Modifier.pointerInput(pokemonNameOrId) { detectHorizontalDragGestures(...) }` on the content
+    `Box`, committing to `onNavigateAdjacent(next/previous)` past a swipe-distance threshold, no-op
+    at either end of the list (name null).
+  - A small `IconButton` pair (`Icons.Filled.ChevronLeft`/`ChevronRight`), pinned at the vertical
+    center of each screen edge, shown only when that direction's name is non-null — the swipe
+    gesture alone isn't discoverable (nothing on screen hints it exists) and isn't reachable without
+    touch (TalkBack, a hardware keyboard); the buttons cover both.
+- `PokedexNavHost.kt`: wires `onNavigateAdjacent = { name -> ifIdle { navController.navigate(
+  "detail/$name") { popUpTo(ROUTE_DETAIL) { inclusive = true } } } }` — replaces the current
+  back-stack entry rather than pushing (same `popUpTo(...){inclusive=true}` pattern the Compare
+  screen's own re-navigate already uses), so Back always returns to wherever the user actually
+  entered the detail flow from, not back through every Pokémon swiped past on the way.
+
+## F22 — Suggestion "why" text and impact-based sort
+
+**Done 2026-08-08.** Follow-up to F21: sorting Suggestions by stat total no longer made sense once
+a tier ceiling was in play, and a tile never explained *why* that particular Pokémon was suggested
+— the user had to work it out from the type badges against the card's general "would help both..."
+subtitle.
+
+- `TeamSuggestion` gains `weaknessesResisted: List<String>` and `gapsHit: List<String>` — exactly
+  which of the team's shared weaknesses/coverage gaps this candidate qualified on, not the full
+  input lists.
+- `util/TeamSuggestions.kt`: `qualifies()` refactored into `qualification()`, returning those two
+  lists (null unless both non-empty, same "both required" rule as before) instead of a bare
+  `Boolean`; `qualifies()` kept as a thin wrapper for `findConflictingForms`, unchanged.
+- `rankSuggestions` sorts by total impact (`weaknessesResisted.size + gapsHit.size`) descending,
+  stat total ascending as a tiebreak — the most useful pick leads, no longer just the weakest one.
+  Default `limit` lowered from 10 to 6 (user feedback: 10 was too many to page through).
+- `SuggestionTile` (`TeamScreen.kt`) shows a "Resists water · Hits dragon"-style line under the
+  type badges — tile widened 76dp → 96dp to fit it.
+- Tests: `TeamSuggestionsTest` — impact beats stat total, exact resisted/hit lists (not the full
+  input), default limit is 6.
+
+## F21 — Suggestion tier ceiling filter
+
+**Done 2026-08-08.** Team builder Suggestions were sorted by base stat total, which surfaced
+Pokémon far too weak to be a realistic pick; requested a way to cap them to a competitive tier
+instead.
+
+- `util/SmogonTierLabels.isAtOrBelowCeiling(tier, ceiling)`: "this tier or below" rule (a UU ceiling
+  allows UU, RU, NU... not OU/Uber); an unrecognized tier is treated as weaker than every known one.
+- `util/TeamSuggestions.filterByTierCeiling(candidates, maxTier, tierByShowdownKey)`: pure filter
+  step ahead of `rankSuggestions`; a candidate with no tier entry (unclassified on Showdown) is kept
+  rather than excluded.
+- `data/SuggestionSettings.kt`: `SharedPreferences`-backed `StateFlow<String?>` for the chosen
+  ceiling (null = no limit, the default), same pattern as `PrefetchSettings`.
+- `TeamViewModel.loadSuggestions()`: fetches Gen 9 (`"sv"`) Smogon tiers only when a ceiling is set,
+  applies the filter before ranking; also collects `SuggestionSettings.maxTier` directly in `init`
+  (not just on team changes) since this ViewModel survives a tab switch and Settings lives on a
+  different tab.
+- Settings screen: new "Team suggestions" section with a tier picker (reuses `OptionsDialog`).
+- Team screen: `SuggestionsCard` shows "Limited to `<tier>` and below (Settings)" when a ceiling is
+  active, so the card explains itself without the user needing to remember a setting on another tab.
+- Tests: `SmogonTierLabelsTest`, tier-ceiling cases added to `TeamSuggestionsTest`.
 
 ## Cancelled
 
