@@ -94,6 +94,41 @@ commits `9a90f08`/`ec8859e`).
   comparing `stats.values.sum()` against the threshold).
 - Range: 0..~720 (highest known base stat total).
 
+## F15 — Preview a Pokémon's impact on the current team's coverage
+
+Added to the backlog 2026-08-08. Entry point and output format agreed with the user; scoring/data
+approach not yet discussed.
+
+From a Pokémon's detail screen (`PokedexDetailScreen.kt`), a new top-bar icon — same slot pattern as
+the existing shiny toggle and the Compare entry point (`showCompareDialog` /
+`loadCompareCandidatesIfNeeded()`) — opens an "impact on my team" preview showing what would change
+if this Pokémon were **added** to the active team (team not full) or **replaced** one of its members
+(team full, user picks who via a dialog reusing the existing member-chip list from `TeamScreen.kt`).
+
+Output is a **text summary** of the delta (not a full before/after matrix): shared weaknesses fixed,
+shared weaknesses introduced, coverage gaps closed, coverage gaps opened — e.g. "Would fix these
+shared weaknesses: Water, Rock. Would introduce no new shared weaknesses. Would close this coverage
+gap: Dragon."
+
+Implementation sketch (not yet validated with the user):
+
+- Extract the per-member matchup + matrix-assembly logic currently inlined in
+  `TeamViewModel.computeMatrix()` into a shared suspend function (e.g.
+  `util/TeamMatrixCalculator.kt` or a `PokedexRepository` method) so it can be run twice — once for
+  the real team (already cached via `TeamViewModel`/`TeamRepository`), once for the hypothetical
+  roster (current members with the candidate added or swapped in). Full movepool-based accuracy,
+  **not** F11's STAB-only shortcut — this is one hypothetical team of ≤6, not a 1300-candidate scan,
+  so the cost is affordable.
+- New pure function, e.g. `util/TeamImpact.kt`: `computeTeamImpact(beforeSharedWeaknesses,
+  afterSharedWeaknesses, beforeCoverageGaps, afterCoverageGaps): TeamImpactSummary` — plain set
+  differences (fixed = in before, not in after; introduced = in after, not in before; same shape for
+  gaps).
+- New state/loading on `PokedexDetailViewModel` (`teamImpact: TeamImpactSummary?`,
+  `isTeamImpactLoading`), triggered on demand like `loadCompareCandidatesIfNeeded()`, not as part of
+  `load()`.
+- Icon hidden or disabled when there's no active team to compare against (empty team — nothing to
+  preview impact on).
+
 ## Cancelled (not to be re-proposed)
 
 - **F9 — Showdown export.** User explicitly said "je ne veux plus de cette feature" (2026-08-08).
