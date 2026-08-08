@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.data.PrefetchState
+import com.mandallaz.pikadex.ui.components.OptionsDialog
+import com.mandallaz.pikadex.util.SmogonTierLabels
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +44,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val prefetchState by viewModel.prefetchState.collectAsState()
     var showFullDetailWarning by remember { mutableStateOf(false) }
+    var showTierDialog by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
@@ -143,7 +147,47 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     }
                 }
             }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+
+            Text(
+                "Team suggestions",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                "Cap the team builder's Suggestions card to a competitive tier and below (e.g. " +
+                    "UU also allows RU, NU...), based on Gen 9 Smogon tiers.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { showTierDialog = true }.padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Tier limit", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Text(
+                    uiState.maxSuggestionTier?.let { SmogonTierLabels.labelFor(it) } ?: "No limit",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
+    }
+
+    if (showTierDialog) {
+        OptionsDialog(
+            title = "Suggestion tier limit",
+            options = listOf<String?>(null) + uiState.suggestionTierOptions,
+            labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: "No limit" },
+            selected = uiState.maxSuggestionTier,
+            onDismiss = { showTierDialog = false },
+            onSelect = { tier ->
+                viewModel.setMaxSuggestionTier(tier)
+                showTierDialog = false
+            }
+        )
     }
 
     if (showFullDetailWarning) {

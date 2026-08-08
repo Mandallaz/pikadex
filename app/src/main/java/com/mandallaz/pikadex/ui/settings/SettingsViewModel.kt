@@ -10,6 +10,10 @@ import com.mandallaz.pikadex.data.PrefetchManager
 import com.mandallaz.pikadex.data.PrefetchSettings
 import com.mandallaz.pikadex.data.PrefetchState
 import com.mandallaz.pikadex.data.PrefetchTier
+import com.mandallaz.pikadex.data.SuggestionSettings
+import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.util.SmogonTierLabels
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +21,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/** Smogon generation the tier ceiling picker resolves options against — see [TeamViewModel]'s own
+ *  `SUGGESTION_TIER_GEN`, kept in sync with it (BACKLOG.md F17). */
+private const val SUGGESTION_TIER_GEN = "sv"
 
 data class StorageUsage(val httpCacheBytes: Long, val diskCacheBytes: Long, val imageCacheBytes: Long) {
     val totalBytes: Long get() = httpCacheBytes + diskCacheBytes + imageCacheBytes
@@ -27,7 +35,13 @@ data class SettingsUiState(
     val spritesEnabled: Boolean = true,
     val fullDetailEnabled: Boolean = false,
     val storageUsage: StorageUsage? = null,
-    val isMeasuringStorage: Boolean = false
+    val isMeasuringStorage: Boolean = false,
+    /** Team-builder Suggestions' competitive tier ceiling (BACKLOG.md F17) — null means no limit. */
+    val maxSuggestionTier: String? = null,
+    /** Every tier code Gen 9 actually uses, most-used first — empty until [SettingsViewModel]'s
+     *  init block resolves it (best-effort; the picker just shows "Loading..." until then, same
+     *  as the Pokédex list's own tier dialog). */
+    val suggestionTierOptions: List<String> = emptyList()
 ) {
     val hasAnyTierEnabled: Boolean
         get() = essentialsEnabled || spritesEnabled || fullDetailEnabled
@@ -36,7 +50,10 @@ data class SettingsUiState(
 /** [AndroidViewModel], not the usual plain [androidx.lifecycle.ViewModel] — measuring/clearing the
  *  image cache needs a real [android.content.Context] (`context.imageLoader`), and Settings is the
  *  one screen in this app where that's worth the coupling. */
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+class SettingsViewModel @JvmOverloads constructor(
+    application: Application,
+    private val repository: PokedexRepository = AppContainer.repository
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -47,12 +64,34 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { PrefetchSettings.essentialsEnabled.collect { v -> _uiState.update { it.copy(essentialsEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.spritesEnabled.collect { v -> _uiState.update { it.copy(spritesEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.fullDetailEnabled.collect { v -> _uiState.update { it.copy(fullDetailEnabled = v) } } }
+        viewModelScope.launch { SuggestionSettings.maxTier.collect { v -> _uiState.update { it.copy(maxSuggestionTier = v) } } }
+        loadSuggestionTierOptions()
         measureStorage()
     }
 
     fun setEssentialsEnabled(enabled: Boolean) = PrefetchSettings.setEssentialsEnabled(enabled)
     fun setSpritesEnabled(enabled: Boolean) = PrefetchSettings.setSpritesEnabled(enabled)
     fun setFullDetailEnabled(enabled: Boolean) = PrefetchSettings.setFullDetailEnabled(enabled)
+    fun setMaxSuggestionTier(tier: String?) = SuggestionSettings.setMaxTier(tier)
+
+    /** Best-effort, same as every other filter-option fetch in this app (e.g. the Pokédex list's
+     *  own tier dialog) — a failure just leaves the picker showing "Loading...", not an error
+     *  state, since Suggestions themselves degrade gracefully (see [TeamViewModel.loadSuggestions])
+     *  when tier data isn't available. */
+    private fun loadSuggestionTierOptions() {
+        viewModelScope.launch {
+            try {
+                val tiers = repository.getSmogonTiers(SUGGESTION_TIER_GEN)
+                val options = SmogonTierLabels.sortedTiers(tiers.values.toSet())
+                _uiState.update { it.copy(suggestionTierOptions = options) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Left as-is: an empty options list, same "Loading..." the OptionsDialog already
+                // shows for the initial fetch.
+            }
+        }
+    }
 
     fun startPrefetch() {
         val state = _uiState.value

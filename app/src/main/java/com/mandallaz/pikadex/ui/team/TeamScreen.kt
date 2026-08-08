@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,6 +59,7 @@ import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
+import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
@@ -262,6 +264,7 @@ fun TeamScreen(
                     SuggestionsCard(
                         suggestions = uiState.suggestions,
                         spriteIds = uiState.suggestionSpriteIds,
+                        tierCeiling = uiState.suggestionTierCeiling,
                         onAdd = viewModel::addSuggestion
                     )
                 }
@@ -493,13 +496,15 @@ private fun multiplierColors(multiplier: Double, isOffense: Boolean = false): Pa
     }
 }
 
-/** Up to 10 candidates that would fix both a shared weakness and a coverage gap at once — see
- *  [TeamViewModel.loadSuggestions]/BACKLOG.md F11. Sorted ascending by stat total, so the weakest
- *  (least overpowering) options that still qualify lead the row. */
+/** Candidates that would fix both a shared weakness and a coverage gap at once — see
+ *  [TeamViewModel.loadSuggestions]/BACKLOG.md F11/F21. Sorted by total impact (weaknesses resisted
+ *  plus gaps hit) descending, stat total ascending as a tiebreak, so the most useful, least
+ *  overpowering options lead the row. */
 @Composable
 private fun SuggestionsCard(
     suggestions: List<TeamSuggestion>,
     spriteIds: Map<String, Int>,
+    tierCeiling: String?,
     onAdd: (String) -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -511,6 +516,17 @@ private fun SuggestionsCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
             )
+            // The ceiling itself lives in Settings, out of sight from this card — without this
+            // line, a shorter-than-expected list here (or one that suddenly changed) had no
+            // visible cause.
+            if (tierCeiling != null) {
+                Text(
+                    "Limited to ${SmogonTierLabels.labelFor(tierCeiling)} and below (Settings).",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
             // More than fit on a portrait phone in one glance — the row scrolls, but nothing about
             // a plain horizontalScroll Row hints that on its own, so a bare "4 shown, 6 more
             // offscreen" used to read as "only 4 suggestions" with no reason to swipe further.
@@ -549,7 +565,7 @@ private fun SuggestionsCard(
 
 @Composable
 private fun SuggestionTile(suggestion: TeamSuggestion, spriteId: Int, onAdd: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(76.dp)) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(96.dp)) {
         PokemonSprite(id = spriteId, contentDescription = suggestion.name, modifier = Modifier.size(48.dp))
         Text(
             suggestion.name.toDisplayName(),
@@ -571,6 +587,20 @@ private fun SuggestionTile(suggestion: TeamSuggestion, spriteId: Int, onAdd: () 
                 TypeBadge(type, TypeIds.idOrNull(type), height = 14.dp)
             }
         }
+        // The "why" behind this specific suggestion — without it the reasoning in the card's own
+        // subtitle ("would help both...") never ties back to any one tile, and the user has to
+        // work it out by eye from the type badges above. Also what [rankSuggestions] sorts by, so
+        // it doubles as an explanation for the tile's position in the row.
+        Text(
+            "Resists ${suggestion.weaknessesResisted.joinToString(", ") { it.toDisplayName() }} · " +
+                "Hits ${suggestion.gapsHit.joinToString(", ") { it.toDisplayName() }}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp)
+        )
         // The suggestion was scored on this species' base typing only — a mega/gmax/regional form
         // that changes the typing can silently stop qualifying, so name exactly which ones not to
         // pick. Stripped of the shared "<species>-" prefix ("charizard-mega-x" -> "Mega X") to fit

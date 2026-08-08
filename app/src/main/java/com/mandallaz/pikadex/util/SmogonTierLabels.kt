@@ -35,4 +35,17 @@ object SmogonTierLabels {
 
     fun sortedTiers(tierCodes: Collection<String>): List<String> =
         tierCodes.sortedBy { code -> ORDER.indexOf(code).let { if (it >= 0) it else Int.MAX_VALUE } }
+
+    /** True if [tier] is usable at a format capped at [ceiling] — i.e. [tier] is [ceiling] itself
+     *  or anything weaker, the same "this tier or below" rule Smogon's own tier list follows (a UU
+     *  format allows UU, RU, NU... but not OU/Uber). An unrecognized [tier] (not in [ORDER]) is
+     *  treated as weaker than every known tier, so an unfamiliar/new tier code isn't excluded by a
+     *  ceiling filter just because it's unrecognized. An unrecognized [ceiling] allows everything,
+     *  since there's nothing to compare against. */
+    fun isAtOrBelowCeiling(tier: String, ceiling: String): Boolean {
+        val ceilingIndex = ORDER.indexOf(ceiling)
+        if (ceilingIndex < 0) return true
+        val tierIndex = ORDER.indexOf(tier).let { if (it >= 0) it else Int.MAX_VALUE }
+        return tierIndex >= ceilingIndex
+    }
 }

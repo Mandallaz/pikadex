@@ -3,6 +3,7 @@ package com.mandallaz.pikadex.ui.team
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
+import com.mandallaz.pikadex.data.SuggestionSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.TeamSlot
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -16,6 +17,7 @@ import com.mandallaz.pikadex.util.bestOffensiveMultipliers
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
 import com.mandallaz.pikadex.util.computeOffensiveMultipliers
 import com.mandallaz.pikadex.util.coverageGaps
+import com.mandallaz.pikadex.util.filterByTierCeiling
 import com.mandallaz.pikadex.util.findConflictingForms
 import com.mandallaz.pikadex.util.rankSuggestions
 import kotlinx.coroutines.CancellationException
@@ -49,14 +51,19 @@ data class TeamUiState(
      *  picker can preview each roster as sprites. Empty until the master list is available (the
      *  picker then falls back to names), since presets deliberately store names, not ids. */
     val presetSpriteIds: Map<String, Int> = emptyMap(),
-    /** Up to 10 candidates that would improve both the team's shared weaknesses and coverage gaps
-     *  at once — see [rankSuggestions]/BACKLOG.md F11. Cleared whenever the gate in [loadSuggestions]
+    /** Candidates that would improve both the team's shared weaknesses and coverage gaps at once —
+     *  see [rankSuggestions]/BACKLOG.md F11/F21. Cleared whenever the gate in [loadSuggestions]
      *  no longer holds (team full, empty, or the matrix isn't fresh). */
     val suggestions: List<TeamSuggestion> = emptyList(),
     val isSuggestionsLoading: Boolean = false,
     /** Dex ids for [suggestions], resolved the same way [presetSpriteIds] is — sprites are
      *  cosmetic, not part of the pure ranking, so they're kept out of [TeamSuggestion] itself. */
-    val suggestionSpriteIds: Map<String, Int> = emptyMap()
+    val suggestionSpriteIds: Map<String, Int> = emptyMap(),
+    /** The competitive tier ceiling [suggestions] was filtered against, mirrored from
+     *  [SuggestionSettings] at the moment [suggestions] was computed (BACKLOG.md F17) — read by
+     *  the Suggestions card so it can explain why the list is short/empty rather than leaving that
+     *  unexplained, since the setting itself lives on a different screen. Null means no limit. */
+    val suggestionTierCeiling: String? = null
 ) {
     val isMatrixStale: Boolean
         get() = matrixComputedFor != members.map { it.name }.toSet()
@@ -92,6 +99,10 @@ private data class MemberMatchups(
 /** PokeAPI's damage_class for moves that deal no damage. */
 private const val STATUS_DAMAGE_CLASS = "status"
 
+/** Smogon generation Suggestions' tier ceiling (BACKLOG.md F17) is checked against — always the
+ *  most recent generation, so Settings doesn't also need a generation picker for this. */
+private const val SUGGESTION_TIER_GEN = "sv"
+
 class TeamViewModel @JvmOverloads constructor(
     private val repository: PokedexRepository = AppContainer.repository
 ) : ViewModel() {
@@ -108,6 +119,14 @@ class TeamViewModel @JvmOverloads constructor(
     init {
         viewModelScope.launch {
             TeamRepository.team.collect { members -> computeMatrix(members) }
+        }
+        // Settings lives on a different tab, and this ViewModel survives a tab switch (bottom-nav
+        // back stack entries keep their ViewModelStore) — without this, changing the tier ceiling
+        // in Settings and switching back to Team left the previous ceiling's suggestions on screen
+        // until the team itself changed again. loadSuggestions() no-ops safely (isMatrixStale gate)
+        // if the matrix isn't ready yet for this collector's first (immediate) emission.
+        viewModelScope.launch {
+            SuggestionSettings.maxTier.collect { loadSuggestions() }
         }
     }
 
@@ -260,9 +279,11 @@ class TeamViewModel @JvmOverloads constructor(
             return
         }
         val excludeNames = state.members.map { it.name }.toSet()
-        _uiState.update { it.copy(isSuggestionsLoading = true) }
+        val maxTier = SuggestionSettings.maxTier.value
+        _uiState.update { it.copy(isSuggestionsLoading = true, suggestionTierCeiling = maxTier) }
         suggestionsJob = viewModelScope.launch {
             try {
+                var tierByShowdownKey: Map<String, String> = emptyMap()
                 val (masterList, basics, typeDetails) = supervisorScope {
                     val masterDeferred = async { repository.getMasterList() }
                     val basicsDeferred = async { repository.getAllBasics() }
@@ -272,6 +293,10 @@ class TeamViewModel @JvmOverloads constructor(
                     val typeDetailsDeferred = TypeIds.standardTypeNames.associateWith { type ->
                         async { repository.getTypeDetail(type) }
                     }
+                    // Only fetched when a ceiling is actually set — no reason to pay for this
+                    // request (even a cached one) for the common case of no tier filter.
+                    val tiersDeferred = maxTier?.let { async { repository.getSmogonTiers(SUGGESTION_TIER_GEN) } }
+                    tierByShowdownKey = tiersDeferred?.await().orEmpty()
                     Triple(masterDeferred.await(), basicsDeferred.await(), typeDetailsDeferred.mapValues { it.value.await() })
                 }
                 val idByName = masterList.mapNotNull { r -> r.id?.let { r.name to it } }.toMap()
@@ -284,7 +309,8 @@ class TeamViewModel @JvmOverloads constructor(
                     if (total < 300) return@mapNotNull null
                     SuggestionCandidate(name, basic.types, total)
                 }
-                val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, candidates, typeDetails, excludeNames)
+                val tierFilteredCandidates = filterByTierCeiling(candidates, maxTier, tierByShowdownKey)
+                val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, tierFilteredCandidates, typeDetails, excludeNames)
                 // basics (unlike candidates) still has every alt form — exactly the universe
                 // findConflictingForms needs to check a suggested species' mega/gmax/regional
                 // variants against.
