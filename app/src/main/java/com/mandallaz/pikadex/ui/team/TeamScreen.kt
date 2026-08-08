@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.WarningAmber
@@ -508,10 +509,30 @@ private fun SuggestionsCard(
                 "Would help both your team-wide weaknesses and coverage gaps.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+                modifier = Modifier.padding(top = 2.dp)
             )
+            // More than fit on a portrait phone in one glance — the row scrolls, but nothing about
+            // a plain horizontalScroll Row hints that on its own, so a bare "4 shown, 6 more
+            // offscreen" used to read as "only 4 suggestions" with no reason to swipe further.
+            if (suggestions.size > 4) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                    Text(
+                        "Swipe to see all ${suggestions.size}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        Icons.Filled.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
             Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .padding(top = if (suggestions.size > 4) 0.dp else 8.dp)
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 suggestions.forEach { suggestion ->
@@ -541,6 +562,39 @@ private fun SuggestionTile(suggestion: TeamSuggestion, spriteId: Int, onAdd: () 
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 2.dp)
+        ) {
+            suggestion.types.forEach { type ->
+                TypeBadge(type, TypeIds.idOrNull(type), height = 14.dp)
+            }
+        }
+        // The suggestion was scored on this species' base typing only — a mega/gmax/regional form
+        // that changes the typing can silently stop qualifying, so name exactly which ones not to
+        // pick. Stripped of the shared "<species>-" prefix ("charizard-mega-x" -> "Mega X") to fit
+        // this tile's width.
+        if (suggestion.conflictingForms.isNotEmpty()) {
+            Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(top = 2.dp)) {
+                Icon(
+                    Icons.Filled.WarningAmber,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(12.dp).padding(top = 1.dp)
+                )
+                Text(
+                    "Not as " + suggestion.conflictingForms.joinToString(", ") {
+                        it.removePrefix("${suggestion.name}-").toDisplayName()
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 2.dp)
+                )
+            }
+        }
         IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
             Icon(
                 Icons.Filled.Add,

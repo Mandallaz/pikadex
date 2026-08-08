@@ -12,6 +12,7 @@ avoids).
 |---|---|
 | F15 — Team coverage impact preview | **High** |
 | F12 — Match team against a preset trainer | Low |
+| F16 — Swipe between Pokémon on the detail screen | Not yet prioritized |
 
 F10 is cancelled — see the Cancelled section at the bottom.
 
@@ -126,6 +127,21 @@ gap: Dragon."
   ties, empty team). No dedicated `PokedexDetailViewModel` test — no such test file exists today, and
   `TeamViewModel`'s own F11 wiring wasn't unit-tested either; the two pure-function suites above are
   where the real logic risk is.
+
+## F16 — Swipe between Pokémon on the detail screen
+
+**Priority: not yet discussed.** Added to the backlog 2026-08-08.
+
+From `PokedexDetailScreen.kt`, swipe left/right (or a prev/next arrow) to move to the adjacent
+Pokémon without backing out to the list and re-selecting — currently the only way to see the next
+entry is Back, scroll/search, tap again.
+
+Open question for when this gets planned: "adjacent" by what ordering? The screen is reached from
+several places (the grid under its active filter/sort, an evolution chain tap, Compare, a team
+member chip...), and threading whichever ordering was active at the entry point through navigation
+args is real plumbing. Simplest candidate: always step by dex number regardless of entry point —
+predictable, needs no extra nav state, matches "Pokédex" as a numbered reference work. Not yet
+confirmed with the user.
 
 ## Cancelled
 

@@ -16,6 +16,7 @@ import com.mandallaz.pikadex.util.bestOffensiveMultipliers
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
 import com.mandallaz.pikadex.util.computeOffensiveMultipliers
 import com.mandallaz.pikadex.util.coverageGaps
+import com.mandallaz.pikadex.util.findConflictingForms
 import com.mandallaz.pikadex.util.rankSuggestions
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -284,8 +285,19 @@ class TeamViewModel @JvmOverloads constructor(
                     SuggestionCandidate(name, basic.types, total)
                 }
                 val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, candidates, typeDetails, excludeNames)
-                val spriteIds = ranked.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
-                _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = ranked, suggestionSpriteIds = spriteIds) }
+                // basics (unlike candidates) still has every alt form — exactly the universe
+                // findConflictingForms needs to check a suggested species' mega/gmax/regional
+                // variants against.
+                val typesByName = basics.mapValues { it.value.types }
+                val withFormNotes = ranked.map { suggestion ->
+                    suggestion.copy(
+                        conflictingForms = findConflictingForms(
+                            suggestion.name, suggestion.types, sharedWeaknesses, coverageGaps, typesByName, typeDetails
+                        )
+                    )
+                }
+                val spriteIds = withFormNotes.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
+                _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = withFormNotes, suggestionSpriteIds = spriteIds) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
