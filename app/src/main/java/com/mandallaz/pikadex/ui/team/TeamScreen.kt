@@ -42,12 +42,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -61,6 +63,7 @@ import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.Sprites
+import com.mandallaz.pikadex.util.isCompactMatrixLayout
 import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.toDisplayName
@@ -70,15 +73,20 @@ private val MEMBER_COLUMN_WIDTH = 64.dp
 private val MATRIX_ROW_HEIGHT = 32.dp
 
 /**
- * Below this much content height, the pinned-header matrix layout stops working and the screen
- * scrolls as one page instead — see the comment at the [BoxWithConstraints] in [TeamScreen].
+ * Below this much *leftover* height (viewport minus the actually-measured header above the
+ * matrix), the pinned-header matrix layout stops working and the screen scrolls as one page
+ * instead — see the comment at the [BoxWithConstraints] in [TeamScreen].
  *
- * The header above the matrix (team chips ~120dp, weakness banner ~80dp, sprite header ~48dp) runs
- * to roughly 250dp, so this leaves a matrix viewport of at least ~150dp — about five type rows,
- * enough for the pinned layout to be worth having. A typical phone has ~750dp here in portrait and
- * ~250dp in landscape, so the two orientations land either side of it with room to spare.
+ * Originally this compared against a hardcoded guess of the header's height (~250dp) instead of
+ * the real, measured one. The suggestions card has grown since (tier-ceiling line, wider tiles,
+ * multi-line "why" text) — on an ordinary portrait phone the header could end up tall enough to
+ * squeeze the matrix's leftover space toward zero while the guess still said "plenty of room",
+ * leaving no scroll gesture able to reach it. Comparing against the measured header height keeps
+ * this correct regardless of how tall the header grows later.
+ *
+ * ~150dp leaves room for about five type rows, enough for the pinned layout to be worth having.
  */
-private val COMPACT_LAYOUT_MIN_HEIGHT = 400.dp
+private val COMPACT_LAYOUT_MIN_REMAINING_HEIGHT = 150.dp
 
 /**
  * Which direction of the matchup the matrix is showing.
@@ -152,22 +160,51 @@ fun TeamScreen(
             }
 
             // The matrix used to take whatever vertical space the header left over. In landscape
-            // the header alone is taller than the entire content area, so "left over" was zero:
-            // the matrix measured to nothing and, since this Column never scrolled, there was no
-            // gesture that could bring it back — the coverage matrix, the whole point of the
-            // screen, was simply unreachable. When the viewport is too short to host both, the
-            // screen now scrolls as one page and the matrix renders at full height instead. The
-            // sprite header gives up being pinned there; the type-name column stays pinned in both
-            // layouts, since losing track of *which row is which* is the more disorienting of the
-            // two, and it costs nothing because it rides the horizontal axis.
-            val compact = maxHeight < COMPACT_LAYOUT_MIN_HEIGHT
+            // (or whenever the header itself grows, e.g. the suggestions card) the header alone
+            // can be taller than the entire content area, so "left over" was zero: the matrix
+            // measured to nothing and, since this Column never scrolled, there was no gesture that
+            // could bring it back — the coverage matrix, the whole point of the screen, was simply
+            // unreachable. When the *measured* header leaves too little room, the screen now
+            // scrolls as one page and the matrix renders at full height instead. The sprite header
+            // gives up being pinned there; the type-name column stays pinned in both layouts, since
+            // losing track of *which row is which* is the more disorienting of the two, and it
+            // costs nothing because it rides the horizontal axis.
+            //
+            // headerHeightPx starts at 0 (nothing measured yet), which reads as "plenty of room" —
+            // compact briefly, then corrects itself once onGloballyPositioned reports the real
+            // size, same one-frame settle every measure-then-decide layout in Compose has.
+            var headerHeightPx by remember { mutableStateOf(0) }
+            val headerHeightDp = with(LocalDensity.current) { headerHeightPx.toDp() }
+            val compact = isCompactMatrixLayout(maxHeight, headerHeightDp, COMPACT_LAYOUT_MIN_REMAINING_HEIGHT)
             val pageScrollState = rememberScrollState()
+
+            // Two independent scroll axes, shared between a pinned header/column and the scrolling
+            // body — previously the whole thing (corner, sprite header, type-name column, and cells)
+            // scrolled together in one nested horizontal-then-vertical scroll, so scrolling down to
+            // see e.g. Dragon/Dark/Steel/Fairy lost the sprite header, and scrolling right to see a
+            // 5th/6th member lost the type-name column — there was no way to tell rows/columns apart
+            // once scrolled. Declared here (rather than next to the sprite/matrix rows that use them)
+            // since both the sprite header row (still part of the measured header below) and the
+            // matrix row after it need to share the same state.
+            val horizontalScrollState = rememberScrollState()
+            val verticalScrollState = rememberScrollState()
+
+            // The pinned type-name column and the scrolling cell grid are two separate Columns that
+            // only stay row-aligned because both use this exact same fixed height — so it can't just
+            // wrap its content. Instead it grows with the user's font scale, since at 1.5-2x the
+            // multiplier text ("×4", "×½") no longer fits 32dp and was getting vertically clipped.
+            val rowHeight = MATRIX_ROW_HEIGHT * LocalDensity.current.fontScale.coerceAtLeast(1f)
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(if (compact) Modifier.verticalScroll(pageScrollState) else Modifier)
             ) {
+                // Everything here down to the sprite header row is what "compact" above measures
+                // against — wrapped in one Column purely so onGloballyPositioned can report its
+                // total height, not for any layout purpose (a Column wrapping a Column changes
+                // nothing about how its children are placed).
+                Column(modifier = Modifier.onGloballyPositioned { headerHeightPx = it.size.height }) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -269,21 +306,6 @@ fun TeamScreen(
                     )
                 }
 
-                // Two independent scroll axes, shared between a pinned header/column and the scrolling
-                // body — previously the whole thing (corner, sprite header, type-name column, and cells)
-                // scrolled together in one nested horizontal-then-vertical scroll, so scrolling down to
-                // see e.g. Dragon/Dark/Steel/Fairy lost the sprite header, and scrolling right to see a
-                // 5th/6th member lost the type-name column — there was no way to tell rows/columns apart
-                // once scrolled.
-                val horizontalScrollState = rememberScrollState()
-                val verticalScrollState = rememberScrollState()
-
-                // The pinned type-name column and the scrolling cell grid are two separate Columns that
-                // only stay row-aligned because both use this exact same fixed height — so it can't just
-                // wrap its content. Instead it grows with the user's font scale, since at 1.5-2x the
-                // multiplier text ("×4", "×½") no longer fits 32dp and was getting vertically clipped.
-                val rowHeight = MATRIX_ROW_HEIGHT * LocalDensity.current.fontScale.coerceAtLeast(1f)
-
                 Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(horizontal = 16.dp)) {
                     Box(modifier = Modifier.width(TYPE_COLUMN_WIDTH))
                     Row(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
@@ -300,6 +322,7 @@ fun TeamScreen(
                             }
                         }
                     }
+                }
                 }
 
                 // Compact takes its height from the content and lets the page scroll it; otherwise

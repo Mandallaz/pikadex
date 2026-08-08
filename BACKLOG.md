@@ -11,6 +11,7 @@
 | F17 — Filter dex by "is legendary" | Medium | To groom |
 | F12 — Match team against a preset trainer | Low | Plan ready |
 | F18 — Fix ExperimentalCoilApi warnings at compile time | — | Done |
+| F23 — Fix unreachable coverage matrix on Team screen | — | Done |
 | F22 — Suggestion "why" text and impact-based sort | — | Done |
 | F21 — Suggestion tier ceiling filter | — | Done |
 | F9 — Showdown export | — | Cancelled |
@@ -300,6 +301,30 @@ reference work, and needs no extra nav state.
   back-stack entry rather than pushing (same `popUpTo(...){inclusive=true}` pattern the Compare
   screen's own re-navigate already uses), so Back always returns to wherever the user actually
   entered the detail flow from, not back through every Pokémon swiped past on the way.
+
+## F23 — Fix unreachable coverage matrix on Team screen
+
+**Done 2026-08-08.** User-reported bug: on the Team screen, scrolling down no longer reached the
+type coverage matrix.
+
+- **Root cause.** `036fe14` ("Make the team coverage matrix reachable in landscape") introduced a
+  `compact` layout switch: below `COMPACT_LAYOUT_MIN_HEIGHT` (400dp) of *total viewport* height,
+  the whole screen scrolls as one page; above it, the matrix gets whatever space the header leaves
+  over, in its own scrollable viewport, and the outer page doesn't scroll at all. That threshold
+  compared total height against a hardcoded guess of the header's size (~250dp) — not the header's
+  actual, measured height. F21/F22 (tier-ceiling line, wider suggestion tiles, multi-line "why"
+  text) grew the real header past that guess, so on an ordinary portrait phone (well over 400dp
+  total) the non-compact branch kept being chosen even though the grown header now left ~0dp for
+  the matrix — and with the page itself not scrolling, there was no gesture left to reach it.
+- **Fix.** Replaced the static threshold with a measured one. The header content (team chips
+  through the sprite row, everything above the matrix grid) is wrapped in a `Column` with
+  `Modifier.onGloballyPositioned` reporting its real height; `compact` now compares *remaining*
+  space (`maxHeight - measuredHeaderHeight`) against a 150dp floor
+  (`COMPACT_LAYOUT_MIN_REMAINING_HEIGHT`), pulled out as pure function `isCompactMatrixLayout` in
+  new `util/TeamMatrixLayout.kt` so the decision has a regression test independent of Compose.
+- Tests: `util/TeamMatrixLayoutTest.kt` — plenty of room stays non-compact, a tall viewport with a
+  header that leaves too little room goes compact (the exact regression), header taller than the
+  viewport, and the floor's boundary (exactly at it vs. just above).
 
 ## F22 — Suggestion "why" text and impact-based sort
 
