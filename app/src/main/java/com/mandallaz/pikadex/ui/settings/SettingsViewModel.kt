@@ -3,6 +3,7 @@ package com.mandallaz.pikadex.ui.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.JsonDiskCache
@@ -105,6 +106,10 @@ class SettingsViewModel @JvmOverloads constructor(
 
     fun cancelPrefetch() = PrefetchManager.cancel()
 
+    // DiskCache.size and DiskCache.clear() are still @ExperimentalCoilApi in coil-compose 2.7.0
+    // (Coil hasn't stabilized a non-experimental accessor for them yet) — opted in deliberately
+    // rather than suppressed, since this is the only way to read/clear the image disk cache.
+    @OptIn(ExperimentalCoilApi::class)
     fun measureStorage() {
         _uiState.update { it.copy(isMeasuringStorage = true) }
         viewModelScope.launch {
@@ -120,6 +125,8 @@ class SettingsViewModel @JvmOverloads constructor(
         }
     }
 
+    // See measureStorage()'s @OptIn comment — same experimental DiskCache.clear() call.
+    @OptIn(ExperimentalCoilApi::class)
     fun clearDownloadedData() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {

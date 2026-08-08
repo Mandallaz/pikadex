@@ -4,13 +4,13 @@
 
 | Feature | Priority | Status |
 |---|---|---|
-| F18 — Fix ExperimentalCoilApi warnings at compile time | **High** | To groom |
 | F15 — Team coverage impact preview | **High** | Plan ready |
 | F16 — Swipe between Pokémon on the detail screen | **High** | Plan ready |
 | F20 — Radical Red mode (rebalanced stats + trainer teams) | Medium | To groom |
 | F19 — Black/AMOLED mode | Medium | To groom |
 | F17 — Filter dex by "is legendary" | Medium | To groom |
 | F12 — Match team against a preset trainer | Low | Plan ready |
+| F18 — Fix ExperimentalCoilApi warnings at compile time | — | Done |
 | F22 — Suggestion "why" text and impact-based sort | — | Done |
 | F21 — Suggestion tier ceiling filter | — | Done |
 | F9 — Showdown export | — | Cancelled |
@@ -30,15 +30,20 @@ wasted effort a kept description avoids.
 
 ## F18 — Fix ExperimentalCoilApi warnings at compile time
 
-**To groom** — raised but no implementation plan agreed yet.
+**Done 2026-08-08.** `./gradlew compileDebugKotlin` emitted two `This declaration needs opt-in`
+warnings from `SettingsViewModel.kt` (`measureStorage()` and `clearDownloadedData()`).
 
-`./gradlew compileDebugKotlin` currently emits two `This declaration needs opt-in` warnings from
-`SettingsViewModel.kt` (`measureStorage()` and `clearDownloadedData()`), both from calling
-`ImageLoader.diskCache` (a Coil API marked `@ExperimentalCoilApi`). Currently silent (build still
-succeeds), but real cleanup, not just suppression: either wrap both call sites in
-`@OptIn(ExperimentalCoilApi::class)` with a comment on why the experimental surface is accepted, or
-check whether the installed Coil version has since stabilized a non-experimental accessor for the
-disk cache. Open question to resolve before this moves to "Plan ready": which of the two.
+- Checked the installed `coil-compose` version (2.7.0, via `gradle/libs.versions.toml`) against its
+  bundled sources: the warnings don't come from `ImageLoader.diskCache` itself (stable since 2.2) but
+  from the two `DiskCache` members it exposes that are called — `DiskCache.size` and
+  `DiskCache.clear()` — both still annotated `@ExperimentalCoilApi` in 2.7.0's `DiskCache.kt`. No
+  stabilized non-experimental accessor exists yet in this version, resolving the open question in
+  favor of opting in rather than switching APIs.
+- `@OptIn(ExperimentalCoilApi::class)` added to both `measureStorage()` and `clearDownloadedData()`,
+  each with a one-line comment on why the experimental surface is accepted.
+- Verified via `./gradlew compileDebugKotlin --rerun-tasks` (config cache otherwise no-ops an
+  unchanged file): warnings gone, build succeeds. `./gradlew testDebugUnitTest` still green — no
+  behavior change, so no new test needed.
 
 ## F20 — Radical Red mode
 
