@@ -7,6 +7,7 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.FavoritesRepository
+import com.mandallaz.pikadex.data.PrefetchSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.CacheControlInterceptor
 import okhttp3.OkHttpClient
@@ -34,6 +35,7 @@ class PikaDexApplication : Application(), ImageLoaderFactory {
         AppContainer.init(this)
         FavoritesRepository.init(this)
         TeamRepository.init(this)
+        PrefetchSettings.init(this)
     }
 
     override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)

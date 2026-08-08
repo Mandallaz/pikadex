@@ -31,11 +31,16 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 
 A reference screen for the 16 rock-paper-scissors type cycles, including the 4 "perfect" ones where offense and defense are fully symmetric. Each gets a diagram, an explanation, and the typing that best counters it.
 
+### Settings
+
+- Offline prefetch, tiered: Essentials (base stats, moves, type chart, Smogon tiers, ~1MB), Sprites (artwork and sprites for every entry, 50-150MB), and an opt-in Full detail tier (every Pokémon's complete data) — each with live progress and partial-failure reporting that never aborts the run
+- Storage accounting for the API and image caches, with a one-tap "Clear downloaded data"
+
 ### Throughout
 
 - Favorites, tracked separately from the team
 - Dark mode, following the system setting
-- Persistent disk cache for API responses and images, so a warm start needs far less network
+- Persistent disk cache for API responses and images, so a warm start needs far less network — see Settings to prefetch it all ahead of time
 - Explicit error states with a retry, instead of a failed fetch quietly rendering as "no results"
 - Portrait and landscape
 

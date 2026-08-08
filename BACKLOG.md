@@ -11,7 +11,6 @@ avoids).
 | Feature | Priority |
 |---|---|
 | F15 — Team coverage impact preview | **High** |
-| F13 — Offline prefetch | Medium |
 | F12 — Match team against a preset trainer | Low |
 
 F10 is cancelled — see the Cancelled section at the bottom.
@@ -60,64 +59,6 @@ implement when asked. "How does my team fare against Cynthia's?"
   `PresetTeamDialog(mode = COMPARE, onCompare = { viewModel.loadVersus(it); showMatchup = true })`.
 - Test: `util/TeamVersusTest.kt` — grid shape, correct best-multiplier direction each way, empty
   roster edge cases, same style as `TeamSuggestionsTest.kt`.
-
-## F13 — Offline prefetch
-
-**Priority: Medium.** **Plan finalized 2026-08-08** — simplest option chosen for every open question;
-implement when asked.
-
-No settings screen or navigation slot exists in the app today. Simplest entry point, confirmed with
-the user: a 4th bottom-nav tab, "Settings" (`Icons.Default.Settings`), alongside Pokédex/Triangles/
-Team in `PokedexNavHost.kt` — new `ROUTE_SETTINGS`, `ui/settings/SettingsScreen.kt` +
-`ui/settings/SettingsViewModel.kt`.
-
-- New `data/PrefetchManager.kt`, a singleton (not a ViewModel) so its `CoroutineScope` survives
-  navigating away from Settings — the one deliberate exception to the app's usual
-  `viewModelScope`-owns-everything pattern:
-  ```kotlin
-  sealed interface PrefetchState {
-      data object Idle : PrefetchState
-      data class Running(val done: Int, val total: Int, val phase: String) : PrefetchState
-      data class Finished(val failed: Int) : PrefetchState
-      data class Failed(val message: String) : PrefetchState
-  }
-  object PrefetchManager {
-      private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-      val state: StateFlow<PrefetchState> = ...
-      fun prefetchEssentials(repository: PokedexRepository)
-      fun prefetchSprites(context: Context, repository: PokedexRepository)
-      fun prefetchFullDetail(repository: PokedexRepository)
-      fun cancel()
-  }
-  ```
-- Shared engine: `internal suspend fun runPrefetchBatch(units: List<suspend () -> Unit>, concurrency:
-  Int, onProgress: (done: Int) -> Unit): Int /* failedCount */` — runs [units] under `Semaphore(6)`,
-  each wrapped in its own `try/catch(Exception)` (never `CancellationException`) so one failure never
-  aborts the run, `delay(200)` after every wave of 6 (politeness). Small and pure enough (fake
-  suspend lambdas, some throwing) to be the one part of F13 with real unit test coverage — the
-  tier-specific wiring below is manual-verification only, same as `TeamViewModel`'s own F11 wiring.
-- **Essentials** (default on): `getAllBasics()` + `getAllMoveInfo()` + `getTypeDetail(type)` for
-  `TypeIds.standardTypeNames` (18) + `getSmogonTiers(genCode)` for each `Smogon.ALL_GENERATIONS`
-  code. `total` = `1 + 1 + 18 + ALL_GENERATIONS.size`.
-- **Sprites** (default on): for every `getMasterList()` entry with a non-null id, two Coil
-  `ImageRequest`s (`Sprites.officialArtworkUrl`/`defaultSpriteUrl`) run via `context.imageLoader
-  .execute(request)` (a suspend call, simpler to gate with the shared `Semaphore(6)` than the
-  listener-based `enqueue`) with `memoryCachePolicy(CachePolicy.DISABLED)` /
-  `diskCachePolicy(CachePolicy.ENABLED)`. `total` = `2 * masterList.size`. No alt-form id filtering —
-  the spec says "every entry" and sprites exist for forms too.
-- **Full detail** (explicit opt-in, UI shows a warning first): `getPokemonDetailBundle(name)` per
-  master-list entry (already a 3-way cache: pokemon/species/evolution chain). `total` =
-  `masterList.size`.
-- Toggle persistence: new `PrefetchSettings` object, `SharedPreferences`-backed, same pattern as
-  `TeamRepository`/`FavoritesRepository` — no new dependency. Toggles just gate which tiers the
-  Settings screen's "Prefetch now" button runs; no background auto-scheduling (WorkManager) — out of
-  scope, the spec only asks for a manual entry point.
-- Storage accounting on `SettingsScreen`: sizes of `cacheDir/http_cache`, `filesDir/disk_cache`, and
-  `context.imageLoader.diskCache?.directory`, measured on `Dispatchers.IO`. "Clear downloaded data"
-  clears all three — `AppContainer.sharedOkHttpClient.cache?.evictAll()`, a new
-  `JsonDiskCache.clear()`, `context.imageLoader.diskCache?.clear()` — then re-measures.
-- Test: `data/PrefetchBatchTest.kt` covering `runPrefetchBatch`'s concurrency cap, partial-failure
-  counting, and progress callback ordering with fake suspend units.
 
 ## F15 — Preview a Pokémon's impact on the current team's coverage
 

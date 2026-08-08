@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChangeHistory
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.ui.compare.CompareScreen
 import com.mandallaz.pikadex.ui.detail.PokedexDetailScreen
 import com.mandallaz.pikadex.ui.list.PokedexListScreen
+import com.mandallaz.pikadex.ui.settings.SettingsScreen
 import com.mandallaz.pikadex.ui.team.TeamScreen
 import com.mandallaz.pikadex.ui.typechart.TypeTrianglesScreen
 
@@ -38,6 +40,7 @@ private const val ROUTE_DETAIL = "detail/{pokemonName}"
 private const val ROUTE_TEAM = "team"
 private const val ROUTE_TYPE_TRIANGLES = "type-triangles"
 private const val ROUTE_COMPARE = "compare/{leftName}/{rightName}"
+private const val ROUTE_SETTINGS = "settings"
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
 
@@ -48,7 +51,8 @@ private data class BottomTab(val route: String, val label: String, val icon: Ima
 private val BOTTOM_TABS = listOf(
     BottomTab(ROUTE_LIST, "Pokédex", Icons.Default.Home),
     BottomTab(ROUTE_TYPE_TRIANGLES, "Triangles", Icons.Default.ChangeHistory),
-    BottomTab(ROUTE_TEAM, "Team", Icons.Default.Groups)
+    BottomTab(ROUTE_TEAM, "Team", Icons.Default.Groups),
+    BottomTab(ROUTE_SETTINGS, "Settings", Icons.Default.Settings)
 )
 
 @Composable
@@ -176,6 +180,9 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
             }
             composable(ROUTE_TEAM) {
                 TeamScreen(onBrowsePokedex = { switchTab(ROUTE_LIST) })
+            }
+            composable(ROUTE_SETTINGS) {
+                SettingsScreen()
             }
         }
     }

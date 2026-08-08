@@ -63,4 +63,17 @@ object JsonDiskCache {
             tempFile.delete()
         }
     }
+
+    /** Deletes every cached entry — the "Clear downloaded data" settings action. The in-memory
+     *  caches layered on top of this ([PokedexRepository]'s [AsyncValueCache]s) are untouched, so a
+     *  screen that already loaded this process's data keeps working; only the *next* cold start (or
+     *  an explicit re-prefetch) actually re-fetches from network. */
+    suspend fun clear() = withContext(Dispatchers.IO) {
+        cacheDir.listFiles()?.forEach { it.delete() }
+    }
+
+    /** Total bytes on disk — shown as storage accounting on the Settings screen. */
+    suspend fun sizeBytes(): Long = withContext(Dispatchers.IO) {
+        cacheDir.listFiles()?.sumOf { it.length() } ?: 0L
+    }
 }
