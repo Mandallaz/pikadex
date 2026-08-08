@@ -7,7 +7,7 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 ### Pokédex
 
 - Search by name or dex number across every entry PokeAPI exposes, alternate forms included
-- Filters behind a single sheet, so they don't eat the grid: type (multi-select, AND semantics), move, ability, generation, Smogon competitive tier, and favorites-only
+- Filters behind a single sheet, so they don't eat the grid: type (multi-select, AND semantics), move, ability, generation, Smogon competitive tier, favorites-only, and a minimum per-stat threshold (Any/50+/100+/150+/200+)
 - Sort by dex number, any base stat, or the stat total — ascending or descending
 - Grid sizes its columns to the screen rather than to a fixed count
 
