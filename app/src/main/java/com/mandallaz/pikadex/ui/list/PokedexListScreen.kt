@@ -40,6 +40,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -91,6 +94,10 @@ private val POKEMON_CARD_MIN_WIDTH = 120.dp
 
 /** Below this content height the list header stops being pinned — see [PokedexListScreen]. */
 private val COMPACT_HEADER_MAX_HEIGHT = 400.dp
+
+/** Discrete choices for the "Minimum Stats" filter's segmented buttons, one row per stat. 0 means
+ *  no constraint (see [PokedexListUiState.statMinimums]'s KDoc). */
+private val STAT_MINIMUM_TIERS = listOf(0, 50, 100, 150, 200)
 
 private enum class ActiveDialog { NONE, MOVE, ABILITY, FORMAT_GEN, FORMAT_TIER, SORT, RARITY }
 
@@ -417,7 +424,8 @@ fun PokedexListScreen(
                     viewModel.loadTierOptionsIfNeeded()
                     activeDialog = ActiveDialog.FORMAT_TIER
                 },
-                onOpenRarity = { activeDialog = ActiveDialog.RARITY }
+                onOpenRarity = { activeDialog = ActiveDialog.RARITY },
+                onStatMinimumChanged = viewModel::onStatMinimumChanged
             )
         }
     }
@@ -510,7 +518,8 @@ private fun FilterSheetContent(
     onOpenAbility: () -> Unit,
     onOpenFormat: () -> Unit,
     onOpenTier: () -> Unit,
-    onOpenRarity: () -> Unit
+    onOpenRarity: () -> Unit,
+    onStatMinimumChanged: (String, Int) -> Unit
 ) {
     // verticalScroll: a plain Column here could overflow the sheet's available height in
     // landscape or at large font scales — 18 type chips plus 5 "other filters" chips is enough
@@ -595,6 +604,40 @@ private fun FilterSheetContent(
                 selected = uiState.rarityFilter != null,
                 onClick = onOpenRarity
             )
+        }
+
+        Text(
+            "Minimum Stats",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 20.dp, bottom = 4.dp)
+        )
+        if (uiState.isStatsLoading && uiState.baseStats.isEmpty()) {
+            Text(
+                "Loading base stats…",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            // Every real stat (excludes DEX_NUMBER/NAME/TOTAL, which have no apiName) — reusing
+            // SortStat's own list+labels instead of a second, easy-to-drift-apart stat name list.
+            SortStat.entries.mapNotNull { stat -> stat.apiName?.let { stat to it } }.forEach { (stat, apiName) ->
+                val minimum = uiState.statMinimums[apiName] ?: 0
+                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                    Text(stat.label, style = MaterialTheme.typography.bodyMedium)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        STAT_MINIMUM_TIERS.forEachIndexed { index, tier ->
+                            SegmentedButton(
+                                selected = minimum == tier,
+                                onClick = { onStatMinimumChanged(apiName, tier) },
+                                enabled = uiState.baseStats.isNotEmpty(),
+                                shape = SegmentedButtonDefaults.itemShape(index, STAT_MINIMUM_TIERS.size),
+                                label = { Text(if (tier == 0) "Any" else "$tier+") }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -63,12 +63,15 @@ data class PokedexListUiState(
     // name sets rather than exposing the full PokemonBasics map, since that's all this filter
     // needs and it keeps this ViewModel's state decoupled from the GraphQL data source's types.
     val legendaryNames: Set<String> = emptySet(),
-    val mythicalNames: Set<String> = emptySet()
+    val mythicalNames: Set<String> = emptySet(),
+    // Only keys with an active (> 0) minimum are present — a slider at its default (0) imposes no
+    // constraint, so there's nothing to filter on and no reason for it to occupy a map entry.
+    val statMinimums: Map<String, Int> = emptyMap()
 ) {
     val hasActiveFilters: Boolean
         get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
             selectedFormatGen != null || selectedFormatTier != null || showFavoritesOnly ||
-            sortStat != null || rarityFilter != null
+            sortStat != null || rarityFilter != null || statMinimums.isNotEmpty()
 
     /** How many of the filter controls (not counting sort) are currently set — shown as a badge
      *  count on the "Filters" button so it's clear at a glance whether/how much filtering is active
@@ -79,7 +82,8 @@ data class PokedexListUiState(
             (if (selectedAbility != null) 1 else 0) +
             (if (selectedFormatGen != null || selectedFormatTier != null) 1 else 0) +
             (if (showFavoritesOnly) 1 else 0) +
-            (if (rarityFilter != null) 1 else 0)
+            (if (rarityFilter != null) 1 else 0) +
+            statMinimums.size
 
     /** The tier filter works standalone (e.g. picking "Uber" with no generation chosen), so it
      *  needs a generation to look up regardless — this defaults to the current one. */
@@ -132,6 +136,17 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
                 RarityFilter.MYTHICAL -> resource.name in state.mythicalNames
                 RarityFilter.ORDINARY -> resource.name !in state.legendaryNames && resource.name !in state.mythicalNames
             }
+        }
+    }
+
+    // Same "no data yet, don't filter" guard as rarity/sort above — statMinimums is only ever set
+    // from the same sheet that already triggered loadBaseStatsIfNeeded, so this window is brief,
+    // but a Pokémon whose own entry is missing from an otherwise-loaded map (a partial/stale fetch)
+    // still can't prove it satisfies a minimum, so it's excluded rather than assumed to pass.
+    if (state.statMinimums.isNotEmpty() && state.baseStats.isNotEmpty()) {
+        list = list.filter { resource ->
+            val stats = state.baseStats[resource.name] ?: return@filter false
+            state.statMinimums.all { (key, minimum) -> (stats[key] ?: 0) >= minimum }
         }
     }
 
@@ -487,6 +502,14 @@ class PokedexListViewModel @JvmOverloads constructor(
         _uiState.update { it.copy(sortAscending = !it.sortAscending) }
     }
 
+    /** [minimum] of 0 removes the constraint entirely rather than storing a no-op 0 entry — see
+     *  the KDoc on [PokedexListUiState.statMinimums]. */
+    fun onStatMinimumChanged(statKey: String, minimum: Int) {
+        _uiState.update {
+            it.copy(statMinimums = if (minimum <= 0) it.statMinimums - statKey else it.statMinimums + (statKey to minimum))
+        }
+    }
+
     fun clearFilters() {
         tierOptionsGen = null
         typeFilterJob?.cancel()
@@ -502,6 +525,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 selectedFormatTier = null, formatFilterNames = null,
                 showFavoritesOnly = false,
                 rarityFilter = null,
+                statMinimums = emptyMap(),
                 // Same reason as the individual cancel sites: whichever of the four jobs just got
                 // cancelled will never clear this itself, so Reset while a filter was still
                 // resolving used to leave the grid's spinner up permanently.

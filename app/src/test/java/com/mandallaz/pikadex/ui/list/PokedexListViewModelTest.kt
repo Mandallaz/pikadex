@@ -156,4 +156,45 @@ class PokedexListViewModelTest {
         val state = PokedexListUiState(allPokemon = unsorted, sortStat = SortStat.NAME, sortAscending = true, baseStats = emptyMap())
         assertEquals(listOf("bulbasaur", "charmander", "squirtle"), computeDisplayed(state, "").map { it.name })
     }
+
+    // --- Stat minimum filter -------------------------------------------------
+
+    private val statBaseline = mapOf(
+        "charmander" to mapOf("attack" to 52, "speed" to 65),
+        "bulbasaur" to mapOf("attack" to 49, "speed" to 45),
+        "squirtle" to mapOf("attack" to 48, "speed" to 43)
+    )
+
+    @Test
+    fun `a stat minimum keeps only entries meeting or exceeding it`() {
+        val state = PokedexListUiState(allPokemon = unsorted, baseStats = statBaseline, statMinimums = mapOf("attack" to 49))
+        assertEquals(listOf("charmander", "bulbasaur"), computeDisplayed(state, "").map { it.name })
+    }
+
+    @Test
+    fun `multiple stat minimums combine as AND, not OR`() {
+        // charmander clears attack>=50 but not speed>=60; nothing clears both except charmander itself here —
+        // pick thresholds only charmander satisfies on both stats to prove they're ANDed, not ORed.
+        val state = PokedexListUiState(
+            allPokemon = unsorted,
+            baseStats = statBaseline,
+            statMinimums = mapOf("attack" to 50, "speed" to 60)
+        )
+        assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
+    }
+
+    @Test
+    fun `a resource missing from an otherwise-loaded stats map is excluded, not assumed to pass`() {
+        val partial = mapOf("bulbasaur" to mapOf("attack" to 49))
+        val state = PokedexListUiState(allPokemon = unsorted, baseStats = partial, statMinimums = mapOf("attack" to 1))
+        assertEquals(listOf("bulbasaur"), computeDisplayed(state, "").map { it.name })
+    }
+
+    // Same "not loaded yet" guard as the rarity filter — an active minimum with no bulk stats data
+    // at all must not filter the grid down to nothing while the fetch is still in flight.
+    @Test
+    fun `a stat minimum with no base stats loaded yet leaves the list untouched`() {
+        val state = PokedexListUiState(allPokemon = unsorted, statMinimums = mapOf("attack" to 100))
+        assertEquals(unsorted, computeDisplayed(state, ""))
+    }
 }
