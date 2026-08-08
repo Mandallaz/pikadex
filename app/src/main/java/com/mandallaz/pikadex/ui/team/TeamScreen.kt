@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -57,6 +58,7 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.Sprites
+import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.toDisplayName
 
@@ -251,6 +253,16 @@ fun TeamScreen(
                             }
                         }
                     }
+                }
+
+                // Only worth showing once there's actually room to add someone and something to
+                // suggest — hidden rather than an empty/placeholder card the rest of the time.
+                if (uiState.members.size < TeamRepository.MAX_SIZE && uiState.suggestions.isNotEmpty()) {
+                    SuggestionsCard(
+                        suggestions = uiState.suggestions,
+                        spriteIds = uiState.suggestionSpriteIds,
+                        onAdd = viewModel::addSuggestion
+                    )
                 }
 
                 // Two independent scroll axes, shared between a pinned header/column and the scrolling
@@ -477,6 +489,65 @@ private fun multiplierColors(multiplier: Double, isOffense: Boolean = false): Pa
         multiplier == 0.0 -> if (isOffense) bad else immune
         multiplier > 1.0 -> if (isOffense) good else bad
         else -> if (isOffense) bad else good
+    }
+}
+
+/** Up to 10 candidates that would fix both a shared weakness and a coverage gap at once — see
+ *  [TeamViewModel.loadSuggestions]/BACKLOG.md F11. Sorted ascending by stat total, so the weakest
+ *  (least overpowering) options that still qualify lead the row. */
+@Composable
+private fun SuggestionsCard(
+    suggestions: List<TeamSuggestion>,
+    spriteIds: Map<String, Int>,
+    onAdd: (String) -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text("Suggestions", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Would help both your team-wide weaknesses and coverage gaps.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                suggestions.forEach { suggestion ->
+                    SuggestionTile(
+                        suggestion = suggestion,
+                        spriteId = spriteIds[suggestion.name] ?: 0,
+                        onAdd = { onAdd(suggestion.name) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionTile(suggestion: TeamSuggestion, spriteId: Int, onAdd: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(76.dp)) {
+        PokemonSprite(id = spriteId, contentDescription = suggestion.name, modifier = Modifier.size(48.dp))
+        Text(
+            suggestion.name.toDisplayName(),
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            "BST ${suggestion.statTotal}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = "Add ${suggestion.name} to team",
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 

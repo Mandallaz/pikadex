@@ -9,11 +9,14 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepository
 import com.mandallaz.pikadex.util.PresetTeam
 import com.mandallaz.pikadex.util.PresetTeams
+import com.mandallaz.pikadex.util.SuggestionCandidate
+import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.bestOffensiveMultipliers
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
 import com.mandallaz.pikadex.util.computeOffensiveMultipliers
 import com.mandallaz.pikadex.util.coverageGaps
+import com.mandallaz.pikadex.util.rankSuggestions
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -44,7 +47,15 @@ data class TeamUiState(
     /** Dex ids for the species named in [com.mandallaz.pikadex.util.PresetTeams], so the preset
      *  picker can preview each roster as sprites. Empty until the master list is available (the
      *  picker then falls back to names), since presets deliberately store names, not ids. */
-    val presetSpriteIds: Map<String, Int> = emptyMap()
+    val presetSpriteIds: Map<String, Int> = emptyMap(),
+    /** Up to 10 candidates that would improve both the team's shared weaknesses and coverage gaps
+     *  at once — see [rankSuggestions]/BACKLOG.md F11. Cleared whenever the gate in [loadSuggestions]
+     *  no longer holds (team full, empty, or the matrix isn't fresh). */
+    val suggestions: List<TeamSuggestion> = emptyList(),
+    val isSuggestionsLoading: Boolean = false,
+    /** Dex ids for [suggestions], resolved the same way [presetSpriteIds] is — sprites are
+     *  cosmetic, not part of the pure ranking, so they're kept out of [TeamSuggestion] itself. */
+    val suggestionSpriteIds: Map<String, Int> = emptyMap()
 ) {
     val isMatrixStale: Boolean
         get() = matrixComputedFor != members.map { it.name }.toSet()
@@ -91,6 +102,7 @@ class TeamViewModel @JvmOverloads constructor(
     val activeTeamId: StateFlow<Int> = TeamRepository.activeTeamId
 
     private var matrixJob: Job? = null
+    private var suggestionsJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -108,6 +120,7 @@ class TeamViewModel @JvmOverloads constructor(
         // without a team change to trigger it — and so a superseded fetch is cancelled the same way
         // the Pokédex list's filter jobs are.
         matrixJob?.cancel()
+        suggestionsJob?.cancel()
         if (members.isEmpty()) {
             // Clear only what belongs to the team itself. presetSpriteIds is unrelated to team
             // membership and expensive to rebuild (it resolves every preset roster's sprites
@@ -121,7 +134,9 @@ class TeamViewModel @JvmOverloads constructor(
                     errorMessage = null,
                     matrix = emptyMap(),
                     offensiveMatrix = emptyMap(),
-                    matrixComputedFor = emptySet()
+                    matrixComputedFor = emptySet(),
+                    suggestions = emptyList(),
+                    suggestionSpriteIds = emptyMap()
                 )
             }
             return
@@ -199,6 +214,9 @@ class TeamViewModel @JvmOverloads constructor(
                         matrixComputedFor = members.map { m -> m.name }.toSet()
                     )
                 }
+                // Only worth attempting once the matrix that sharedWeaknesses/coverageGaps are
+                // read from is actually fresh for this team.
+                loadSuggestions()
             } catch (e: CancellationException) {
                 // A superseded fetch (the team changed again, or Retry was tapped) isn't a network
                 // failure — and CancellationException *is* an Exception, so without this it fell into
@@ -210,12 +228,84 @@ class TeamViewModel @JvmOverloads constructor(
                 // already changed — no longer matches the current team. UI reads that mismatch
                 // (isMatrixStale) to render the matrix as unknown rather than as leftover data
                 // for a team composition that no longer exists.
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Network error while computing team matchups. Check your connection.") }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Network error while computing team matchups. Check your connection.",
+                        suggestions = emptyList(),
+                        suggestionSpriteIds = emptyMap()
+                    )
+                }
+            }
+        }
+    }
+
+    /** Candidates that would fix both a shared weakness and a coverage gap at once — see
+     *  BACKLOG.md F11. Gated on the matrix being fresh (it's what [TeamUiState.sharedWeaknesses]
+     *  and [TeamUiState.coverageGaps] are read from) and the team having room to grow; anything
+     *  outside that gate just clears the list rather than showing suggestions for a team that no
+     *  longer applies. */
+    private fun loadSuggestions() {
+        suggestionsJob?.cancel()
+        val state = _uiState.value
+        if (state.isMatrixStale || state.members.isEmpty() || state.members.size >= TeamRepository.MAX_SIZE) {
+            _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = emptyList(), suggestionSpriteIds = emptyMap()) }
+            return
+        }
+        val sharedWeaknesses = state.sharedWeaknesses
+        val coverageGaps = state.coverageGaps
+        if (sharedWeaknesses.isEmpty() || coverageGaps.isEmpty()) {
+            _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = emptyList(), suggestionSpriteIds = emptyMap()) }
+            return
+        }
+        val excludeNames = state.members.map { it.name }.toSet()
+        _uiState.update { it.copy(isSuggestionsLoading = true) }
+        suggestionsJob = viewModelScope.launch {
+            try {
+                val (masterList, basics, typeDetails) = supervisorScope {
+                    val masterDeferred = async { repository.getMasterList() }
+                    val basicsDeferred = async { repository.getAllBasics() }
+                    // Reuses whatever computeMatrix already warmed in the cache — a plain cache
+                    // hit for every type that mattered to this team, a real fetch only for the
+                    // handful (if any) it didn't need.
+                    val typeDetailsDeferred = TypeIds.standardTypeNames.associateWith { type ->
+                        async { repository.getTypeDetail(type) }
+                    }
+                    Triple(masterDeferred.await(), basicsDeferred.await(), typeDetailsDeferred.mapValues { it.value.await() })
+                }
+                val idByName = masterList.mapNotNull { r -> r.id?.let { r.name to it } }.toMap()
+                val candidates = basics.mapNotNull { (name, basic) ->
+                    val id = idByName[name] ?: return@mapNotNull null
+                    // Alternate forms (mega/gmax/regional/...) — same id-range heuristic as
+                    // PokedexRepository.getPokemonDetailBundle's comment.
+                    if (id >= 10000) return@mapNotNull null
+                    val total = basic.stats.values.sum()
+                    if (total < 300) return@mapNotNull null
+                    SuggestionCandidate(name, basic.types, total)
+                }
+                val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, candidates, typeDetails, excludeNames)
+                val spriteIds = ranked.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
+                _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = ranked, suggestionSpriteIds = spriteIds) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Best-effort: the Suggestions card just doesn't show anything new, same as it
+                // wouldn't if offline entirely.
+                _uiState.update { it.copy(isSuggestionsLoading = false) }
             }
         }
     }
 
     fun removeFromTeam(member: NamedApiResource) = TeamRepository.remove(member)
+
+    /** Adds a suggested candidate by name — the id comes from [TeamUiState.suggestionSpriteIds],
+     *  resolved via the master list the same way every other add-to-team entry point builds its
+     *  [NamedApiResource]. No-ops (same as [TeamRepository.add]) if the team filled up since the
+     *  suggestions list was computed. */
+    fun addSuggestion(name: String) {
+        val id = _uiState.value.suggestionSpriteIds[name] ?: return
+        TeamRepository.add(NamedApiResource(name, "https://pokeapi.co/api/v2/pokemon/$id/"))
+    }
 
     fun createTeam(name: String): Int = TeamRepository.createTeam(name)
     fun renameTeam(id: Int, name: String) = TeamRepository.renameTeam(id, name)

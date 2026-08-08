@@ -10,39 +10,12 @@ avoids).
 
 | Feature | Priority |
 |---|---|
-| F11 — Suggest team members covering gaps | **High** |
 | F14 — Stat total minimum filter | **High** |
 | F15 — Team coverage impact preview | **High** |
 | F13 — Offline prefetch | Medium |
 | F12 — Match team against a preset trainer | Low |
 
 F10 is cancelled — see the Cancelled section at the bottom.
-
-## F11 — Suggest team members covering gaps
-
-**Priority: High.** **Plan agreed with the user on 2026-08-08** — implement when asked.
-
-When the active team has fewer than 6 members, show a "Suggestions" card offering up to 10 Pokémon
-that improve **both** the team's offense and defense at once. Sorted by base stat total, **ascending**.
-
-- `util/TeamSuggestions.kt` (+ test): pure
-  `rankSuggestions(sharedWeaknesses, coverageGaps, candidates, typeDetailsByType, excludeNames, limit=10): List<TeamSuggestion>`.
-  A candidate qualifies only if it resists (`<1.0`) at least one shared weakness **and** hits
-  (`>1.0`) at least one coverage gap — both conditions required, not either/or. Ties/ordering: sort
-  by `statTotal` ascending (not descending, and not score-weighted — the user's explicit choice).
-  Offensive data is STAB only (candidate's own types from `getAllBasics()`), no per-candidate
-  movepool fetch.
-- Candidate pool: `getAllBasics()` (already cached, stats+types) filtered against `getMasterList()`'s
-  id — exclude alternate forms (`id >= 10000`, same heuristic as
-  `PokedexRepository.getPokemonDetailBundle`'s comment on mega/gmax/regional ids) and exclude
-  `stats.values.sum() < 300` (cuts babies/pre-evolutions). No legendary/mythical exclusion beyond
-  that threshold.
-- `TeamViewModel.loadSuggestions()`: own tracked Job (same cancel/rethrow shape as `matrixJob`),
-  gated on `!isMatrixStale && members.isNotEmpty() && members.size < TeamRepository.MAX_SIZE`. Reuses
-  the 18 `getTypeDetail()` calls already cached by `computeMatrix`.
-- UI (`TeamScreen.kt`): "Suggestions" card below the existing `MatrixCallout`, visible only when the
-  team isn't full and the list isn't empty. Sprite + name + stat total + add button per row (respects
-  `TeamRepository.MAX_SIZE` / reuses the existing "team is full" rejection path).
 
 ## F12 — Match team against a preset trainer
 

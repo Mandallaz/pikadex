@@ -23,7 +23,8 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 ### Team builder
 
 - Up to 6 Pokémon, with the combined defensive matrix across all 18 attacking types
-- A callout for types at least half the team is weak to
+- A callout for types at least half the team is weak to, and one for coverage gaps — types nothing on the team can hit for more than neutral damage
+- Suggestions: up to 10 Pokémon (sorted by base stat total) that would fix both a shared weakness and a coverage gap at once, shown whenever the team has room to grow
 - 81 preset teams — 70 gym leaders and 11 champions, from Red/Blue through Scarlet/Violet — loadable in one tap
 
 ### Type Triangles
