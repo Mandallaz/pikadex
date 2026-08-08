@@ -7,7 +7,7 @@
 | F18 — Fix ExperimentalCoilApi warnings at compile time | **High** | To groom |
 | F15 — Team coverage impact preview | **High** | Plan ready |
 | F16 — Swipe between Pokémon on the detail screen | **High** | Plan ready |
-| F20 — Add Radical Red trainer teams | Medium | To groom |
+| F20 — Radical Red mode (rebalanced stats + trainer teams) | Medium | To groom |
 | F19 — Black/AMOLED mode | Medium | To groom |
 | F17 — Filter dex by "is legendary" | Medium | To groom |
 | F12 — Match team against a preset trainer | Low | Plan ready |
@@ -40,18 +40,90 @@ succeeds), but real cleanup, not just suppression: either wrap both call sites i
 check whether the installed Coil version has since stabilized a non-experimental accessor for the
 disk cache. Open question to resolve before this moves to "Plan ready": which of the two.
 
-## F20 — Add Radical Red trainer teams
+## F20 — Radical Red mode
 
-**To groom** — raised but no implementation plan agreed yet.
+**To groom** — data source resolved, dataset extracted and enriched 2026-08-08; implementation plan
+not yet agreed.
 
-Extend `util/PresetTeams.kt` (currently the 70 gym leaders + 11 champions from the official games,
-Red/Blue through Scarlet/Violet — see `PresetTeam`/`PresetRole`) with the trainer rosters from the
+A toggleable mode (not just an addition to the existing preset list) that swaps in data from the
 [Radical Red](https://dex.radicalred.net/) ROM hack, which already inspired this app's Pokédex
-presentation per the README's intro. Open questions to resolve before this moves to "Plan ready":
-which Radical Red version/difficulty's rosters to use (they're reportedly rebalanced and differ by
-difficulty mode), whether `PresetRole`/`game` need a new case or Radical Red's trainers fit the
-existing `GYM_LEADER`/`CHAMPION` split, and where the roster data itself would be sourced from (no
-official API, unlike PokeAPI-backed official-game teams).
+presentation per the README's intro:
+
+- **Rebalanced stats — data source question resolved.** Source is
+  [JwowSquared/Radical-Red-Pokedex](https://github.com/JwowSquared/Radical-Red-Pokedex) (what
+  dex.radicalred.net itself is built from), specifically its root `data.js` — a ~4.6MB JS object
+  literal (single-quoted keys, `\uXXXX`-escaped text, not valid JSON as-is) covering species,
+  moves, abilities, items, types, natures, trainers. Parsed and converted into
+  `app/src/main/assets/radicalred/radicalred_pokedex.json` (17MB, 1343 species, PokeAPI-DTO-shaped:
+  `types[].type.name`, `stats[].base_stat`/`stat.name`, `abilities[].ability.name`/`is_hidden`,
+  `moves[].move.name` + `version_group_details[].move_learn_method.name` ∈
+  {level-up,machine,tutor,egg}, `held_items`, `sprites.front_default`/`front_shiny` pointing at
+  bundled files — back sprites dropped per user request, front-only) plus
+  `app/src/main/assets/radicalred/sprites/front{,_shiny}/{id}.png` (2752 files, 64×64 GBA-style,
+  from the same repo's `graphics/species/`) — together ~27MB bundled into the APK. Every species
+  carries an `is_radical_red_exclusive` flag (40 true): Sevii regional forms (e.g. `Noibat-Sevii`),
+  non-canonical custom Mega forms (e.g. `Machamp-Mega`), `Dialga-Primal`, and the one genuine
+  fakemon `Chillet` (dexID 2001, Ice/Dragon, only species outside the national dex range).
+  Groudon-Primal/Kyogre-Primal are present too but *not* flagged exclusive — their RR stats are
+  identical to the canonical PokeAPI `-primal` forms.
+- **Evolutions — decoded.** `evolutions[]` per species now carries a human-readable `description`
+  (e.g. `"at Level 16"`, `"with the Charzardite X"` — RR's own typo, kept verbatim) built by
+  reimplementing the template-string lookup table found at `data.js`'s top-level `evolutions` key
+  (26 trigger codes: level/friendship/held-item/stone/party-species/party-type/nature-group/
+  time-of-day/overworld-rain/50%-chance/Ninjask-slot/Attack-vs-Defense, plus a combined
+  move-or-item code `254`). Raw `trigger_raw`/`param_raw`/`extra_raw` kept alongside the text for
+  anyone who later wants structured fields instead of prose. All 17 trigger codes actually used
+  across the dex are covered — verified by enumerating every code that appears before writing the
+  decoder, not by decoding on faith.
+- **Missing fields — filled from PokeAPI.** `height`, `weight`, `base_experience`,
+  `is_legendary`/`is_mythical`, `generation_id`, `color`, `egg_groups` (names, not RR's internal
+  IDs), and `genus` now live under a new `pokeapi_metadata` object per species, bulk-fetched in one
+  GraphQL call to `graphql.pokeapi.co/v1beta2` (`pokemon(limit: 2000){...}`, same endpoint/shape
+  `PokeApiGraphQLDataSource.kt` already uses) rather than ~2700 individual REST calls. Matched by
+  slug in three tiers, recorded per entry as `pokeapi_metadata.source`: `"exact"` (1190 — RR's key
+  slug *is* a real PokeAPI name, covers canonical forms like `venusaur-mega` and the two Primals),
+  `"base-species-fallback"` (90 — RR exclusive forms like `Noibat-Sevii`/`Machamp-Mega` fall back to
+  the base species' metadata, since these are reskins of an existing species, not new ones — the
+  attached color/legendary-flag/egg-groups describe the *base* Pokémon, not the RR variant, worth
+  keeping in mind wherever this shows in UI), `"base-species-default-variety"` (62 — species with no
+  bare PokeAPI slug because the real dex only has named forms, e.g. `deoxys` → `deoxys-normal`,
+  `giratina` → `giratina-altered`, resolved via each family's `is_default` flag). Only **one**
+  species has no metadata at all: `Chillet` (`pokeapi_metadata: null`) — genuinely absent from
+  PokeAPI, nothing to fall back to.
+- **Reproducible pipeline.** `tools/radicalred/build_dataset.py` (downloads `data.js`, parses it,
+  decodes evolutions, enriches via PokeAPI, writes the asset JSON — `--data-js`/`--skip-pokeapi`
+  flags for offline/no-network reruns) and `tools/radicalred/fetch_sprites.sh` (sparse-clones just
+  `graphics/species/` and copies front sprites into the asset folder) — both idempotent, rerun
+  either whenever Radical Red's own data updates rather than hand-editing the generated JSON.
+- **Still open.** A real repository-level data source (`RadicalRedDataSource` or similar) reading
+  this bundled JSON instead of hitting PokeAPI/GraphQL when the mode is on — not yet implemented,
+  this item only covers getting the data itself in place and correct. Also unresolved: `moves[]`
+  still produces one entry per learn method for the same move rather than PokeAPI's one-entry-with-
+  multiple-`version_group_details` shape (functionally fine, structurally different); `NamedApiResource`
+  fields throughout (`type.name`, `move.name`, `ability.name`...) have no `url`, so any code that
+  derives an id by parsing that url will need a different path for Radical Red data; and the
+  species-identity mapping (RR's `key`/`name` vs. whatever the rest of the app keys screens off)
+  still needs deciding before detail/filters/suggestions can share one lookup path.
+- **Replaced trainer teams.** `util/PresetTeams.kt`'s 70 gym leaders + 11 champions (official-game
+  rosters, `PresetTeam`/`PresetRole`) get replaced by Radical Red's own trainer rosters while the
+  mode is on, not appended alongside them — the user asked for a swap, not a second preset list.
+  Boss trainer rosters for both Normal and Hardcore mode are available at
+  [apescasio.fr/apecio/docs](https://apescasio.fr/apecio/docs/) — a candidate source, though which
+  of Normal/Hardcore (or both, as a sub-toggle) still needs deciding, same as the difficulty-mode
+  question already open for the stats side below. The user also pointed at a
+  [Google Drive folder](https://drive.google.com/drive/folders/1YaYM-8dzRlBRuJm1bmYrjJC6HGwTwl-x) as
+  a possible source — noted here unread: Drive requires an authenticated session neither WebFetch
+  nor any available tool can provide, so its contents haven't been reviewed. Whoever grooms this
+  item next needs to open it manually (or export/share the specific files as plain links) to see
+  what's actually in it before it factors into the plan.
+- **Scope of "mode".** Toggled where (Settings, alongside the new F19 dark-mode toggle?) and what it
+  affects — base stats + trainer teams only, or does it extend to movepools/abilities too (Radical
+  Red also changes those, but that's a much bigger fetch/parse surface)? Also: which Radical Red
+  version's data (still under active development, values shift between releases), and whether
+  rebalanced stats replace PokeAPI's everywhere in the app (Pokédex list/detail/suggestions/matrix)
+  or only within the trainer-team/team-builder flows. All open questions to resolve before this
+  moves to "Plan ready" — likely the most involved item in this backlog once scoped, given it touches
+  a new external data source plus every screen that reads base stats today.
 
 ## F19 — Black/AMOLED mode
 
