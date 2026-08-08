@@ -2,26 +2,25 @@
 
 Features discussed with the user but not yet implemented. Each entry stays here until it's built
 (then it moves into the README's feature list and this entry is removed) or the user explicitly
-cancels it (then it's removed with a note in the commit message, not left here as dead weight).
+cancels it (then it moves to the "Cancelled" section at the bottom, full spec kept intact — the user
+may change their mind later, and re-deriving a spec from scratch is wasted effort a kept description
+avoids).
 
-## F10 — Filter dex by resistance/weakness
+## Priority (reviewed 2026-08-08)
 
-Filter the Pokédex list by how it matches up against a chosen attacking type (resists / weak to).
+| Feature | Priority |
+|---|---|
+| F11 — Suggest team members covering gaps | **High** |
+| F14 — Stat total minimum filter | **High** |
+| F15 — Team coverage impact preview | **High** |
+| F13 — Offline prefetch | Medium |
+| F12 — Match team against a preset trainer | Low |
 
-- New repository method `getDefensiveMultipliersAgainst(attackingType): Map<String, Double>` —
-  fetch all 18 `TypeDetailDto` concurrently (already cached), combine with `getAllBasics()`'s typing
-  per Pokémon via `computeDefensiveMultipliers`, memoize in `AsyncCache<String, Map<String, Double>>`.
-  Real CPU work (~1300×2 map merges) — `AsyncCache` already runs fetches on `Dispatchers.Default`,
-  don't move it.
-- New state on `PokedexListUiState`: `matchupFilterType`, `matchupFilterDirection` (RESISTS = `<1.0`
-  incl. immunities, WEAK_TO = `>1.0`), `matchupFilterNames`.
-- New `onMatchupFilterSelected` mirrors `onTypeToggled`'s exact shape (tracked job, cancel-then-clear,
-  rethrow cancellation).
-- UI: type picker + 2-option segmented control in `FilterSheetContent`.
+F10 is cancelled — see the Cancelled section at the bottom.
 
 ## F11 — Suggest team members covering gaps
 
-**Plan agreed with the user on 2026-08-08** — implement when asked.
+**Priority: High.** **Plan agreed with the user on 2026-08-08** — implement when asked.
 
 When the active team has fewer than 6 members, show a "Suggestions" card offering up to 10 Pokémon
 that improve **both** the team's offense and defense at once. Sorted by base stat total, **ascending**.
@@ -47,7 +46,7 @@ that improve **both** the team's offense and defense at once. Sorted by base sta
 
 ## F12 — Match team against a preset trainer
 
-"How does my team fare against Cynthia's?"
+**Priority: Low.** "How does my team fare against Cynthia's?"
 
 - `util/TeamVersus.kt` (+ test): pure
   `buildVersusGrid(myTypings, theirTypings, offensiveByType, defensiveByPokemon): List<VersusCell>`
@@ -62,6 +61,8 @@ that improve **both** the team's offense and defense at once. Sorted by base sta
   confirm, `COMPARE` skips it).
 
 ## F13 — Offline prefetch
+
+**Priority: Medium.**
 
 - New `data/PrefetchManager.kt` + a settings entry point. Tiered:
   - **Essentials** (S-1 bulk payload + move-info + 18 type details + Smogon tier files, ~1MB,
@@ -80,7 +81,7 @@ that improve **both** the team's offense and defense at once. Sorted by base sta
 
 ## F14 — Stat *total* minimum filter
 
-Added to the backlog 2026-08-08, alongside F11's plan.
+**Priority: High.** Added to the backlog 2026-08-08, alongside F11's plan.
 
 Same "Minimum Stats" section as F8 (`FilterSheetContent`), one more slider for the stat **total**
 (sum of all six base stats), same Slider UI as the rest of that section (the user explicitly prefers
@@ -96,8 +97,8 @@ commits `9a90f08`/`ec8859e`).
 
 ## F15 — Preview a Pokémon's impact on the current team's coverage
 
-Added to the backlog 2026-08-08. Entry point and output format agreed with the user; scoring/data
-approach not yet discussed.
+**Priority: High.** Added to the backlog 2026-08-08. Entry point and output format agreed with the
+user; scoring/data approach not yet discussed.
 
 From a Pokémon's detail screen (`PokedexDetailScreen.kt`), a new top-bar icon — same slot pattern as
 the existing shiny toggle and the Compare entry point (`showCompareDialog` /
@@ -129,7 +130,30 @@ Implementation sketch (not yet validated with the user):
 - Icon hidden or disabled when there's no active team to compare against (empty team — nothing to
   preview impact on).
 
-## Cancelled (not to be re-proposed)
+## Cancelled
 
-- **F9 — Showdown export.** User explicitly said "je ne veux plus de cette feature" (2026-08-08).
-  Do not implement without being asked again.
+Full specs kept here rather than deleted — the user may revisit any of these later, and a kept
+description means a re-approval doesn't require re-deriving the design from scratch.
+
+### F9 — Showdown export
+
+Cancelled 2026-08-08 — user explicitly said "je ne veux plus de cette feature". No detailed spec was
+ever recorded before cancellation (cancelled the same session it was raised), so there's nothing more
+to keep beyond the name/summary above.
+
+### F10 — Filter dex by resistance/weakness
+
+Cancelled 2026-08-08 (backlog priority review).
+
+Filter the Pokédex list by how it matches up against a chosen attacking type (resists / weak to).
+
+- New repository method `getDefensiveMultipliersAgainst(attackingType): Map<String, Double>` —
+  fetch all 18 `TypeDetailDto` concurrently (already cached), combine with `getAllBasics()`'s typing
+  per Pokémon via `computeDefensiveMultipliers`, memoize in `AsyncCache<String, Map<String, Double>>`.
+  Real CPU work (~1300×2 map merges) — `AsyncCache` already runs fetches on `Dispatchers.Default`,
+  don't move it.
+- New state on `PokedexListUiState`: `matchupFilterType`, `matchupFilterDirection` (RESISTS = `<1.0`
+  incl. immunities, WEAK_TO = `>1.0`), `matchupFilterNames`.
+- New `onMatchupFilterSelected` mirrors `onTypeToggled`'s exact shape (tracked job, cancel-then-clear,
+  rethrow cancellation).
+- UI: type picker + 2-option segmented control in `FilterSheetContent`.
