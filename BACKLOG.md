@@ -5,11 +5,11 @@
 | Feature | Priority | Status |
 |---|---|---|
 | F15 — Team coverage impact preview | **High** | Plan ready |
-| F16 — Swipe between Pokémon on the detail screen | **High** | Plan ready |
 | F20 — Radical Red mode (rebalanced stats + trainer teams) | Medium | To groom |
 | F19 — Black/AMOLED mode | Medium | To groom |
 | F17 — Filter dex by "is legendary" | Medium | To groom |
 | F12 — Match team against a preset trainer | Low | Plan ready |
+| F16 — Swipe between Pokémon on the detail screen | — | Done |
 | F18 — Fix ExperimentalCoilApi warnings at compile time | — | Done |
 | F23 — Fix unreachable coverage matrix on Team screen | — | Done |
 | F22 — Suggestion "why" text and impact-based sort | — | Done |
@@ -265,42 +265,48 @@ gap: Dragon."
 
 ## F16 — Swipe between Pokémon on the detail screen
 
-**Plan finalized 2026-08-08** — simplest option chosen for every open question; implement when asked.
+**Done 2026-08-08.** From `PokedexDetailScreen.kt`, swipe left/right (or tap a chevron) to move to
+the adjacent Pokémon without backing out to the list and re-selecting.
 
-From `PokedexDetailScreen.kt`, swipe left/right to move to the adjacent Pokémon without backing out
-to the list and re-selecting — currently the only way to see the next entry is Back, scroll/search,
-tap again.
-
-"Adjacent" by what ordering, given the screen is reached from several places (the grid under its
-active filter/sort, an evolution chain tap, Compare, a team member chip...)? Simplest option, chosen
-over threading whichever ordering was active at the entry point through navigation args: always step
-by `getMasterList()`'s own order (PokeAPI's `/pokemon` list, already effectively ascending id
-including alt forms) regardless of entry point — predictable, matches "Pokédex" as a numbered
-reference work, and needs no extra nav state.
-
-- New pure `util/AdjacentPokemon.kt`: `fun adjacentNames(masterList: List<NamedApiResource>,
-  currentName: String): Pair<String?, String?>` (previous, next; null at either end of the list or
-  if `currentName` isn't found). Tests: empty list, single entry, first/last boundary, name absent.
-- `PokedexDetailViewModel`: add `previousPokemonName: String?`/`nextPokemonName: String?` to
-  `PokedexDetailUiState`, computed in `load()` via `repository.getMasterList()` (already cached by
-  the time most detail screens open — Pokédex list, Compare, and this screen's own `Add to team`
-  path all warm it first) + `adjacentNames`. Best-effort: a failure here leaves both null rather than
-  blocking the rest of `load()`.
+- "Adjacent" by what ordering — **not** the plan's original "always `getMasterList()`'s order
+  regardless of entry point" simplest-option choice. The user explicitly asked for filtered-list
+  awareness instead: swiping from a Pokémon reached via the Pokédex list's active filter/sort stays
+  inside that filtered set (e.g. filtered to Fire types, swiping only ever visits other Fire types),
+  falling back to master list order for every other entry point (an evolution chain tap, Compare, a
+  team member chip) or before the list screen has loaded this session.
+  - New `data/PokedexListContext.kt`: in-memory singleton (no persistence needed, unlike
+    `FavoritesRepository`/`TeamRepository`) holding `StateFlow<List<String>>` of the list screen's
+    current filtered/sorted names.
+  - `PokedexListViewModel` collects its own `displayedPokemon` in `init` and pushes the names into
+    `PokedexListContext.update(...)` on every change.
+  - `util/AdjacentPokemon.kt`: `fun adjacentNames(names: List<String>, currentName: String):
+    Pair<String?, String?>` (previous, next; null at either end or if not found) plus `fun
+    namesForAdjacency(displayedNames, masterNames, currentName): List<String>` — picks
+    `displayedNames` when `currentName` is actually part of it, else `masterNames`. Tests:
+    `AdjacentPokemonTest` — both functions, including the fallback and "not filtered in" cases.
+  - `PokedexDetailViewModel.load()`: reads `PokedexListContext.displayedNames.value`, resolves
+    `repository.getMasterList()` (already cached by the time most detail screens open) as the
+    fallback, and calls `namesForAdjacency` + `adjacentNames` — best-effort, leaves both null on
+    failure rather than blocking the rest of `load()`.
 - `PokedexDetailScreen.kt`: new `onNavigateAdjacent: (String) -> Unit` param, distinct from the
   existing `onPokemonClick` (which *pushes* a new detail screen — used for cross-references like
   evolution stages, where Back should return to the page you tapped from). Two pieces:
-  - `Modifier.pointerInput(pokemonNameOrId) { detectHorizontalDragGestures(...) }` on the content
-    `Box`, committing to `onNavigateAdjacent(next/previous)` past a swipe-distance threshold, no-op
-    at either end of the list (name null).
-  - A small `IconButton` pair (`Icons.Filled.ChevronLeft`/`ChevronRight`), pinned at the vertical
-    center of each screen edge, shown only when that direction's name is non-null — the swipe
-    gesture alone isn't discoverable (nothing on screen hints it exists) and isn't reachable without
-    touch (TalkBack, a hardware keyboard); the buttons cover both.
+  - `Modifier.pointerInput(pokemonNameOrId, previousName, nextName) { detectHorizontalDragGestures(...) }`
+    on the content `Box`, committing to `onNavigateAdjacent(next/previous)` past an 80dp drag
+    threshold, no-op at either end of the list (name null).
+  - A chevron pair (`Icons.Filled.ChevronLeft`/`ChevronRight`) pinned level with the sprite (not
+    vertically centered on the whole screen, per user feedback — that landed on top of scrolling
+    body text like the flavor paragraph lower down the page), each wrapped in a small elevated
+    `Surface` circle so it reads as a floating control rather than a stray icon drawn over whatever
+    content happens to be underneath. Shown only when that direction's name is non-null.
 - `PokedexNavHost.kt`: wires `onNavigateAdjacent = { name -> ifIdle { navController.navigate(
   "detail/$name") { popUpTo(ROUTE_DETAIL) { inclusive = true } } } }` — replaces the current
   back-stack entry rather than pushing (same `popUpTo(...){inclusive=true}` pattern the Compare
   screen's own re-navigate already uses), so Back always returns to wherever the user actually
   entered the detail flow from, not back through every Pokémon swiped past on the way.
+- Verified manually on the emulator: filtered the list to Fire types, opened Charmander, swiped
+  through Charmander → Charmeleon → Charizard → **Vulpix (#37)**, confirming the chevron skips
+  Squirtle/Wartortle/Blastoise (#7-9, the master-list neighbors) and stays inside the filter.
 
 ## F23 — Fix unreachable coverage matrix on Team screen
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.FavoritesRepository
+import com.mandallaz.pikadex.data.PokedexListContext
 import com.mandallaz.pikadex.data.remote.SmogonTierDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepository
@@ -247,6 +248,13 @@ class PokedexListViewModel @JvmOverloads constructor(
             FavoritesRepository.favorites.collect { favs ->
                 _uiState.update { it.copy(favorites = favs) }
             }
+        }
+        // Published for the detail screen's swipe/chevron navigation (BACKLOG.md F16) to step
+        // through whatever's actually on screen — filtered to Fire types, swiping should only ever
+        // land on another Fire type. See PokedexListContext's own doc for the fallback when a
+        // Pokémon isn't part of this list at all.
+        viewModelScope.launch {
+            displayedPokemon.collect { list -> PokedexListContext.update(list.map { it.name }) }
         }
     }
 

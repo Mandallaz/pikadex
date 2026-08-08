@@ -155,6 +155,17 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
                     },
                     onCompare = { left, right ->
                         ifIdle { navController.navigate("compare/$left/$right") }
+                    },
+                    // Replaces the current back-stack entry rather than pushing (same
+                    // popUpTo(...){inclusive=true} pattern the Compare screen's own re-navigate
+                    // already uses), so Back always returns to wherever the user actually entered
+                    // the detail flow from, not back through every Pokémon swiped past on the way.
+                    onNavigateAdjacent = { newName ->
+                        ifIdle {
+                            navController.navigate("detail/$newName") {
+                                popUpTo(ROUTE_DETAIL) { inclusive = true }
+                            }
+                        }
                     }
                 )
             }

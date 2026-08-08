@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.FavoritesRepository
+import com.mandallaz.pikadex.data.PokedexListContext
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto
@@ -15,8 +16,10 @@ import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.TypeTriangles
+import com.mandallaz.pikadex.util.adjacentNames
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
 import com.mandallaz.pikadex.util.movesForCategory
+import com.mandallaz.pikadex.util.namesForAdjacency
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -54,7 +57,14 @@ data class PokedexDetailUiState(
     /** Every pokemon name, for the "Compare with…" picker — loaded lazily (see
      *  [PokedexDetailViewModel.loadCompareCandidatesIfNeeded]), not as part of [load], since most
      *  visits to a detail page never open that picker. */
-    val compareCandidates: List<String> = emptyList()
+    val compareCandidates: List<String> = emptyList(),
+    /** Swipe/chevron targets for BACKLOG.md F16 — the Pokédex list's own current filtered/sorted
+     *  order when this Pokémon is part of it (see [PokedexListContext]/[namesForAdjacency]),
+     *  otherwise [getMasterList]'s order. Best-effort: a failure here leaves both null (see
+     *  [PokedexDetailViewModel.load]'s `orNullUnlessCancelled` use for it) rather than blocking the
+     *  rest of the page on a feature that's a convenience, not the point of the page. */
+    val previousPokemonName: String? = null,
+    val nextPokemonName: String? = null
 )
 
 /** Result of [block], or null if it failed — but never swallowing coroutine cancellation, which
@@ -152,6 +162,17 @@ class PokedexDetailViewModel @JvmOverloads constructor(
 
                     val groupedMoves = groupedMovesDeferred.await()
 
+                    // Best-effort, same shape as formVersionGroup above. getMasterList() is already
+                    // cached by the time most detail screens open (the list screen itself, Compare,
+                    // and this screen's own Add-to-team path all warm it first), so this is normally
+                    // instant regardless of which of the two orders namesForAdjacency picks.
+                    val (previousName, nextName) = orNullUnlessCancelled {
+                        val displayedNames = PokedexListContext.displayedNames.value
+                        val masterNames = repository.getMasterList().map { it.name }
+                        val orderedNames = namesForAdjacency(displayedNames, masterNames, bundle.pokemon.name)
+                        adjacentNames(orderedNames, bundle.pokemon.name)
+                    } ?: (null to null)
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -165,7 +186,9 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             moveInfo = moveInfo,
                             statPercentiles = percentiles,
                             formVersionGroup = formVersionGroup,
-                            groupedMoves = groupedMoves
+                            groupedMoves = groupedMoves,
+                            previousPokemonName = previousName,
+                            nextPokemonName = nextName
                         )
                     }
                 }

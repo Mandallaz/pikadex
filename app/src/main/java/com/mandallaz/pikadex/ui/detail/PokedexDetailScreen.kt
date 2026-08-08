@@ -7,6 +7,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -67,8 +70,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -123,6 +128,12 @@ fun PokedexDetailScreen(
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit,
     onCompare: (left: String, right: String) -> Unit,
+    // Distinct from onPokemonClick, which *pushes* a new detail screen — used for cross-references
+    // like evolution stages, where Back should return to the page you tapped from. This one
+    // replaces the current back-stack entry instead (see PokedexNavHost.kt), so Back from a
+    // swiped-through Pokémon always returns to wherever the user actually entered the detail flow
+    // from, not back through every Pokémon swiped past on the way (BACKLOG.md F16).
+    onNavigateAdjacent: (String) -> Unit,
     viewModel: PokedexDetailViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -204,7 +215,34 @@ fun PokedexDetailScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        val previousName = uiState.previousPokemonName
+        val nextName = uiState.nextPokemonName
+        val density = LocalDensity.current
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                // Swipe left/right to move to the adjacent Pokémon without backing out to the list
+                // and re-selecting. Keyed on the two names (not just pokemonNameOrId) so a fresh
+                // gesture detector picks up new thresholds once load() resolves them, rather than
+                // capturing null forever from before the fetch completed.
+                .pointerInput(pokemonNameOrId, previousName, nextName) {
+                    val thresholdPx = with(density) { 80.dp.toPx() }
+                    var accumulatedDrag = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { accumulatedDrag = 0f },
+                        onDragEnd = {
+                            when {
+                                accumulatedDrag <= -thresholdPx && nextName != null -> onNavigateAdjacent(nextName)
+                                accumulatedDrag >= thresholdPx && previousName != null -> onNavigateAdjacent(previousName)
+                            }
+                        }
+                    ) { change, dragAmount ->
+                        change.consume()
+                        accumulatedDrag += dragAmount
+                    }
+                }
+        ) {
             val pokemon = uiState.pokemon
             val species = uiState.species
             when {
@@ -248,6 +286,45 @@ fun PokedexDetailScreen(
                     onPokemonClick = onPokemonClick,
                     onViewTypeTriangles = onViewTypeTriangles
                 )
+            }
+
+            // The swipe gesture alone isn't discoverable (nothing on screen hints it exists) and
+            // isn't reachable without touch (TalkBack, a hardware keyboard) — these cover both.
+            // Shown only when that direction actually has a target, same as the swipe itself
+            // no-ops at either end of the list. Pinned level with the sprite (DetailContent's
+            // header Column: 24dp padding + a 200dp artwork, so the artwork's own vertical center
+            // sits 124dp below this Box's top edge) rather than centered on the whole screen,
+            // where it used to land on top of scrolling body text (flavor text, a stat row...)
+            // lower down the page — wrapped in a small elevated circle, the same "floating over
+            // content" affordance a FAB uses, so it still reads as a control and not a stray icon
+            // drawn over whatever's underneath.
+            if (previousName != null) {
+                Surface(
+                    onClick = { onNavigateAdjacent(previousName) },
+                    modifier = Modifier.align(Alignment.TopStart).padding(start = 4.dp, top = 104.dp).size(40.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 3.dp,
+                    shadowElevation = 3.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous Pokémon")
+                    }
+                }
+            }
+            if (nextName != null) {
+                Surface(
+                    onClick = { onNavigateAdjacent(nextName) },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(end = 4.dp, top = 104.dp).size(40.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 3.dp,
+                    shadowElevation = 3.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.ChevronRight, contentDescription = "Next Pokémon")
+                    }
+                }
             }
         }
     }
