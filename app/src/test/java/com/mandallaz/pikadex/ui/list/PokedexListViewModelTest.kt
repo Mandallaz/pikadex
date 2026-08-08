@@ -197,4 +197,26 @@ class PokedexListViewModelTest {
         val state = PokedexListUiState(allPokemon = unsorted, statMinimums = mapOf("attack" to 100))
         assertEquals(unsorted, computeDisplayed(state, ""))
     }
+
+    // --- Stat total minimum filter (F14) --------------------------------------
+
+    // charmander sums to 117, bulbasaur to 94, squirtle to 91 — none of these is a real key in
+    // statBaseline, proving STAT_KEY_TOTAL is read as a derived sum rather than a literal lookup
+    // into a "total" entry that doesn't exist in the map.
+    @Test
+    fun `a total minimum keeps only entries whose summed stats meet or exceed it`() {
+        val state = PokedexListUiState(allPokemon = unsorted, baseStats = statBaseline, statMinimums = mapOf(STAT_KEY_TOTAL to 95))
+        assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
+    }
+
+    @Test
+    fun `a total minimum combines with a per-stat minimum as AND`() {
+        // bulbasaur clears total>=90 but not attack>=50; only charmander clears both.
+        val state = PokedexListUiState(
+            allPokemon = unsorted,
+            baseStats = statBaseline,
+            statMinimums = mapOf(STAT_KEY_TOTAL to 90, "attack" to 50)
+        )
+        assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
+    }
 }

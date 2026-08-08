@@ -91,6 +91,12 @@ data class PokedexListUiState(
         get() = selectedFormatGen ?: Smogon.ALL_GENERATIONS.last()
 }
 
+/** [PokedexListUiState.statMinimums] key for the stat *total* filter (F14) — a derived sum, not one
+ *  of the six raw stat names [SortStat.apiName] provides, so it needs a key of its own rather than
+ *  colliding with (or being mistaken for) a real stat. Internal, not private: [FilterSheetContent]
+ *  in `PokedexListScreen.kt` reads/writes it too. */
+internal const val STAT_KEY_TOTAL = "total"
+
 /** Same filtering/sorting [PokedexListUiState] used to expose as a `displayed` getter, moved to a
  *  plain function fed by a debounced query — a getter re-ran this (up to 5 chained `.filter{}`
  *  passes, plus a full sort, over ~1300 items) on every single recomposition; now it only runs
@@ -146,7 +152,12 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
     if (state.statMinimums.isNotEmpty() && state.baseStats.isNotEmpty()) {
         list = list.filter { resource ->
             val stats = state.baseStats[resource.name] ?: return@filter false
-            state.statMinimums.all { (key, minimum) -> (stats[key] ?: 0) >= minimum }
+            state.statMinimums.all { (key, minimum) ->
+                // STAT_KEY_TOTAL is a derived sum, not a raw stat name — never present in `stats`
+                // itself, so a plain lookup would read it as 0 and filter out everything.
+                val value = if (key == STAT_KEY_TOTAL) stats.values.sum() else stats[key] ?: 0
+                value >= minimum
+            }
         }
     }
 

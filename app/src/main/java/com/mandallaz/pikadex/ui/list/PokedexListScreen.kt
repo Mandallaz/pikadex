@@ -636,6 +636,26 @@ private fun FilterSheetContent(
                     )
                 }
             }
+            // Outside the loop above on purpose: SortStat.TOTAL.apiName is null (it's a derived
+            // sum, not a raw GraphQL field), which is exactly what the mapNotNull loop excludes it
+            // for — see STAT_KEY_TOTAL's KDoc.
+            val totalMinimum = uiState.statMinimums[STAT_KEY_TOTAL] ?: 0
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(SortStat.TOTAL.label, modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodyMedium)
+                Slider(
+                    value = totalMinimum.toFloat(),
+                    onValueChange = { onStatMinimumChanged(STAT_KEY_TOTAL, it.toInt()) },
+                    valueRange = 0f..720f,
+                    steps = 71, // 10-point increments, the same range-to-step ratio as the per-stat sliders above
+                    enabled = uiState.baseStats.isNotEmpty(),
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    if (totalMinimum > 0) "$totalMinimum" else "Any",
+                    modifier = Modifier.widthIn(min = 36.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
     }
 }

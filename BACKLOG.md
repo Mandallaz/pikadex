@@ -10,7 +10,6 @@ avoids).
 
 | Feature | Priority |
 |---|---|
-| F14 — Stat total minimum filter | **High** |
 | F15 — Team coverage impact preview | **High** |
 | F13 — Offline prefetch | Medium |
 | F12 — Match team against a preset trainer | Low |
@@ -19,89 +18,173 @@ F10 is cancelled — see the Cancelled section at the bottom.
 
 ## F12 — Match team against a preset trainer
 
-**Priority: Low.** "How does my team fare against Cynthia's?"
+**Priority: Low.** **Plan finalized 2026-08-08** — simplest option chosen for every open question;
+implement when asked. "How does my team fare against Cynthia's?"
 
-- `util/TeamVersus.kt` (+ test): pure
-  `buildVersusGrid(myTypings, theirTypings, offensiveByType, defensiveByPokemon): List<VersusCell>`
-  (my-member × their-member best multiplier each way, STAB only — same caveat as F11, state it in
-  the UI). Needs typings only (no per-Pokémon fetch), and `TeamViewModel.computeMatrix`'s already-
-  built `offensiveByType`.
-- New `ui/team/MatchupScreen.kt` (or dialog): grid, my 6 as rows / theirs as columns, split cell or
-  two small numbers, reuse `multiplierColors` from `TeamScreen`. One-line verdict
-  (favourable/unfavourable count) above the grid.
-- Entry point: "Test against a trainer" on `TeamScreen`, opens `PresetTeamDialog` in a new
-  selection-only mode (add a `mode: PresetDialogMode` param — `LOAD` keeps today's destructive
-  confirm, `COMPARE` skips it).
+- `util/TeamVersus.kt` (+ test): pure. Simplified from the original sketch — `offensiveByType` turned
+  out to be unnecessary: with a defensive multiplier per Pokémon already in hand, "best I deal to
+  them" is just the max over *my* member's own types of *their* member's defensive multiplier for
+  that attacking type (and symmetrically the other way), so one map covers both directions:
+  ```kotlin
+  data class VersusCell(val myName: String, val theirName: String, val myBest: Double, val theirBest: Double)
+
+  fun buildVersusGrid(
+      myTypings: Map<String, List<String>>,     // name -> own types, both rosters
+      theirTypings: Map<String, List<String>>,
+      defensiveByPokemon: Map<String, Map<String, Double>>  // name -> attackingType -> multiplier, covers both rosters
+  ): List<VersusCell> = myTypings.flatMap { (myName, myTypes) ->
+      theirTypings.map { (theirName, theirTypes) ->
+          val myBest = myTypes.mapNotNull { defensiveByPokemon[theirName]?.get(it) }.maxOrNull() ?: 0.0
+          val theirBest = theirTypes.mapNotNull { defensiveByPokemon[myName]?.get(it) }.maxOrNull() ?: 0.0
+          VersusCell(myName, theirName, myBest, theirBest)
+      }
+  }
+  ```
+  STAB only (own types, no movepool) — same caveat as F11, state it in the UI.
+- `TeamViewModel` additions: `versusResult: List<VersusCell>?`, `isVersusLoading`, `versusTrainer:
+  PresetTeam?` on `TeamUiState`. `fun loadVersus(trainer: PresetTeam)`: own tracked job (same
+  cancel/rethrow shape as `matrixJob`); resolves the trainer's roster via `repository.getMasterList()`
+  (same lookup `loadPreset` already does); fetches `getPokemonTypes` for both rosters and
+  `getTypeDetail` for the union of types involved (all `AsyncCache`d, cheap on a warm cache); builds
+  `defensiveByPokemon` via `computeDefensiveMultipliers` per member; calls `buildVersusGrid`.
+- New `ui/team/MatchupScreen.kt`: a full-screen `Dialog`, same shape as `PresetTeamDialog`/
+  `CompareScreen`. Grid: my roster as rows, theirs as columns, split cell (two small numbers) colored
+  via `multiplierColors` — change that function's visibility from `private` to `internal` in
+  `TeamScreen.kt` (same package) rather than duplicating the palette. One-line verdict above the grid:
+  count of cells where `myBest > theirBest` ("favourable") vs `theirBest > myBest` ("unfavourable").
+- `PresetTeamDialog` gets `mode: PresetDialogMode = PresetDialogMode.LOAD` (`LOAD` / `COMPARE`) and an
+  optional `onCompare: ((PresetTeam) -> Unit)? = null`. Under `COMPARE`, a row tap calls `onCompare`
+  directly — the existing "replace vs. new team" `AlertDialog` confirmation is skipped entirely
+  (wrapped in `if (mode == PresetDialogMode.LOAD)`), since comparing isn't destructive.
+- Entry point: new `IconButton` "Test against a trainer" in `TeamScreen`'s top bar, opens
+  `PresetTeamDialog(mode = COMPARE, onCompare = { viewModel.loadVersus(it); showMatchup = true })`.
+- Test: `util/TeamVersusTest.kt` — grid shape, correct best-multiplier direction each way, empty
+  roster edge cases, same style as `TeamSuggestionsTest.kt`.
 
 ## F13 — Offline prefetch
 
-**Priority: Medium.**
+**Priority: Medium.** **Plan finalized 2026-08-08** — simplest option chosen for every open question;
+implement when asked.
 
-- New `data/PrefetchManager.kt` + a settings entry point. Tiered:
-  - **Essentials** (S-1 bulk payload + move-info + 18 type details + Smogon tier files, ~1MB,
-    default on)
-  - **Sprites** (artwork + default sprite for every entry via Coil `ImageLoader.enqueue` with
-    `memoryCachePolicy(DISABLED)`, ~50-150MB, default on)
-  - **Full detail** (every `PokemonDto` + species + evolution chain via REST, explicit opt-in with a
-    warning)
-- `Semaphore(6)` concurrency cap + small inter-batch delay (politeness).
-- `sealed interface PrefetchState { Idle / Running(done, total, phase) / Finished(failed) / Failed(message) }`
-  as a `StateFlow`, owned by `PrefetchManager`'s own `CoroutineScope` (not `viewModelScope` — must
-  survive navigating away).
-- Partial failure (404s) counted, never aborts the run.
-- Storage accounting: show `http_cache` + `disk_cache` + `image_cache` directory sizes, "Clear
-  downloaded data" button.
+No settings screen or navigation slot exists in the app today. Simplest entry point, confirmed with
+the user: a 4th bottom-nav tab, "Settings" (`Icons.Default.Settings`), alongside Pokédex/Triangles/
+Team in `PokedexNavHost.kt` — new `ROUTE_SETTINGS`, `ui/settings/SettingsScreen.kt` +
+`ui/settings/SettingsViewModel.kt`.
 
-## F14 — Stat *total* minimum filter
-
-**Priority: High.** Added to the backlog 2026-08-08, alongside F11's plan.
-
-Same "Minimum Stats" section as F8 (`FilterSheetContent`), one more slider for the stat **total**
-(sum of all six base stats), same Slider UI as the rest of that section (the user explicitly prefers
-sliders over segmented buttons/chips for this filter — see the F8 revert in git history,
-commits `9a90f08`/`ec8859e`).
-
-- `SortStat.TOTAL` currently has `apiName = null` (it's a derived sum, not a raw GraphQL field) — F8's
-  `SortStat.entries.mapNotNull { it.apiName?.let {...} }` loop skips it for exactly that reason, so
-  this needs its own slider row outside that loop, or `statMinimums` needs a non-apiName-keyed
-  special case (e.g. a reserved `"total"` key checked separately in `computeDisplayed`'s filter pass,
-  comparing `stats.values.sum()` against the threshold).
-- Range: 0..~720 (highest known base stat total).
+- New `data/PrefetchManager.kt`, a singleton (not a ViewModel) so its `CoroutineScope` survives
+  navigating away from Settings — the one deliberate exception to the app's usual
+  `viewModelScope`-owns-everything pattern:
+  ```kotlin
+  sealed interface PrefetchState {
+      data object Idle : PrefetchState
+      data class Running(val done: Int, val total: Int, val phase: String) : PrefetchState
+      data class Finished(val failed: Int) : PrefetchState
+      data class Failed(val message: String) : PrefetchState
+  }
+  object PrefetchManager {
+      private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+      val state: StateFlow<PrefetchState> = ...
+      fun prefetchEssentials(repository: PokedexRepository)
+      fun prefetchSprites(context: Context, repository: PokedexRepository)
+      fun prefetchFullDetail(repository: PokedexRepository)
+      fun cancel()
+  }
+  ```
+- Shared engine: `internal suspend fun runPrefetchBatch(units: List<suspend () -> Unit>, concurrency:
+  Int, onProgress: (done: Int) -> Unit): Int /* failedCount */` — runs [units] under `Semaphore(6)`,
+  each wrapped in its own `try/catch(Exception)` (never `CancellationException`) so one failure never
+  aborts the run, `delay(200)` after every wave of 6 (politeness). Small and pure enough (fake
+  suspend lambdas, some throwing) to be the one part of F13 with real unit test coverage — the
+  tier-specific wiring below is manual-verification only, same as `TeamViewModel`'s own F11 wiring.
+- **Essentials** (default on): `getAllBasics()` + `getAllMoveInfo()` + `getTypeDetail(type)` for
+  `TypeIds.standardTypeNames` (18) + `getSmogonTiers(genCode)` for each `Smogon.ALL_GENERATIONS`
+  code. `total` = `1 + 1 + 18 + ALL_GENERATIONS.size`.
+- **Sprites** (default on): for every `getMasterList()` entry with a non-null id, two Coil
+  `ImageRequest`s (`Sprites.officialArtworkUrl`/`defaultSpriteUrl`) run via `context.imageLoader
+  .execute(request)` (a suspend call, simpler to gate with the shared `Semaphore(6)` than the
+  listener-based `enqueue`) with `memoryCachePolicy(CachePolicy.DISABLED)` /
+  `diskCachePolicy(CachePolicy.ENABLED)`. `total` = `2 * masterList.size`. No alt-form id filtering —
+  the spec says "every entry" and sprites exist for forms too.
+- **Full detail** (explicit opt-in, UI shows a warning first): `getPokemonDetailBundle(name)` per
+  master-list entry (already a 3-way cache: pokemon/species/evolution chain). `total` =
+  `masterList.size`.
+- Toggle persistence: new `PrefetchSettings` object, `SharedPreferences`-backed, same pattern as
+  `TeamRepository`/`FavoritesRepository` — no new dependency. Toggles just gate which tiers the
+  Settings screen's "Prefetch now" button runs; no background auto-scheduling (WorkManager) — out of
+  scope, the spec only asks for a manual entry point.
+- Storage accounting on `SettingsScreen`: sizes of `cacheDir/http_cache`, `filesDir/disk_cache`, and
+  `context.imageLoader.diskCache?.directory`, measured on `Dispatchers.IO`. "Clear downloaded data"
+  clears all three — `AppContainer.sharedOkHttpClient.cache?.evictAll()`, a new
+  `JsonDiskCache.clear()`, `context.imageLoader.diskCache?.clear()` — then re-measures.
+- Test: `data/PrefetchBatchTest.kt` covering `runPrefetchBatch`'s concurrency cap, partial-failure
+  counting, and progress callback ordering with fake suspend units.
 
 ## F15 — Preview a Pokémon's impact on the current team's coverage
 
-**Priority: High.** Added to the backlog 2026-08-08. Entry point and output format agreed with the
-user; scoring/data approach not yet discussed.
+**Priority: High.** **Plan finalized 2026-08-08** — simplest option chosen for every open question;
+implement when asked. Entry point and output format agreed with the user.
 
 From a Pokémon's detail screen (`PokedexDetailScreen.kt`), a new top-bar icon — same slot pattern as
 the existing shiny toggle and the Compare entry point (`showCompareDialog` /
 `loadCompareCandidatesIfNeeded()`) — opens an "impact on my team" preview showing what would change
 if this Pokémon were **added** to the active team (team not full) or **replaced** one of its members
-(team full, user picks who via a dialog reusing the existing member-chip list from `TeamScreen.kt`).
+(team full, user picks who via a small new picker dialog).
 
 Output is a **text summary** of the delta (not a full before/after matrix): shared weaknesses fixed,
 shared weaknesses introduced, coverage gaps closed, coverage gaps opened — e.g. "Would fix these
 shared weaknesses: Water, Rock. Would introduce no new shared weaknesses. Would close this coverage
 gap: Dragon."
 
-Implementation sketch (not yet validated with the user):
-
-- Extract the per-member matchup + matrix-assembly logic currently inlined in
-  `TeamViewModel.computeMatrix()` into a shared suspend function (e.g.
-  `util/TeamMatrixCalculator.kt` or a `PokedexRepository` method) so it can be run twice — once for
-  the real team (already cached via `TeamViewModel`/`TeamRepository`), once for the hypothetical
-  roster (current members with the candidate added or swapped in). Full movepool-based accuracy,
-  **not** F11's STAB-only shortcut — this is one hypothetical team of ≤6, not a 1300-candidate scan,
-  so the cost is affordable.
-- New pure function, e.g. `util/TeamImpact.kt`: `computeTeamImpact(beforeSharedWeaknesses,
-  afterSharedWeaknesses, beforeCoverageGaps, afterCoverageGaps): TeamImpactSummary` — plain set
-  differences (fixed = in before, not in after; introduced = in after, not in before; same shape for
-  gaps).
-- New state/loading on `PokedexDetailViewModel` (`teamImpact: TeamImpactSummary?`,
-  `isTeamImpactLoading`), triggered on demand like `loadCompareCandidatesIfNeeded()`, not as part of
-  `load()`.
-- Icon hidden or disabled when there's no active team to compare against (empty team — nothing to
-  preview impact on).
+- **Extract, don't duplicate.** `TeamViewModel.computeMatrix()`'s `supervisorScope { ... }` body
+  (member matchup fetch + matrix assembly, currently ~60 lines inlined) moves verbatim into a new
+  top-level suspend function in `util/TeamMatrixCalculator.kt`:
+  `suspend fun computeTeamMatrices(repository: PokedexRepository, members: List<NamedApiResource>):
+  TeamMatrixResult` (`TeamMatrixResult(defensive, offensive)`, same shape `computeMatrix` builds
+  today). `TeamViewModel.computeMatrix` calls this instead of the inline block — behavior and
+  exception handling unchanged. Being a plain top-level function (not a `TeamViewModel` method), it's
+  directly callable from `PokedexDetailViewModel` with no cross-ViewModel dependency. Full
+  movepool-based accuracy, **not** F11's STAB-only shortcut — this is one hypothetical team of ≤6,
+  not a 1300-candidate scan, so the cost is affordable.
+- **Reuse the "at least half weak" / "no member hits it" rules**, don't reimplement them.
+  `TeamUiState.sharedWeaknesses`'s logic (weak-count ≥ half the roster) currently lives inline as a
+  private getter; extract it into `util/TypeEffectiveness.kt` as a twin of the existing
+  `coverageGaps(offensiveMatrix, memberNames)`: `fun sharedWeaknesses(defensiveMatrix, memberNames):
+  List<String>`. `TeamUiState.sharedWeaknesses` becomes a one-line delegate to it — a small refactor
+  with no behavior change, giving both `TeamViewModel` and `PokedexDetailViewModel` one source of
+  truth.
+- New pure `util/TeamImpact.kt`: `data class TeamImpactSummary(weaknessesFixed: List<String>,
+  weaknessesIntroduced: List<String>, gapsClosed: List<String>, gapsOpened: List<String>)` +
+  `fun computeTeamImpact(beforeSharedWeaknesses, afterSharedWeaknesses, beforeCoverageGaps,
+  afterCoverageGaps): TeamImpactSummary` — plain set differences (fixed = in before, not in after;
+  introduced = in after, not in before; same shape for gaps).
+- `PokedexDetailViewModel` additions: `teamImpact: TeamImpactSummary?`, `isTeamImpactLoading`,
+  `teamImpactError: String?` on `PokedexDetailUiState`. `fun loadTeamImpact(replacingIndex: Int? =
+  null)`: own tracked job (same cancel/rethrow shape as every other job in this codebase); builds
+  `afterMembers` from `TeamRepository.team.value` (append the candidate if `replacingIndex == null`,
+  swap it in at that index otherwise); calls `computeTeamMatrices` **twice** — once for the current
+  roster, once for `afterMembers` (simplest option: recomputing "before" costs nothing extra in
+  practice, since every fetch involved is `AsyncCache`d and near-instant on a warm cache — no need to
+  thread `TeamViewModel`'s already-computed matrix across ViewModels); derives
+  `sharedWeaknesses`/`coverageGaps` for both from the two `TeamMatrixResult`s; calls
+  `computeTeamImpact`. `fun clearTeamImpact()` resets the three fields, called when the preview
+  dialog is dismissed so reopening it for a different replace target doesn't flash stale data.
+- UI: `PokedexDetailScreen.kt` top bar gets one more `IconButton` (e.g. `Icons.AutoMirrored.Filled
+  .TrendingUp`, "Preview impact on my team"), hidden entirely when `team.isEmpty()` (the screen
+  already collects `team` for the existing add-to-team button). On tap: if `team.size <
+  TeamRepository.MAX_SIZE`, call `loadTeamImpact(null)` directly; if full, open a small new
+  `AlertDialog` + sprite row (not a reuse of `TeamScreen`'s private `TeamMemberChip` — cross-package
+  reuse there would point `ui.detail` at `ui.team` for one tiny composable, simpler to write a
+  ~15-line picker inline) letting the user pick which member to replace, then call
+  `loadTeamImpact(pickedIndex)`. Result shown in an `AlertDialog`: loading spinner while
+  `isTeamImpactLoading`, `teamImpactError` text + retry on failure, else the four-line summary
+  ("Would fix...", "Would introduce no new...", "Would close...", "Would open no new..." — "no new"
+  wording whenever a list is empty, matching the user's example). `onDismissRequest` calls
+  `clearTeamImpact()`.
+- Tests: `util/TeamImpactTest.kt` (set-difference cases, no-op case) and new `sharedWeaknesses` cases
+  added to `TypeEffectivenessTest.kt` (mirroring the existing `coverageGaps` tests: half-or-more weak,
+  ties, empty team). No dedicated `PokedexDetailViewModel` test — no such test file exists today, and
+  `TeamViewModel`'s own F11 wiring wasn't unit-tested either; the two pure-function suites above are
+  where the real logic risk is.
 
 ## Cancelled
 
