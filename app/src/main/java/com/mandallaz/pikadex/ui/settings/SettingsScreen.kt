@@ -157,7 +157,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             )
             PrefetchTierRow(
                 title = "AMOLED black",
-                subtitle = "True black background in dark mode, to save battery on AMOLED screens.",
+                subtitle = "Forces dark mode with a true black background, to save battery on AMOLED screens.",
                 checked = uiState.amoledEnabled,
                 onCheckedChange = viewModel::setAmoledEnabled
             )

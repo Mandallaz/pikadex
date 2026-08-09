@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -19,7 +20,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val amoledBlack by DisplaySettings.amoledEnabled.collectAsState()
-            PokeDexTheme(amoledBlack = amoledBlack) {
+            // Turning AMOLED black on is itself a request for dark mode, not just a modifier of it
+            // — the user shouldn't also have to separately flip the system theme.
+            val darkTheme = isSystemInDarkTheme() || amoledBlack
+            PokeDexTheme(darkTheme = darkTheme, amoledBlack = amoledBlack) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     PokedexNavHost()
                 }

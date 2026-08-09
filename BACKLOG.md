@@ -152,7 +152,11 @@ dark-mode override (independent of the system setting) is still open; split out 
   Compose runtime; the composable gained an `amoledBlack: Boolean = false` parameter (same pattern as
   the existing `dynamicColor` parameter/comment).
 - `MainActivity.kt`: collects `DisplaySettings.amoledEnabled` as state and passes it into
-  `PokeDexTheme(amoledBlack = ...)`.
+  `PokeDexTheme(amoledBlack = ...)`. **Revised 2026-08-09** after the user tried the toggle with the
+  emulator in light mode and saw no change: `darkTheme` is now computed as `isSystemInDarkTheme() ||
+  amoledBlack` rather than left at its system-only default — enabling AMOLED black is itself a
+  request for dark mode, not just a modifier of it, so the user shouldn't also have to flip the
+  system theme separately.
 - `SettingsViewModel`/`SettingsScreen`: new `amoledEnabled` field on `SettingsUiState`,
   `setAmoledEnabled()` delegator, and a "Display" section with one `PrefetchTierRow`-style Switch row
   ("AMOLED black" / "True black background in dark mode, to save battery on AMOLED screens.").
