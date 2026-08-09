@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Requêtes vers pokeapi.co et les sprites hébergés sur GitHub -->
+    <!-- Requests to pokeapi.co and sprites hosted on GitHub -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application

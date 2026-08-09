@@ -33,6 +33,10 @@ object Smogon {
     /** Oldest to newest. */
     val ALL_GENERATIONS: List<SmogonGen> = GENERATIONS.map { it.second }
 
+    /** Generation the Suggestions tier ceiling and its Settings picker are checked against — always
+     *  the most recent generation, so Settings doesn't also need a generation picker for this. */
+    const val SUGGESTION_TIER_GEN = "sv"
+
     /** PokeAPI version_group -> the Smogon generation that covers it. A version group *absent* here
      *  has no Smogon dex at all, and forms introduced in it get no links: "mega-dimension" (Legends
      *  Z-A) is the case that matters, since it accounts for roughly half of all "-mega" forms. */

@@ -15,6 +15,7 @@ import com.mandallaz.pikadex.data.PrefetchState
 import com.mandallaz.pikadex.data.PrefetchTier
 import com.mandallaz.pikadex.data.SuggestionSettings
 import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -24,10 +25,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-/** Smogon generation the tier ceiling picker resolves options against — see [TeamViewModel]'s own
- *  `SUGGESTION_TIER_GEN`, kept in sync with it (BACKLOG.md F17). */
-private const val SUGGESTION_TIER_GEN = "sv"
 
 data class StorageUsage(
     val httpCacheBytes: Long,
@@ -96,7 +93,7 @@ class SettingsViewModel @JvmOverloads constructor(
     private fun loadSuggestionTierOptions() {
         viewModelScope.launch {
             try {
-                val tiers = repository.getSmogonTiers(SUGGESTION_TIER_GEN)
+                val tiers = repository.getSmogonTiers(Smogon.SUGGESTION_TIER_GEN)
                 val options = SmogonTierLabels.sortedTiers(tiers.values.toSet())
                 _uiState.update { it.copy(suggestionTierOptions = options) }
             } catch (e: CancellationException) {

@@ -10,6 +10,7 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepository
 import com.mandallaz.pikadex.util.PresetTeam
 import com.mandallaz.pikadex.util.PresetTeams
+import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SuggestionCandidate
 import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
@@ -81,10 +82,6 @@ data class TeamUiState(
             return coverageGaps(offensiveMatrix, members.map { it.name })
         }
 }
-
-/** Smogon generation Suggestions' tier ceiling (BACKLOG.md F17) is checked against — always the
- *  most recent generation, so Settings doesn't also need a generation picker for this. */
-private const val SUGGESTION_TIER_GEN = "sv"
 
 class TeamViewModel @JvmOverloads constructor(
     private val repository: PokedexRepository = AppContainer.repository
@@ -220,7 +217,7 @@ class TeamViewModel @JvmOverloads constructor(
                     }
                     // Only fetched when a ceiling is actually set — no reason to pay for this
                     // request (even a cached one) for the common case of no tier filter.
-                    val tiersDeferred = maxTier?.let { async { repository.getSmogonTiers(SUGGESTION_TIER_GEN) } }
+                    val tiersDeferred = maxTier?.let { async { repository.getSmogonTiers(Smogon.SUGGESTION_TIER_GEN) } }
                     tierByShowdownKey = tiersDeferred?.await().orEmpty()
                     Triple(masterDeferred.await(), basicsDeferred.await(), typeDetailsDeferred.mapValues { it.value.await() })
                 }

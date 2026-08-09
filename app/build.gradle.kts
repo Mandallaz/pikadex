@@ -63,7 +63,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Réseau : appels vers PokeAPI
+    // Networking: calls to PokeAPI
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
     // okhttp3 classes (OkHttpClient, Interceptor, Cache...) are imported directly across several
@@ -74,11 +74,11 @@ dependencies {
     // release build; it has no place shipping to users.
     debugImplementation(libs.okhttp.logging.interceptor)
 
-    // Chargement des sprites/artworks des Pokémon
+    // Loading Pokémon sprites/artwork
     implementation(libs.coil.compose)
     // Animated GIF decoding for Showdown battle sprites (F38)
     implementation(libs.coil.gif)
 
-    // Custom Tabs : ouvre les liens Smogon dans l'app plutôt que dans une tâche navigateur séparée
+    // Custom Tabs: opens Smogon links in-app instead of a separate browser task
     implementation(libs.androidx.browser)
 }
