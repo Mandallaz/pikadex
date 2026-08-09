@@ -81,7 +81,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
+import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.ShowdownSprites
@@ -102,6 +104,7 @@ import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
 import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.SortStat
+import com.mandallaz.pikadex.util.TeamImpactSummary
 import com.mandallaz.pikadex.util.toDisplayName
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -141,7 +144,7 @@ fun PokedexDetailScreen(
     val isCryPlaying by viewModel.isCryPlaying.collectAsState()
     val context = LocalContext.current
     val isInTeam = uiState.pokemon?.let { p -> team.any { it.name == p.name } } ?: false
-    val isTeamFull = team.size >= com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE
+    val isTeamFull = team.size >= TeamRepository.MAX_SIZE
     val isFavorite = uiState.pokemon?.let { p -> favorites.contains(p.name) } ?: false
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -163,7 +166,7 @@ fun PokedexDetailScreen(
     // apart into two slightly different rules for the same thing.
     val teamMembership = team.map { it.name }
     LaunchedEffect(uiState.pokemon?.name, teamMembership) {
-        if (uiState.pokemon != null && team.isNotEmpty() && team.size < com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE) {
+        if (uiState.pokemon != null && team.isNotEmpty() && team.size < TeamRepository.MAX_SIZE) {
             viewModel.loadTeamImpact()
         } else {
             viewModel.clearTeamImpact()
@@ -225,10 +228,10 @@ fun PokedexDetailScreen(
                             onClick = {
                                 // The result, not a re-derived isTeamFull, decides whether this
                                 // was actually rejected — see TeamRepository.ToggleResult.
-                                if (viewModel.toggleTeamMembership() == com.mandallaz.pikadex.data.TeamRepository.ToggleResult.RejectedTeamFull) {
+                                if (viewModel.toggleTeamMembership() == TeamRepository.ToggleResult.RejectedTeamFull) {
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar(
-                                            "Your team is full (${com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE}/${com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE}). Remove one first."
+                                            "Your team is full (${TeamRepository.MAX_SIZE}/${TeamRepository.MAX_SIZE}). Remove one first."
                                         )
                                     }
                                 }
@@ -331,10 +334,7 @@ fun PokedexDetailScreen(
                     groupedMoves = uiState.groupedMoves,
                     shiny = shiny,
                     animated = animated,
-                    // Card visibility is the exact same condition the LaunchedEffect above gates
-                    // loadTeamImpact()/clearTeamImpact() on — kept as one boolean computed once here
-                    // rather than re-derived inside DetailContent, so the two can't drift apart.
-                    showTeamImpactCard = team.isNotEmpty() && team.size < com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE,
+                    showTeamImpactCard = shouldShowTeamImpactCard(team, isInTeam),
                     isTeamImpactLoading = uiState.isTeamImpactLoading,
                     teamImpactError = uiState.teamImpactError,
                     teamImpact = uiState.teamImpact,
@@ -453,7 +453,7 @@ private fun DetailContent(
     showTeamImpactCard: Boolean,
     isTeamImpactLoading: Boolean,
     teamImpactError: String?,
-    teamImpact: com.mandallaz.pikadex.util.TeamImpactSummary?,
+    teamImpact: TeamImpactSummary?,
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit
 ) {
@@ -798,7 +798,7 @@ private fun DetailContent(
             expanded = MoveCategory.TUTOR in expandedCategories
         ) { toggle(MoveCategory.TUTOR) }
 
-        item { androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(24.dp)) }
+        item { Spacer(modifier = Modifier.size(24.dp)) }
     }
 }
 
@@ -862,7 +862,7 @@ private fun PokemonSpriteTile(
 private fun TeamImpactCard(
     isLoading: Boolean,
     error: String?,
-    impact: com.mandallaz.pikadex.util.TeamImpactSummary?
+    impact: TeamImpactSummary?
 ) {
     // A loaded result with all 7 categories empty means this Pokémon genuinely wouldn't change
     // anything about the team's coverage — worth saying explicitly ("Nothing.") rather than leaving
@@ -909,7 +909,7 @@ private fun TeamImpactCard(
  *  changes nothing on either side shows no text at all here (see [TeamImpactCard]'s "Nothing." case
  *  for when *both* sections are empty). */
 @Composable
-private fun TeamImpactSummaryText(impact: com.mandallaz.pikadex.util.TeamImpactSummary) {
+private fun TeamImpactSummaryText(impact: TeamImpactSummary) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ImpactSection(
             "Defensively",
@@ -1253,9 +1253,14 @@ private fun statDisplayName(apiName: String): String =
 
 private fun signed(value: Int): String = if (value > 0) "+$value" else value.toString()
 
-/** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would
- *  render that as "No Eggs", which reads like a typo rather than the actual game term. Internal,
- *  not private, so it's unit-testable directly. */
+/** The "team coverage impact" card is only worth showing while there's an active team with room to
+ *  grow and this Pokémon isn't already on it — a full or empty team, or one already containing this
+ *  Pokémon (loadTeamImpact() bails out early in that case since adding it would change nothing),
+ *  has nothing meaningful to preview, and would otherwise render the card's title over a permanently
+ *  empty body. Internal, not private, so it's unit-testable directly. */
+internal fun shouldShowTeamImpactCard(team: List<NamedApiResource>, isInTeam: Boolean): Boolean =
+    team.isNotEmpty() && team.size < TeamRepository.MAX_SIZE && !isInTeam
+
 /** F38: which Showdown sprite URL (if any) [PokemonArtwork] should show when animated is on —
  *  the shiny variant when the shiny toggle is also active, falling back to the regular animated
  *  sprite if this Pokémon has no animated shiny (a real coverage gap, not an error), and null when
@@ -1263,6 +1268,9 @@ private fun signed(value: Int): String = if (value > 0) "+$value" else value.toS
 internal fun selectShowdownUrl(shiny: Boolean, showdown: ShowdownSprites?): String? =
     showdown?.let { if (shiny) it.frontShiny ?: it.frontDefault else it.frontDefault }
 
+/** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would
+ *  render that as "No Eggs", which reads like a typo rather than the actual game term. Internal,
+ *  not private, so it's unit-testable directly. */
 internal fun eggGroupDisplayName(name: String): String = when (name) {
     "no-eggs" -> "Undiscovered"
     else -> name.toDisplayName()

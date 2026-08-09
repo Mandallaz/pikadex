@@ -31,20 +31,23 @@ object SmogonTierDataSource {
     /** A Pokemon's Showdown data key strips out all hyphens from its PokeAPI name (e.g. "mr-mime" -> "mrmime"). */
     fun showdownKey(pokemonName: String): String = pokemonName.replace("-", "")
 
+    /** Resolves a Smogon generation code to its Showdown `formats-data.ts` URL. Throws (rather than
+     *  returning null/empty) for an unrecognized code: [fetchTiers]'s result is memoized in an
+     *  AsyncCache, which only evicts on exception, so returning an empty result here instead used to
+     *  cache "this generation has no tiers at all" for the whole process — the tier picker would
+     *  then show nothing, and the caller's "does this tier still exist in the new generation?" check
+     *  would read the empty map as a definitive no and silently clear the user's tier selection.
+     *  Internal, not private, so it's unit-testable directly without a network call. */
+    internal fun tierUrlFor(genCode: String): String = if (genCode == "sv") {
+        "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/formats-data.ts"
+    } else {
+        val mod = GEN_CODE_TO_MOD[genCode] ?: throw IOException("Unknown Smogon generation code: $genCode")
+        "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/mods/$mod/formats-data.ts"
+    }
+
     /** Returns pokemonKey (Showdown format, no hyphens) -> tier code, for a Smogon generation code. */
     suspend fun fetchTiers(genCode: String): Map<String, String> = withContext(Dispatchers.IO) {
-        val url = if (genCode == "sv") {
-            "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/formats-data.ts"
-        } else {
-            val mod = GEN_CODE_TO_MOD[genCode] ?: return@withContext emptyMap()
-            "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/mods/$mod/formats-data.ts"
-        }
-        val request = Request.Builder().url(url).build()
-        // Throws rather than returning an empty map on failure: this result is memoized in an
-        // AsyncCache, which only evicts on exception, so a transient failure used to cache "this
-        // generation has no tiers at all" for the whole process — the tier picker would then show
-        // nothing, and the caller's "does this tier still exist in the new generation?" check would
-        // read the empty map as a definitive no and silently clear the user's tier selection.
+        val request = Request.Builder().url(tierUrlFor(genCode)).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Smogon tier fetch failed: HTTP ${response.code}")
             val body = response.body?.string() ?: throw IOException("Smogon tier response had no body")

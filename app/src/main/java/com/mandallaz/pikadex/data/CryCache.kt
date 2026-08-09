@@ -31,10 +31,30 @@ object CryCache {
             AppContainer.sharedOkHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@withContext false
                 val bytes = response.body?.bytes() ?: return@withContext false
-                file(context, id).writeBytes(bytes)
+                writeAtomically(file(context, id), bytes)
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** Writes via a `.tmp` file + rename, same pattern as [JsonDiskCache.write]: writing [target]
+     *  directly left a process kill mid-write behind a truncated file that [isCached] (which only
+     *  checks `length() > 0`) would still treat as valid, so a cry could go silently and permanently
+     *  broken instead of falling back to the network URL. Internal, not private, so it's
+     *  unit-testable directly without a Context. */
+    internal fun writeAtomically(target: File, bytes: ByteArray): Boolean {
+        val tempFile = File(target.parentFile, "${target.name}.tmp")
+        return try {
+            tempFile.writeBytes(bytes)
+            if (!tempFile.renameTo(target)) {
+                tempFile.delete()
+                false
+            } else {
                 true
             }
         } catch (e: Exception) {
+            tempFile.delete()
             false
         }
     }

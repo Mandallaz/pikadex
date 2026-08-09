@@ -1,13 +1,47 @@
 package com.mandallaz.pikadex.ui.detail
 
+import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource.MoveInfo
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource.MoveStatChange
+import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.ShowdownSprites
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PokedexDetailScreenTest {
+
+    // --- shouldShowTeamImpactCard -------------------------------------------------------
+
+    private fun member(name: String) = NamedApiResource(name = name, url = "")
+
+    @Test
+    fun `an empty team never shows the impact card`() {
+        assertFalse(shouldShowTeamImpactCard(team = emptyList(), isInTeam = false))
+    }
+
+    @Test
+    fun `a full team never shows the impact card`() {
+        val fullTeam = (1..TeamRepository.MAX_SIZE).map { member("pokemon-$it") }
+        assertFalse(shouldShowTeamImpactCard(team = fullTeam, isInTeam = false))
+    }
+
+    // Regression for the bug where opening a Pokémon already on a non-full team showed the card
+    // with its title but a permanently empty body, since loadTeamImpact() bails out early for a
+    // Pokémon already on the team and the card had no matching check.
+    @Test
+    fun `a Pokemon already on the team never shows the impact card, even with room to spare`() {
+        val team = listOf(member("pikachu"))
+        assertFalse(shouldShowTeamImpactCard(team = team, isInTeam = true))
+    }
+
+    @Test
+    fun `a non-empty, non-full team without this Pokemon shows the impact card`() {
+        val team = listOf(member("pikachu"))
+        assertTrue(shouldShowTeamImpactCard(team = team, isInTeam = false))
+    }
 
     @Test
     fun `no-eggs reads as Undiscovered, not the literal API name`() {

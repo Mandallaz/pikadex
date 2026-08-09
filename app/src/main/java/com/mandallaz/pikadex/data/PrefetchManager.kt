@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,12 +61,20 @@ object PrefetchManager {
 
     /** Cancels whatever's running (if anything) and starts fetching [tiers] in order. A fresh call
      *  supersedes an in-flight one rather than queuing behind it — same "latest request wins"
-     *  behavior as every other tracked job in this codebase. */
+     *  behavior as every other tracked job in this codebase.
+     *
+     *  The previous job is joined (not just cancelled) before this one starts its own work: a plain
+     *  `cancel()` lets the old coroutine's in-flight `_state.update { Running(...) }` land after this
+     *  job has already published its own state, which briefly shows the old tier's stale progress. */
     fun start(context: Context, repository: PokedexRepository, tiers: List<PrefetchTier>) {
-        job?.cancel()
-        if (tiers.isEmpty()) return
+        val previousJob = job
+        if (tiers.isEmpty()) {
+            previousJob?.cancel()
+            return
+        }
         val appContext = context.applicationContext
         job = scope.launch {
+            previousJob?.cancelAndJoin()
             try {
                 var totalFailed = 0
                 tiers.forEach { tier ->

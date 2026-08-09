@@ -238,6 +238,8 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 loadedFor = null // let the user retry (e.g. after regaining network) instead of being stuck
                 _uiState.update {

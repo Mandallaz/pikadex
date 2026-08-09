@@ -65,4 +65,17 @@ class JsonDiskCacheTest {
         assertArrayEquals(before, File(dir, "key.json.gz").readBytes())
         assertFalse(File(dir, "key.json.gz.tmp").exists())
     }
+
+    // Regression: a corrupt/truncated file (e.g. from a process kill outside this cache's own
+    // atomic write, or on-disk bit rot) used to be left behind on a failed read, so it was re-read
+    // and re-fail on every cold start until maxAgeMillis expired it.
+    @Test
+    fun `a corrupted file is deleted on a failed read, not left behind to fail again`() = runBlocking {
+        File(dir, "key.json.gz").writeBytes(byteArrayOf(1, 2, 3, 4))
+
+        val result = JsonDiskCache.read<Map<String, Int>>("key", mapType, maxAgeMillis = 60_000)
+
+        assertEquals(null, result)
+        assertFalse(File(dir, "key.json.gz").exists())
+    }
 }

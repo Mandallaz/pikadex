@@ -41,6 +41,9 @@ object JsonDiskCache {
             try {
                 GZIPInputStream(file.inputStream()).bufferedReader().use { gson.fromJson<T>(it, type) }
             } catch (e: Exception) {
+                // A corrupt/truncated file would otherwise sit here and be re-read and re-fail on
+                // every cold start until maxAgeMillis expires it — delete it so the next write wins.
+                file.delete()
                 null
             }
         }
