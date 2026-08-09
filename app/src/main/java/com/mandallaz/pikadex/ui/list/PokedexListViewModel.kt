@@ -13,6 +13,7 @@ import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
+import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.toDisplayName
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -65,14 +66,19 @@ data class PokedexListUiState(
     // needs and it keeps this ViewModel's state decoupled from the GraphQL data source's types.
     val legendaryNames: Set<String> = emptySet(),
     val mythicalNames: Set<String> = emptySet(),
+    // Same bulk fetch as legendaryNames/mythicalNames above (see loadBaseStatsIfNeeded) — backs the
+    // F33 "Perfect Counter" filter, which needs each Pokémon's typing to run through
+    // TypeTriangles.isPerfectCounter client-side, no separate network call.
+    val typesByName: Map<String, List<String>> = emptyMap(),
     // Only keys with an active (> 0) minimum are present — a slider at its default (0) imposes no
     // constraint, so there's nothing to filter on and no reason for it to occupy a map entry.
-    val statMinimums: Map<String, Int> = emptyMap()
+    val statMinimums: Map<String, Int> = emptyMap(),
+    val counterFilterActive: Boolean = false
 ) {
     val hasActiveFilters: Boolean
         get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
             selectedFormatGen != null || selectedFormatTier != null || showFavoritesOnly ||
-            sortStat != null || rarityFilter != null || statMinimums.isNotEmpty()
+            sortStat != null || rarityFilter != null || statMinimums.isNotEmpty() || counterFilterActive
 
     /** How many of the filter controls (not counting sort) are currently set — shown as a badge
      *  count on the "Filters" button so it's clear at a glance whether/how much filtering is active
@@ -84,6 +90,7 @@ data class PokedexListUiState(
             (if (selectedFormatGen != null || selectedFormatTier != null) 1 else 0) +
             (if (showFavoritesOnly) 1 else 0) +
             (if (rarityFilter != null) 1 else 0) +
+            (if (counterFilterActive) 1 else 0) +
             statMinimums.size
 
     /** The tier filter works standalone (e.g. picking "Uber" with no generation chosen), so it
@@ -143,6 +150,16 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
                 RarityFilter.MYTHICAL -> resource.name in state.mythicalNames
                 RarityFilter.ORDINARY -> resource.name !in state.legendaryNames && resource.name !in state.mythicalNames
             }
+        }
+    }
+
+    // Same "no data yet, don't filter" guard as rarity above — typesByName comes from the same bulk
+    // fetch as legendaryNames/mythicalNames, so empty means "not loaded yet", not "no Pokémon counter
+    // any triangle".
+    if (state.counterFilterActive && state.typesByName.isNotEmpty()) {
+        list = list.filter { resource ->
+            val types = state.typesByName[resource.name] ?: return@filter false
+            TypeTriangles.isPerfectCounter(types)
         }
     }
 
@@ -489,6 +506,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                         baseStats = basics.mapValues { (_, b) -> b.stats },
                         legendaryNames = basics.filterValues { b -> b.isLegendary }.keys,
                         mythicalNames = basics.filterValues { b -> b.isMythical }.keys,
+                        typesByName = basics.mapValues { (_, b) -> b.types },
                         isStatsLoading = false
                     )
                 }
@@ -544,6 +562,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 selectedFormatTier = null, formatFilterNames = null,
                 showFavoritesOnly = false,
                 rarityFilter = null,
+                counterFilterActive = false,
                 statMinimums = emptyMap(),
                 // Same reason as the individual cancel sites: whichever of the four jobs just got
                 // cancelled will never clear this itself, so Reset while a filter was still
@@ -559,6 +578,12 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     fun onRarityFilterSelected(filter: RarityFilter?) {
         _uiState.update { it.copy(rarityFilter = filter) }
+    }
+
+    /** Binary toggle, same shape as [RarityFilter]'s on/off entries — "counters *any* triangle" per
+     *  F33's resolved scope, not a per-triangle picker. */
+    fun onCounterFilterToggled() {
+        _uiState.update { it.copy(counterFilterActive = !it.counterFilterActive) }
     }
 
     fun dismissError() {

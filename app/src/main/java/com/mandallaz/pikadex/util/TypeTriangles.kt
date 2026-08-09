@@ -263,4 +263,10 @@ object TypeTriangles {
         val typeSet = types.toSet()
         return ALL.filter { triangle -> triangle.counter.types.toSet() == typeSet }
     }
+
+    /** True if [types] is the exact best-counter typing to at least one triangle in [ALL] — the
+     *  per-Pokémon predicate behind the Pokédex list's "Perfect Counter" filter (F33), same check
+     *  the detail screen's Type Triangles card already runs via [counteredBy] to decide whether it
+     *  has anything to show for a given Pokémon. */
+    fun isPerfectCounter(types: Collection<String>): Boolean = counteredBy(types).isNotEmpty()
 }
