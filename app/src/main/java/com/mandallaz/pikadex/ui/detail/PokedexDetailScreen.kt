@@ -102,12 +102,6 @@ import com.mandallaz.pikadex.util.toDisplayName
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-/** How many triangles the Type Triangles card shows before collapsing the rest behind "Show all"
- *  — a pokemon that's a member of several triangles could otherwise push the whole card (and
- *  everything below it: Smogon links, Evolution, moves) several screens down before the user ever
- *  reaches them. */
-private const val COLLAPSED_TRIANGLE_LIMIT = 2
-
 /**
  * Persists which move sections are open across Activity recreation (rotation, process death).
  *
@@ -293,7 +287,6 @@ fun PokedexDetailScreen(
                     evolutionChain = uiState.evolutionChain,
                     typeMatchups = uiState.typeMatchups,
                     abilityDescriptions = uiState.abilityDescriptions,
-                    memberTriangles = uiState.memberTriangles,
                     counteredTriangles = uiState.counteredTriangles,
                     moveInfo = uiState.moveInfo,
                     statPercentiles = uiState.statPercentiles,
@@ -412,7 +405,6 @@ private fun DetailContent(
     evolutionChain: com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto?,
     typeMatchups: Map<String, Double>,
     abilityDescriptions: Map<String, String>,
-    memberTriangles: List<TypeTriangle>,
     counteredTriangles: List<TypeTriangle>,
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     statPercentiles: Map<String, Double>,
@@ -634,9 +626,9 @@ private fun DetailContent(
             TypeMatchupsCard(typeMatchups)
         }
 
-        if (memberTriangles.isNotEmpty() || counteredTriangles.isNotEmpty()) {
+        if (counteredTriangles.isNotEmpty()) {
             item {
-                TypeTrianglesCard(memberTriangles, counteredTriangles, onViewTypeTriangles)
+                TypeTrianglesCard(counteredTriangles, onViewTypeTriangles)
             }
         }
 
@@ -927,38 +919,22 @@ private fun TypeMatchupsCard(typeMatchups: Map<String, Double>) {
     }
 }
 
+/**
+ * BACKLOG.md F26 (simplified 2026-08-09) — used to also list every triangle this Pokémon's typing
+ * is merely a *member* of (`TypeTriangles.containing`, since removed as unused), collapsed behind
+ * a "show all" past a small limit. Dropped per user feedback: sharing a type with one leg of a
+ * triangle isn't a meaningful callout on its own, unlike being the loop's exact best counter
+ * ([TypeTriangles.counteredBy]). With only ever a couple of counter matches at most (each
+ * triangle's counter typing is fixed, and no typing counters many at once), the collapse/expand
+ * complexity the old member list needed no longer earns its keep either — dropped alongside it.
+ * The caller hides this card entirely when [counteredTriangles] is empty, so every call here has
+ * at least one row to show.
+ */
 @Composable
 private fun TypeTrianglesCard(
-    memberTriangles: List<TypeTriangle>,
     counteredTriangles: List<TypeTriangle>,
     onViewTypeTriangles: () -> Unit
 ) {
-    val counteredTitles = counteredTriangles.map { it.title }.toSet()
-    // A pokemon's typing can counter a triangle without being "in" it at all — e.g. Dragonite
-    // (Flying/Dragon) counters Fire/Grass/Water, but neither Flying nor Dragon is one of that
-    // triangle's 3 types — so these need their own section, not just an inline note on triangles
-    // that happen to already be in memberTriangles.
-    val counterOnlyTriangles = counteredTriangles.filter { it !in memberTriangles }
-    val totalCount = counterOnlyTriangles.size + memberTriangles.size
-
-    // Collapsed by default when there are more than COLLAPSED_TRIANGLE_LIMIT — a pokemon in several
-    // triangles used to push everything below this card (Smogon links, Evolution, moves) far down
-    // the page. Counter-only entries fill the cap first since "you beat this" is the more
-    // specifically actionable callout.
-    // rememberSaveable, not remember: same reason as ExpandedCategoriesSaver — rotating used to
-    // silently re-collapse a list the user had just expanded. The triangle lists stay as keys so
-    // the section still resets when the card is showing a different pokemon's triangles.
-    var expanded by rememberSaveable(memberTriangles, counteredTriangles) { mutableStateOf(false) }
-    val visibleCounterOnly: List<TypeTriangle>
-    val visibleMember: List<TypeTriangle>
-    if (expanded || totalCount <= COLLAPSED_TRIANGLE_LIMIT) {
-        visibleCounterOnly = counterOnlyTriangles
-        visibleMember = memberTriangles
-    } else {
-        visibleCounterOnly = counterOnlyTriangles.take(COLLAPSED_TRIANGLE_LIMIT)
-        visibleMember = memberTriangles.take((COLLAPSED_TRIANGLE_LIMIT - visibleCounterOnly.size).coerceAtLeast(0))
-    }
-
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -981,45 +957,23 @@ private fun TypeTrianglesCard(
                 }
             }
 
-            if (visibleCounterOnly.isNotEmpty()) {
-                Text(
-                    "This typing is the best counter to:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
-                )
-                visibleCounterOnly.forEachIndexed { index, triangle ->
-                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                    TriangleRow(triangle)
-                }
-                if (visibleMember.isNotEmpty()) HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp))
-            }
-
-            if (visibleMember.isNotEmpty()) {
-                Text(
-                    "This typing is part of these rock-paper-scissors loops.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
-                )
-                visibleMember.forEachIndexed { index, triangle ->
-                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                    TriangleRow(triangle, isCounter = triangle.title in counteredTitles)
-                }
-            }
-
-            if (totalCount > COLLAPSED_TRIANGLE_LIMIT) {
-                TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (expanded) "Show less" else "Show all $totalCount")
-                }
+            Text(
+                "This typing is the best counter to:",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+            )
+            counteredTriangles.forEachIndexed { index, triangle ->
+                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                TriangleRow(triangle)
             }
         }
     }
 }
 
 @Composable
-private fun TriangleRow(triangle: TypeTriangle, isCounter: Boolean = false) {
+private fun TriangleRow(triangle: TypeTriangle) {
     Column {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1033,15 +987,6 @@ private fun TriangleRow(triangle: TypeTriangle, isCounter: Boolean = false) {
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(top = 6.dp)
         )
-        if (isCounter) {
-            Text(
-                text = "This typing is the best counter to this triangle.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
     }
 }
 

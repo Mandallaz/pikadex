@@ -48,7 +48,10 @@ data class PokedexDetailUiState(
     val evolutionChain: EvolutionChainDto? = null,
     val typeMatchups: Map<String, Double> = emptyMap(),
     val abilityDescriptions: Map<String, String> = emptyMap(),
-    val memberTriangles: List<TypeTriangle> = emptyList(),
+    /** BACKLOG.md F26 — triangles this Pokémon's typing is the exact best counter to (see
+     *  [TypeTriangles.counteredBy]). The card that reads this is hidden entirely when it's empty;
+     *  merely being *part of* a triangle (the pre-F26 `memberTriangles`) was dropped as too weak a
+     *  signal to be worth a callout on its own. */
     val counteredTriangles: List<TypeTriangle> = emptyList(),
     val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap(),
     /** Learned moves grouped and sorted per [MoveCategory] — used to be recomputed by the screen
@@ -139,7 +142,6 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         .awaitAll()
                     val matchups = computeDefensiveMultipliers(typeDetails)
                     val pokemonTypes = bundle.pokemon.types.orEmpty().map { it.type.name }
-                    val memberTriangles = TypeTriangles.containing(pokemonTypes)
                     val counteredTriangles = TypeTriangles.counteredBy(pokemonTypes)
                     val abilityNames = bundle.pokemon.abilities.orEmpty().map { it.ability.name }
                     val descriptionsDeferred = async {
@@ -199,7 +201,6 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             evolutionChain = bundle.evolutionChain,
                             typeMatchups = matchups,
                             abilityDescriptions = descriptions,
-                            memberTriangles = memberTriangles,
                             counteredTriangles = counteredTriangles,
                             moveInfo = moveInfo,
                             statPercentiles = percentiles,

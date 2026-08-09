@@ -257,11 +257,6 @@ object TypeTriangles {
         )
     )
 
-    /** Every triangle whose 3-type loop includes at least one of the given types (e.g. a pure
-     *  Fire-type pokemon is "in" 5 different triangles, since Fire appears in that many loops). */
-    fun containing(types: Collection<String>): List<TypeTriangle> =
-        ALL.filter { triangle -> triangle.types.any { it in types } }
-
     /** Every triangle whose best-counter typing exactly matches the given types (order-independent) —
      *  i.e. this is one of the dual-types that "breaks" that triangle. */
     fun counteredBy(types: Collection<String>): List<TypeTriangle> {

@@ -22,7 +22,7 @@
 | F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
 | F24 — Reorder detail screen sections | — | To groom | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
 | F25 — Shrink Smogon Strategy Dex card | — | To groom | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
-| F26 — Simplify Type Triangles card to perfect-counter-only | — | To groom | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
+| F26 — Simplify Type Triangles card to perfect-counter-only | — | Done | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
 | F27 — Tap a suggestion's sprite to open its detail page | — | To groom | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
 | F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card | — | Done | [#18](https://github.com/Mandallaz/pikadex/issues/18) |
 
@@ -603,9 +603,39 @@ No implementation, sizing values, or before/after mockup agreed yet.
 
 ## F26 — Simplify Type Triangles card to perfect-counter-only
 
-**To groom** — requested 2026-08-09, not yet planned or implemented.
+**Done 2026-08-09.** Implemented autonomously (BACKLOG.md batch: F24/F25/F26/F27/F28 on
+`feature/backlog-f24-f28`) — decisions below made without further user confirmation, per that
+session's mandate.
 
-`TypeTrianglesCard` (`PokedexDetailScreen.kt`, around line 924) currently shows two sections for a
+**Open questions resolved:**
+
+- **"Perfect counter" = `counteredBy` match, not additionally filtered on `TypeTriangle.isPerfect`.**
+  `counteredBy` already means "this typing is the exact best-counter dual-type for this triangle" —
+  a property of the *typing*, independent of whether the *triangle itself* is symmetric
+  (`isPerfect`). Verified on-device with Aegislash (Ghost/Steel): its card correctly shows both
+  Fighting/Rock/Flying (Perfect) and Fighting/Ice/Flying (Imperfect) as things it counters, matching
+  the pre-existing doc comment's own example.
+- **`PokedexDetailViewModel` simplified as anticipated.** `memberTriangles` field, its
+  `TypeTriangles.containing(pokemonTypes)` call, and the `PokedexDetailUiState` field are all
+  removed — only `counteredTriangles` remains. `TypeTriangles.containing()` itself deleted from
+  `util/TypeTriangles.kt` too: unused anywhere else in the app (checked before deleting), and no
+  existing test referenced it either.
+- **`TypeTrianglesScreen.kt` (the "View chart" full screen) left untouched** — out of scope, per the
+  original ask reading "the triangle card" as the embedded detail-screen card only.
+- **Collapse/expand state and `COLLAPSED_TRIANGLE_LIMIT` dropped entirely**, not kept for the single
+  remaining list — each triangle's counter typing is fixed and no typing counters more than a
+  couple of triangles in practice, so the "show all" affordance had nothing left to guard against.
+- **Per-row "This typing is the best counter to this triangle." note removed too** — redundant once
+  every row in the card is, by construction, something this typing counters; the card-level header
+  ("This typing is the best counter to:") already says it once.
+
+**Verified on the emulator**, both directions: Kubfu (pure Fighting, a *member* of 2 triangles but
+the exact counter to none) now shows no Type Triangles card at all — goes straight from Type
+Matchups to Smogon Strategy Dex. Aegislash Shield (Ghost/Steel, the counter to 2 triangles) shows
+both, uncollapsed, with the redundant per-row note gone.
+
+Original ask, requested 2026-08-09 — `TypeTrianglesCard` (`PokedexDetailScreen.kt`, around line 924)
+used to show two sections for a
 Pokémon's typing: triangles it *counters* (`TypeTriangles.counteredBy(types)` — its typing exactly
 matches a triangle's best-counter pair, "This typing is the best counter to:") and triangles it's
 merely *a member of* (`TypeTriangles.containing(types)` — one of its types appears somewhere in the
@@ -616,27 +646,8 @@ Request: drop the "member of" section (`memberTriangles`/`containing(...)`) enti
 merely sharing a type with one leg of a triangle isn't a meaningful callout on its own. Keep only the
 counter section: show the card **only when** the Pokémon's typing is an exact match to a triangle's
 `counter.types` (i.e. `TypeTriangles.counteredBy(types)` is non-empty), and hide the whole card
-otherwise instead of falling back to listing membership.
-
-Not yet scoped:
-
-- Whether "perfect counter" here should also require `TypeTriangle.isPerfect == true` on the
-  triangle being countered, or apply to imperfect triangles too (today `counteredBy` doesn't filter
-  on `isPerfect` — it already returns counters for both perfect and imperfect triangles, e.g.
-  Aegislash counters both Fighting/Rock/Flying (perfect) and Fighting/Ice/Flying (imperfect)). The
-  feature name says "perfect counter to a particular triangle", which reads as being a perfect
-  counter-typing, not necessarily to a triangle flagged `isPerfect` — needs the user's confirmation
-  either way before implementing.
-- Whether `PokedexDetailViewModel`'s current computation of both `memberTriangles` and
-  `counteredTriangles` (and the `showTeamImpactCard`-style wiring passing both into
-  `PokedexDetailScreen`) simplifies to just computing `counteredTriangles`, dropping `containing(...)`
-  calls and the now-unused `counterOnlyTriangles`/`visibleMember` branching, expand/collapse state,
-  and `COLLAPSED_TRIANGLE_LIMIT` handling in `TypeTrianglesCard` — likely yes, since with only one
-  list left there's much less reason to collapse, but worth confirming during implementation rather
-  than assuming.
-- Whether `TypeTrianglesScreen.kt` (the full type-chart screen reached via "View chart") is in scope
-  too, or only this one embedded card on the detail screen — the ask specifically says "le bloc
-  triangle", read here as the detail-screen card only.
+otherwise instead of falling back to listing membership. See "Open questions resolved" above for how
+each open question from this original spec was settled.
 
 ## F27 — Tap a suggestion's sprite to open its detail page
 
