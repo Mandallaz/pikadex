@@ -998,27 +998,35 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, form
     if (links.isEmpty()) return
     val context = LocalContext.current
 
+    // BACKLOG.md F25 — user feedback: this card took up too much visual space for what it shows (a
+    // title plus a handful of link chips). The outer 16dp Card padding plus a second, separate 16dp
+    // inner Column padding (every other card on this page has that exact same double-16dp — worth
+    // revisiting more broadly later, but out of scope here) was the single biggest lever: shrunk to
+    // 12dp inner padding just for this card. Title's bottom gap and the chip grid's own spacing
+    // tightened to match (8dp -> 6dp each). Chip height is left at Material3's own default (32dp)
+    // rather than forced smaller — AssistChip's internal padding assumes that height, and shrinking
+    // it risked clipping the label/icon rather than actually saving visible space.
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 "Smogon Strategy Dex",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 6.dp)
             )
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 links.forEach { link ->
                     AssistChip(
                         onClick = { context.openExternalLink(link.url) },
-                        label = { Text(link.label) },
+                        label = { Text(link.label, style = MaterialTheme.typography.labelMedium) },
                         trailingIcon = {
                             Icon(
                                 Icons.AutoMirrored.Filled.OpenInNew,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                         }
                     )

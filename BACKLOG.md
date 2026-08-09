@@ -21,7 +21,7 @@
 | F9 — Showdown export | — | Cancelled | [#12](https://github.com/Mandallaz/pikadex/issues/12) |
 | F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
 | F24 — Reorder detail screen sections | — | To groom | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
-| F25 — Shrink Smogon Strategy Dex card | — | To groom | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
+| F25 — Shrink Smogon Strategy Dex card | — | Done | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
 | F26 — Simplify Type Triangles card to perfect-counter-only | — | Done | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
 | F27 — Tap a suggestion's sprite to open its detail page | — | Done | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
 | F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card | — | Done | [#18](https://github.com/Mandallaz/pikadex/issues/18) |
@@ -583,23 +583,25 @@ Not yet scoped: exact composable-reordering diff in `PokedexDetailScreen.kt`, wh
 
 ## F25 — Shrink Smogon Strategy Dex card
 
-**To groom** — requested 2026-08-09, not yet planned or implemented.
+**Done 2026-08-09.** Implemented autonomously (BACKLOG.md batch: F24/F25/F26/F27/F28 on
+`feature/backlog-f24-f28`), landed as its own independent, smaller change ahead of F24's reordering
+rather than folded into it — the two touch the same file but are otherwise unrelated.
 
-User feedback: the "Smogon Strategy Dex" card (`SmogonLinksCard` in `PokedexDetailScreen.kt`, around
-line 1013) takes up too much visual space on the detail screen relative to what it actually shows —
-a title plus a `FlowRow` of `AssistChip`s (one per format link, from `Smogon.linksFor(...)`).
+Went with the first option from the original list, confirmed correct by the on-device check: the
+double-16dp (outer `Card` padding + inner `Column` padding) really was the biggest lever.
 
-Not yet scoped — options to weigh when this gets planned:
-
-- Reduce the `Card`'s own padding (currently `Modifier.padding(16.dp)` outer + `16.dp` inner Column
-  padding — the double 16dp is likely most of the excess).
-- Smaller/denser chips, or a plain text-link row instead of `AssistChip`s with their trailing icon.
-- Drop the section title's bottom padding, or fold the title inline with the first chip row instead
-  of stacking it above.
-- Whether this should also feed into F24's reordering work (same file, same screen) or land as an
-  independent, smaller change first.
-
-No implementation, sizing values, or before/after mockup agreed yet.
+- `SmogonLinksCard`'s inner `Column` padding: `16.dp` → `12.dp` (outer `Card` padding left at
+  `16.dp`, unchanged, so this card's outer margin still lines up with every other card on the page).
+- Title's bottom gap and the chip `FlowRow`'s own spacing: `8.dp` → `6.dp` each.
+- Chip label switched to `labelMedium` (from the `AssistChip` default) and the trailing external-link
+  icon shrunk `16.dp` → `14.dp`.
+- **Not done:** forcing the chip's own height below Material3's default 32dp. Tried it first, but
+  `AssistChip`'s internal padding assumes that height — a smaller explicit height risked clipping the
+  label/icon rather than actually saving visible space, so reverted before it ever reached the
+  emulator.
+- Verified on-device on Aegislash (4 Smogon generation links, the card's worst case for stacking):
+  the 4 chips now wrap 2-per-row instead of each taking a full line, visibly tighter without any
+  clipped text or icons.
 
 ## F26 — Simplify Type Triangles card to perfect-counter-only
 
