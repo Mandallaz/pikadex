@@ -20,7 +20,7 @@
 | F21 — Suggestion tier ceiling filter | — | Done | [#11](https://github.com/Mandallaz/pikadex/issues/11) |
 | F9 — Showdown export | — | Cancelled | [#12](https://github.com/Mandallaz/pikadex/issues/12) |
 | F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
-| F24 — Reorder detail screen sections | — | To groom | TBD |
+| F24 — Reorder detail screen sections | — | To groom | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -297,6 +297,17 @@ all removed:
   beforeMembers + candidate` now.
 - No new tests needed: the change is pure wiring/UI reshuffling around the same two pure functions
   (`computeTeamMatrices`, `computeTeamImpact`) the original F15 tests already cover.
+
+**Revised again 2026-08-09** — two more readability requests on the card's body text:
+
+- Each of the 4 categories (fixed/introduced/closed/opened) now renders its types as [TypeBadge]
+  icons in a `FlowRow`, not a comma-joined plain-text list — matching how every other type list on
+  this screen (Type Matchups, Type Triangles) already reads.
+- A category with nothing to report is omitted entirely — no more "Would fix no shared
+  weaknesses."-style empty-handed lines. `TeamImpactSummaryText` → `ImpactTypeRow(label, types)`
+  per category, each returning with no composable output when `types` is empty. A Pokémon whose
+  addition changes nothing on any of the 4 now shows no body text at all under the card's title.
+- No logic change — `TeamImpactSummary`/`computeTeamImpact` untouched, so no new tests.
 
 Original plan, finalized 2026-08-08 — simplest option chosen for every open question; entry point and
 output format agreed with the user:

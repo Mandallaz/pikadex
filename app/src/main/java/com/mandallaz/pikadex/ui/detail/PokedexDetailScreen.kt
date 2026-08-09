@@ -845,42 +845,35 @@ private fun TeamImpactCard(
     }
 }
 
-/** The four-line delta summary for BACKLOG.md F15 — "no new..." wording whenever a list is empty,
- *  matching the user's original phrasing rather than just omitting the line. */
+/** The delta summary for BACKLOG.md F15 (revised 2026-08-09 — user feedback: only show what
+ *  actually changes, with type badges instead of plain type names). Each of the 4 categories
+ *  renders as a label + a row of [TypeBadge]s, and is omitted entirely when empty rather than
+ *  spelled out as "no new..." — a Pokémon that changes nothing on any of the 4 shows no text at
+ *  all, not four empty-handed lines. */
 @Composable
 private fun TeamImpactSummaryText(impact: com.mandallaz.pikadex.util.TeamImpactSummary) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        ImpactTypeRow("Would fix these shared weaknesses:", impact.weaknessesFixed)
+        ImpactTypeRow("Would introduce these shared weaknesses:", impact.weaknessesIntroduced)
+        ImpactTypeRow("Would close these coverage gaps:", impact.gapsClosed)
+        ImpactTypeRow("Would open these coverage gaps:", impact.gapsOpened)
+    }
+}
+
+/** One impact category — omits itself (no label, no row) when [types] is empty, rather than the
+ *  Column above having to special-case which of its up-to-4 children actually render. */
+@Composable
+private fun ImpactTypeRow(label: String, types: List<String>) {
+    if (types.isEmpty()) return
     Column {
-        Text(
-            if (impact.weaknessesFixed.isEmpty()) {
-                "Would fix no shared weaknesses."
-            } else {
-                "Would fix these shared weaknesses: ${impact.weaknessesFixed.joinToString(", ") { it.toDisplayName() }}."
-            }
-        )
-        Text(
-            if (impact.weaknessesIntroduced.isEmpty()) {
-                "Would introduce no new shared weaknesses."
-            } else {
-                "Would introduce these shared weaknesses: ${impact.weaknessesIntroduced.joinToString(", ") { it.toDisplayName() }}."
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Text(
-            if (impact.gapsClosed.isEmpty()) {
-                "Would close no coverage gaps."
-            } else {
-                "Would close these coverage gaps: ${impact.gapsClosed.joinToString(", ") { it.toDisplayName() }}."
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Text(
-            if (impact.gapsOpened.isEmpty()) {
-                "Would open no new coverage gaps."
-            } else {
-                "Would open these coverage gaps: ${impact.gapsOpened.joinToString(", ") { it.toDisplayName() }}."
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        )
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(top = 4.dp)
+        ) {
+            types.forEach { type -> TypeBadge(type, TypeIds.idOrNull(type), height = 20.dp) }
+        }
     }
 }
 
