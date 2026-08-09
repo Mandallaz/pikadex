@@ -18,7 +18,7 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 - Evolution chain, plus Mega Evolutions where the species has them
 - Moves grouped by learn method (Level Up / TM-HM / Breeding / Tutor), each with its type, damage category, power and accuracy
 - Links to the [Smogon](https://www.smogon.com) strategy dex, limited to the generations the Pokémon actually has a page in — a Mega links to Gen 6-7 only, not to games that removed the mechanic. Opened in an in-app Custom Tab, so closing one returns straight to the Pokémon
-- The type triangles this Pokémon belongs to or counters
+- The type triangles this Pokémon's typing is the exact best counter to (shown only when it is one)
 - Swipe left/right (or tap the chevrons pinned at sprite level) to move to the adjacent Pokémon without backing out to the list — steps through whatever the Pokédex list is currently showing (respects its active filters/sort), or dex order when reached some other way (an evolution chain tap, Compare, a team member chip)
 - Team Coverage Impact card: appears whenever you have an active team with room to grow, showing what adding this Pokémon would change about the team's shared weaknesses and coverage gaps
 
@@ -26,7 +26,7 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 
 - Up to 6 Pokémon, with the combined defensive matrix across all 18 attacking types
 - A callout for types at least half the team is weak to, and one for coverage gaps — types nothing on the team can hit for more than neutral damage
-- Suggestions: up to 6 Pokémon that would fix both a shared weakness and a coverage gap at once, sorted by total impact (weaknesses resisted plus gaps hit, most useful first) with each tile explaining exactly which ones; shown whenever the team has room to grow, and optionally capped to a competitive tier and below via a Settings toggle
+- Suggestions: up to 6 Pokémon that would fix both a shared weakness and a coverage gap at once, sorted by total impact (weaknesses resisted plus gaps hit, most useful first) with each tile explaining exactly which ones; shown whenever the team has room to grow, and optionally capped to a competitive tier and below via a Settings toggle. Tap a tile's sprite to open that Pokémon's own detail page
 - 81 preset teams — 70 gym leaders and 11 champions, from Red/Blue through Scarlet/Violet — loadable in one tap
 
 ### Type Triangles
