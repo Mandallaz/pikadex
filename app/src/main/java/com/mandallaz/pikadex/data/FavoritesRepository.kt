@@ -15,20 +15,22 @@ object FavoritesRepository {
     private const val PREFS_NAME = "favorites"
     private const val KEY_FAVORITE_NAMES = "favorite_names"
 
-    private lateinit var prefs: SharedPreferences
+    private var prefs: SharedPreferences? = null
     private val _favorites = MutableStateFlow<Set<String>>(emptySet())
     val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
 
     fun init(context: Context) {
-        prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        _favorites.value = prefs.getStringSet(KEY_FAVORITE_NAMES, emptySet()).orEmpty().toSet()
+        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs = sharedPrefs
+        _favorites.value = sharedPrefs.getStringSet(KEY_FAVORITE_NAMES, emptySet()).orEmpty().toSet()
     }
 
     fun isFavorite(name: String): Boolean = _favorites.value.contains(name)
 
     fun toggle(name: String) {
+        val p = prefs ?: return
         val updated = if (_favorites.value.contains(name)) _favorites.value - name else _favorites.value + name
         _favorites.value = updated
-        prefs.edit { putStringSet(KEY_FAVORITE_NAMES, updated) }
+        p.edit { putStringSet(KEY_FAVORITE_NAMES, updated) }
     }
 }

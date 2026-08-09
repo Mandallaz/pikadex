@@ -25,19 +25,21 @@ object SuggestionSettings {
      *  collide with an actual selection. */
     private const val NO_LIMIT_SENTINEL = ""
 
-    private lateinit var prefs: SharedPreferences
+    private var prefs: SharedPreferences? = null
 
     private val _maxTier = MutableStateFlow<String?>(DEFAULT_MAX_TIER)
     val maxTier: StateFlow<String?> = _maxTier.asStateFlow()
 
     fun init(context: Context) {
-        prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        _maxTier.value = resolveMaxTier(prefs.getString(KEY_MAX_TIER, DEFAULT_MAX_TIER))
+        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs = sharedPrefs
+        _maxTier.value = resolveMaxTier(sharedPrefs.getString(KEY_MAX_TIER, DEFAULT_MAX_TIER))
     }
 
     fun setMaxTier(tier: String?) {
+        val p = prefs ?: return
         _maxTier.value = tier
-        prefs.edit { putString(KEY_MAX_TIER, tier ?: NO_LIMIT_SENTINEL) }
+        p.edit { putString(KEY_MAX_TIER, tier ?: NO_LIMIT_SENTINEL) }
     }
 
     /** Translates a raw stored value (already defaulted to [DEFAULT_MAX_TIER] by [init]'s own

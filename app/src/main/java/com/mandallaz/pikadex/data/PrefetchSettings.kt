@@ -19,7 +19,7 @@ object PrefetchSettings {
     private const val KEY_FULL_DETAIL = "full_detail_enabled"
     private const val KEY_CRIES = "cries_enabled"
 
-    private lateinit var prefs: SharedPreferences
+    private var prefs: SharedPreferences? = null
 
     private val _essentialsEnabled = MutableStateFlow(true)
     val essentialsEnabled: StateFlow<Boolean> = _essentialsEnabled.asStateFlow()
@@ -34,11 +34,12 @@ object PrefetchSettings {
     val criesEnabled: StateFlow<Boolean> = _criesEnabled.asStateFlow()
 
     fun init(context: Context) {
-        prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        _essentialsEnabled.value = prefs.getBoolean(KEY_ESSENTIALS, true)
-        _spritesEnabled.value = prefs.getBoolean(KEY_SPRITES, true)
-        _fullDetailEnabled.value = prefs.getBoolean(KEY_FULL_DETAIL, false)
-        _criesEnabled.value = prefs.getBoolean(KEY_CRIES, false)
+        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs = sharedPrefs
+        _essentialsEnabled.value = sharedPrefs.getBoolean(KEY_ESSENTIALS, true)
+        _spritesEnabled.value = sharedPrefs.getBoolean(KEY_SPRITES, true)
+        _fullDetailEnabled.value = sharedPrefs.getBoolean(KEY_FULL_DETAIL, false)
+        _criesEnabled.value = sharedPrefs.getBoolean(KEY_CRIES, false)
     }
 
     fun setEssentialsEnabled(enabled: Boolean) = set(_essentialsEnabled, KEY_ESSENTIALS, enabled)
@@ -47,7 +48,8 @@ object PrefetchSettings {
     fun setCriesEnabled(enabled: Boolean) = set(_criesEnabled, KEY_CRIES, enabled)
 
     private fun set(flow: MutableStateFlow<Boolean>, key: String, enabled: Boolean) {
+        val p = prefs ?: return
         flow.value = enabled
-        prefs.edit { putBoolean(key, enabled) }
+        p.edit { putBoolean(key, enabled) }
     }
 }

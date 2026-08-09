@@ -14,18 +14,20 @@ object DisplaySettings {
     private const val PREFS_NAME = "display_settings"
     private const val KEY_AMOLED = "amoled_enabled"
 
-    private lateinit var prefs: SharedPreferences
+    private var prefs: SharedPreferences? = null
 
     private val _amoledEnabled = MutableStateFlow(false)
     val amoledEnabled: StateFlow<Boolean> = _amoledEnabled.asStateFlow()
 
     fun init(context: Context) {
-        prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        _amoledEnabled.value = prefs.getBoolean(KEY_AMOLED, false)
+        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs = sharedPrefs
+        _amoledEnabled.value = sharedPrefs.getBoolean(KEY_AMOLED, false)
     }
 
     fun setAmoledEnabled(enabled: Boolean) {
+        val p = prefs ?: return
         _amoledEnabled.value = enabled
-        prefs.edit { putBoolean(KEY_AMOLED, enabled) }
+        p.edit { putBoolean(KEY_AMOLED, enabled) }
     }
 }
