@@ -952,44 +952,55 @@ Not yet scoped:
 
 ## F35 — Translate the app into the languages PokeAPI supports
 
-**To groom** — requested 2026-08-09. Priority **Medium**. Not yet planned or implemented.
+**To groom** — requested 2026-08-09, scope refined same day. Priority **Medium**. Not yet planned
+or implemented.
 
 Request: localize the app into the 14 languages PokeAPI's `/language` endpoint lists (verified
 directly against the API for F32's survey — see that section for the full list and the `official`
-flag per language).
+flag per language). **Default is English regardless of device locale**; a Settings picker lets the
+user choose a language that then drives **both** axes at once — the app's own UI chrome and the
+game data — not a per-axis choice.
 
-Two genuinely separate axes bundled in "translate the app", both worth naming before scoping either:
+The two axes remain worth naming even though both are now in scope, since they're implemented
+completely differently:
 
 - **The app's own UI chrome** — button labels, screen titles, static strings like "Base Stats",
-  "Type Matchups", "Would fix these shared weaknesses:"... This is a normal Android
+  "Type Matchups", "Would fix these shared weaknesses:"... A normal Android
   `strings.xml`/`values-{locale}` localization, entirely unrelated to PokeAPI — the API has no
-  bearing on it at all, since none of these strings come from network data.
-- **Game data itself** — species/move/ability/type names and flavor text. This part *is* already
-  server-side localized: every relevant resource (`PokemonSpeciesDto`, moves, abilities, types) has
-  a `names` and/or `flavor_text_entries` field carrying every language PokeAPI has a translation
-  for, filtered to `"en"` everywhere in the app today (e.g. `flavorTextEntries.firstOrNull {
-  it.language.name == "en" }` on the detail screen). Switching this axis is "read a different
-  language code" at existing call sites, not a new fetch.
+  bearing on it at all, since none of these strings come from network data. This is the larger
+  effort: every user-facing string across every screen needs extracting to resources and
+  translating, and the app's default locale needs pinning to English independent of the device's
+  system locale (Android normally follows system locale automatically) so the picker is the only
+  way to change it.
+- **Game data itself** — species/move/ability/type names and flavor text. Already server-side
+  localized: every relevant resource (`PokemonSpeciesDto`, moves, abilities, types) has a `names`
+  and/or `flavor_text_entries` field carrying every language PokeAPI has a translation for, filtered
+  to `"en"` everywhere in the app today (e.g. `flavorTextEntries.firstOrNull { it.language.name ==
+  "en" }` on the detail screen). Switching this axis is "read a different language code" at
+  existing call sites, not a new fetch — the smaller of the two efforts.
 
 Not yet scoped:
 
-- **Which axis, or both** — a language picker that only swaps game data while the buttons around it
-  stay in English is a real, shippable half-step; UI chrome without game data would be the opposite
-  and arguably less useful. Needs the user's call on scope before implementing either.
 - **Coverage isn't uniform.** Not every resource has a translation in all 14 languages for every
-  entry — rarer/newer species in particular. Falling back to `"en"` (already the only language read
-  today) when a chosen language's entry is missing needs to be the rule from the start, not an
-  afterthought.
+  entry — rarer/newer species in particular. Falling back to `"en"` when a chosen language's entry
+  is missing needs to be the rule from the start, not an afterthought — applies to both axes (a
+  missing `strings.xml` translation falls back to the default resource the same way Android already
+  handles missing locale-qualified resources).
 - **`cs` (Czech) is `official: false`** — a fan translation PokeAPI hosts but that never shipped in
-  a real game. Worth deciding whether to expose it in a language picker at all, or restrict the
-  picker to the 13 official ones.
+  a real game. Worth deciding whether to expose it in the picker at all, or restrict it to the 13
+  official ones — a `cs` UI-chrome translation would also need writing from scratch either way,
+  with no in-game reference text to translate *from*.
 - **`ja`/`ja-hrkt`/`ja-roma` are 3 entries for what a user would think of as "Japanese"** (kanji/
-  kana vs. katakana-only vs. romanized) — needs deciding whether all 3 belong in a picker or just
+  kana vs. katakana-only vs. romanized) — needs deciding whether all 3 belong in the picker or just
   one (likely `ja`).
-- **Picker UI, persistence, and default.** Where the picker lives (Settings, presumably, same
-  section as the existing display/prefetch toggles), whether it defaults to the device's system
-  locale when that locale is one of the 13-14 supported, and how `DisplaySettings`-style
-  `SharedPreferences` persistence would store the choice — no code looked at yet.
+- **Picker UI and persistence.** Where it lives in Settings (presumably the same section as the
+  existing display/prefetch toggles), and how `DisplaySettings`-style `SharedPreferences`
+  persistence would store the choice — no code looked at yet. Default is decided (English), so this
+  is just the mechanism, not the default value.
+- **Translation source for UI chrome.** 14 languages' worth of every UI string is a lot of text to
+  translate accurately — worth deciding whether that's done by hand, via a translation service, or
+  starts with a subset of languages (e.g. the ones with the fullest game-data coverage) rather than
+  all 14 at once.
 
 ## Cancelled
 
