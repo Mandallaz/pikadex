@@ -44,10 +44,8 @@ private const val ROUTE_SETTINGS = "settings"
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
 
-// Pokédex/Triangles/Team icons used to live as unlabelled icon buttons scattered across each
-// screen's own top bar (and vanished on whichever screen didn't happen to show them) — a single
-// always-visible, labelled bottom bar makes all three destinations equally discoverable from
-// anywhere and makes the current one obvious via the selected state.
+// A single always-visible, labelled bottom bar makes all three destinations equally discoverable
+// from anywhere and makes the current one obvious via the selected state.
 private val BOTTOM_TABS = listOf(
     BottomTab(ROUTE_LIST, "Pokédex", Icons.Default.Home),
     BottomTab(ROUTE_TYPE_TRIANGLES, "Triangles", Icons.Default.ChangeHistory),
@@ -62,10 +60,9 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
     val team by TeamRepository.team.collectAsState()
 
     // Both taps of a fast double-tap (on a Pokémon card, an evolution stage, or Back) are dispatched
-    // before the first one's navigation takes effect, so they used to push two identical detail
-    // screens — or pop two entries, blanking the screen from a double-tapped Back. A destination
-    // that has already begun navigating away is no longer RESUMED, so gating on that swallows the
-    // second tap without needing to track any state of our own.
+    // before the first one's navigation takes effect. A destination that has already begun
+    // navigating away is no longer RESUMED, so gating on that swallows the second tap without
+    // needing to track any state of our own.
     fun ifIdle(action: () -> Unit) {
         // Read off the controller rather than the composed `currentBackStackEntry` state so the
         // check reflects the back stack at tap time, not at the last recomposition.
@@ -87,9 +84,7 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
 
     Scaffold(
         // Every screen already has its own Scaffold+TopAppBar that reserves the top system-bar
-        // inset — this outer Scaffold used to *also* reserve it by default, so its `padding` doubled
-        // up on top of each screen's own inset and left an empty status-bar-height band above every
-        // title bar. Zeroing it here means this Scaffold's only job is reserving space for the
+        // inset, so zeroing it here means this Scaffold's only job is reserving space for the
         // bottom nav bar itself (whose own NavigationBar composable already handles the bottom
         // system-bar inset internally).
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -128,9 +123,8 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
             // consumeWindowInsets, not just padding: each screen has its own Scaffold, which by
             // default reserves the bottom system-bar inset itself — on top of the bottom-bar height
             // already reserved here (and the NavigationBar handles that same inset internally too).
-            // Every tab screen's content therefore stopped a nav-bar-inset short of the bottom bar,
-            // a dead band up to ~48dp tall with 3-button navigation. Marking this Scaffold's padding
-            // as consumed leaves each inner Scaffold nothing left to add.
+            // Marking this Scaffold's padding as consumed leaves each inner Scaffold nothing left
+            // to add.
             modifier = Modifier.padding(padding).consumeWindowInsets(padding)
         ) {
             composable(ROUTE_LIST) {
