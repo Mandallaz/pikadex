@@ -104,6 +104,10 @@ private enum class MatrixMode(val label: String, val caption: String) {
 @Composable
 fun TeamScreen(
     onBrowsePokedex: () -> Unit,
+    // BACKLOG.md F27 — opens a suggestion tile's own detail page on sprite tap. Distinct from
+    // onBrowsePokedex (which switches to the Pokédex list tab); this pushes a detail screen the
+    // same way tapping a Pokédex list row does, so Back returns here.
+    onPokemonClick: (String) -> Unit,
     viewModel: TeamViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -302,7 +306,8 @@ fun TeamScreen(
                         suggestions = uiState.suggestions,
                         spriteIds = uiState.suggestionSpriteIds,
                         tierCeiling = uiState.suggestionTierCeiling,
-                        onAdd = viewModel::addSuggestion
+                        onAdd = viewModel::addSuggestion,
+                        onPokemonClick = onPokemonClick
                     )
                 }
 
@@ -528,7 +533,8 @@ private fun SuggestionsCard(
     suggestions: List<TeamSuggestion>,
     spriteIds: Map<String, Int>,
     tierCeiling: String?,
-    onAdd: (String) -> Unit
+    onAdd: (String) -> Unit,
+    onPokemonClick: (String) -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -578,7 +584,8 @@ private fun SuggestionsCard(
                     SuggestionTile(
                         suggestion = suggestion,
                         spriteId = spriteIds[suggestion.name] ?: 0,
-                        onAdd = { onAdd(suggestion.name) }
+                        onAdd = { onAdd(suggestion.name) },
+                        onSpriteClick = { onPokemonClick(suggestion.name) }
                     )
                 }
             }
@@ -587,9 +594,20 @@ private fun SuggestionsCard(
 }
 
 @Composable
-private fun SuggestionTile(suggestion: TeamSuggestion, spriteId: Int, onAdd: () -> Unit) {
+private fun SuggestionTile(
+    suggestion: TeamSuggestion,
+    spriteId: Int,
+    onAdd: () -> Unit,
+    // BACKLOG.md F27 — sprite-only tap target, not the whole tile: the "+" IconButton already
+    // claims its own tap area, and the ask specifically named "the sprite", read narrowly.
+    onSpriteClick: () -> Unit
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(96.dp)) {
-        PokemonSprite(id = spriteId, contentDescription = suggestion.name, modifier = Modifier.size(48.dp))
+        PokemonSprite(
+            id = spriteId,
+            contentDescription = suggestion.name,
+            modifier = Modifier.size(48.dp).clickable(onClick = onSpriteClick)
+        )
         Text(
             suggestion.name.toDisplayName(),
             style = MaterialTheme.typography.bodySmall,

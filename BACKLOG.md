@@ -23,7 +23,7 @@
 | F24 — Reorder detail screen sections | — | To groom | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
 | F25 — Shrink Smogon Strategy Dex card | — | To groom | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
 | F26 — Simplify Type Triangles card to perfect-counter-only | — | Done | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
-| F27 — Tap a suggestion's sprite to open its detail page | — | To groom | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
+| F27 — Tap a suggestion's sprite to open its detail page | — | Done | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
 | F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card | — | Done | [#18](https://github.com/Mandallaz/pikadex/issues/18) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
@@ -651,33 +651,24 @@ each open question from this original spec was settled.
 
 ## F27 — Tap a suggestion's sprite to open its detail page
 
-**To groom** — requested 2026-08-09, not yet planned or implemented.
+**Done 2026-08-09.** Implemented autonomously (BACKLOG.md batch: F24/F25/F26/F27/F28 on
+`feature/backlog-f24-f28`) — every "not yet scoped" question below resolved as its own noted
+likely default, without further user confirmation, per that session's mandate.
 
-On the Team screen's Suggestions card (`SuggestionTile` in `TeamScreen.kt`, around line 590), each
-tile shows a `PokemonSprite`, name, BST, type badges, "why" text, and an `IconButton` (`+`) that adds
-the suggestion to the team via `onAdd`. There's currently no way to open a suggested Pokémon's own
-detail page from this tile — tapping the sprite does nothing.
-
-Request: tapping the sprite opens that Pokémon's detail screen (same destination as tapping a row in
-the Pokédex list or an evolution-chain sprite elsewhere in the app).
-
-Not yet scoped:
-
-- `TeamScreen` currently only takes `onBrowsePokedex: () -> Unit` as a navigation callback (see
-  `TeamScreen(onBrowsePokedex = { switchTab(ROUTE_LIST) })` in `PokedexNavHost.kt`). Needs a new
-  callback, e.g. `onPokemonClick: (String) -> Unit`, threaded from `TeamScreen` down through the
-  suggestions section into `SuggestionTile`, then wired in `PokedexNavHost.kt` the same way the list
-  screen's `onPokemonClick` is: `{ name -> ifIdle { navController.navigate("detail/$name") } }`.
-  Whether it should also carry `popUpTo`/back-stack behavior like `F16`'s adjacent-swipe navigation,
-  or a plain push (so Back returns to the Team screen) — plain push is the obvious default here,
-  matching how tapping a Pokédex list row or an evolution stage already behaves, but not yet
-  confirmed with the user.
-- Whether only the sprite is tappable, or the whole tile minus the `+` button (`IconButton` already
-  claims its own tap target, so the rest of the `Column` would need its own `Modifier.clickable`) —
-  the ask specifically says "le sprite", read narrowly as sprite-only for now.
-- Whether this should extend to other sprite-only tap targets on the Team screen (e.g. the team
-  member chips higher up, `AddMemberChip`/`TeamMemberChip`) — out of scope unless the user asks;
-  this entry covers the Suggestions row only.
+- **Plain push, not `popUpTo`.** `TeamScreen` gains `onPokemonClick: (String) -> Unit`; wired in
+  `PokedexNavHost.kt`'s `TeamScreen(...)` call as `{ name -> ifIdle { navController.navigate("detail/$name") } }`
+  — the same plain-push pattern the Pokédex list's own `onPokemonClick` uses, so Back returns to the
+  Team screen. No `popUpTo`/back-stack replacement (that's F16's adjacent-swipe case, not this one).
+- **Sprite-only, not the whole tile.** `SuggestionTile` gains an `onSpriteClick: () -> Unit` param,
+  applied as `Modifier.clickable(onClick = onSpriteClick)` on just the `PokemonSprite`, leaving the
+  `+` `IconButton`'s own tap target and the rest of the tile (name/BST/badges/"why" text) inert —
+  matching the original ask's literal "le sprite".
+- **Scope stayed to the Suggestions row only** — team member chips elsewhere on the Team screen
+  (`AddMemberChip`/`TeamMemberChip`) untouched, as the original spec anticipated.
+- Threaded through `TeamScreen` → `SuggestionsCard` → `SuggestionTile` → `PokedexNavHost.kt`.
+- Verified on the emulator: loaded Blaine's preset team, scrolled to Suggestions, tapped
+  Toedscool's sprite — opens Toedscool's detail page; Back returns to the Team screen.
+- No new tests: pure navigation wiring, no new pure-function logic to cover.
 
 ## F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card
 

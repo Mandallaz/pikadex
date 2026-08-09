@@ -190,7 +190,12 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
                 )
             }
             composable(ROUTE_TEAM) {
-                TeamScreen(onBrowsePokedex = { switchTab(ROUTE_LIST) })
+                TeamScreen(
+                    onBrowsePokedex = { switchTab(ROUTE_LIST) },
+                    // BACKLOG.md F27 — a plain push, same as the Pokédex list's own onPokemonClick,
+                    // so Back returns to the Team screen rather than anywhere else.
+                    onPokemonClick = { name -> ifIdle { navController.navigate("detail/$name") } }
+                )
             }
             composable(ROUTE_SETTINGS) {
                 SettingsScreen()
