@@ -1,8 +1,10 @@
 package com.mandallaz.pikadex.ui.detail
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
+import com.mandallaz.pikadex.data.CryCache
 import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.PokedexListContext
 import com.mandallaz.pikadex.data.TeamRepository
@@ -12,6 +14,8 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.util.Cries
+import com.mandallaz.pikadex.util.CryPlayer
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.TeamImpactSummary
@@ -39,6 +43,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
+import java.io.File
 
 data class PokedexDetailUiState(
     val isLoading: Boolean = true,
@@ -109,6 +115,27 @@ class PokedexDetailViewModel @JvmOverloads constructor(
 
     private var loadedFor: String? = null
     private var teamImpactJob: Job? = null
+
+    private val cryPlayer = CryPlayer()
+    val isCryPlaying: StateFlow<Boolean> = cryPlayer.isPlaying
+
+    /** F34 — plays this Pokémon's cry, preferring an already-prefetched local file (see
+     *  [CryCache]/[com.mandallaz.pikadex.data.PrefetchTier.CRIES]) over streaming it, and falling
+     *  back from the current-gen cry to the Gen 5-era one on failure (see [CryPlayer.play]'s doc on
+     *  why that's a silent fallback, not a surfaced error). [context] is used transiently to resolve
+     *  the cache file path — same per-call-not-stored pattern as [com.mandallaz.pikadex.data.PrefetchManager.start]. */
+    fun playCry(context: Context, id: Int) {
+        viewModelScope.launch {
+            val cachedFile = withContext(Dispatchers.IO) { CryCache.file(context, id) }
+            val source = resolveCrySource(cachedFile, id)
+            cryPlayer.play(source.primary, source.fallback)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        cryPlayer.release()
+    }
 
     fun load(nameOrId: String) {
         if (loadedFor == nameOrId) return
@@ -308,3 +335,19 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         }
     }
 }
+
+/** F34: what [CryPlayer] should be given for Pokémon [id] — the local file if [cachedFile] is
+ *  genuinely non-empty (i.e. actually downloaded by the F34 prefetch tier, not just a path that
+ *  doesn't exist yet), otherwise the network URL with a legacy-cry fallback. A cached file has no
+ *  fallback: it's already a specific cry (whichever [com.mandallaz.pikadex.data.PrefetchTier.CRIES]
+ *  downloaded), not something to retry with a different variant on failure. Internal, not private,
+ *  so it's unit-testable directly against a plain [File] — no Android framework/Context needed for
+ *  this half of the decision, same reasoning as [selectShowdownUrl] in `PokedexDetailScreen.kt`. */
+internal fun resolveCrySource(cachedFile: File, id: Int): CrySource =
+    if (cachedFile.length() > 0L) {
+        CrySource(primary = cachedFile.absolutePath, fallback = null)
+    } else {
+        CrySource(primary = Cries.latestCryUrl(id), fallback = Cries.legacyCryUrl(id))
+    }
+
+internal data class CrySource(val primary: String, val fallback: String?)

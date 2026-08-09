@@ -5,6 +5,7 @@ import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.util.Cries
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.TypeIds
@@ -27,7 +28,8 @@ import kotlinx.coroutines.launch
 enum class PrefetchTier(val label: String) {
     ESSENTIALS("Essentials"),
     SPRITES("Sprites"),
-    FULL_DETAIL("Full detail")
+    FULL_DETAIL("Full detail"),
+    CRIES("Cries")
 }
 
 sealed interface PrefetchState {
@@ -120,6 +122,11 @@ object PrefetchManager {
         }
         PrefetchTier.FULL_DETAIL -> repository.getMasterList().map { resource ->
             suspend { repository.getPokemonDetailBundle(resource.name); Unit }
+        }
+        // Cry URLs are built by convention (Cries.latestCryUrl), same as SPRITES above — this
+        // avoids ~1300 individual REST calls just to read PokemonDto.cries.latest for each entry.
+        PrefetchTier.CRIES -> repository.getMasterList().mapNotNull { it.id }.map { id ->
+            suspend { CryCache.download(context, id, Cries.latestCryUrl(id)); Unit }
         }
     }
 }

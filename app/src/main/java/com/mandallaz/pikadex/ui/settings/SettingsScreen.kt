@@ -86,6 +86,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     if (enabled) showFullDetailWarning = true else viewModel.setFullDetailEnabled(false)
                 }
             )
+            PrefetchTierRow(
+                title = "Cries",
+                subtitle = "Every Pokémon's cry, so the play button on its detail page works offline — around 1300 short audio clips.",
+                checked = uiState.criesEnabled,
+                onCheckedChange = viewModel::setCriesEnabled
+            )
 
             when (val state = prefetchState) {
                 is PrefetchState.Running -> {
@@ -140,6 +146,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         Text("Total: ${formatBytes(usage?.totalBytes ?: 0L)}", fontWeight = FontWeight.Medium)
                         Text("API data: ${formatBytes((usage?.httpCacheBytes ?: 0L) + (usage?.diskCacheBytes ?: 0L))}")
                         Text("Images: ${formatBytes(usage?.imageCacheBytes ?: 0L)}")
+                        Text("Cries: ${formatBytes(usage?.criesCacheBytes ?: 0L)}")
                     }
                     Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(onClick = viewModel::measureStorage) { Text("Refresh") }

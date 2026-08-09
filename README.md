@@ -20,6 +20,7 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 - Links to the [Smogon](https://www.smogon.com) strategy dex, limited to the generations the Pokémon actually has a page in — a Mega links to Gen 6-7 only, not to games that removed the mechanic. Opened in an in-app Custom Tab, so closing one returns straight to the Pokémon
 - The type triangles this Pokémon's typing is the exact best counter to (shown only when it is one)
 - Animated battle sprite toggle (Pokémon Showdown's sprites, via PokeAPI), alongside the existing shiny-coloring toggle — falls back to the static artwork for the (mostly newer) forms with no animated sprite
+- Play cry button, preferring an already-prefetched local copy over streaming it, with a silent fallback from the current-gen cry to the Gen 5-era one if needed
 - Swipe left/right (or tap the chevrons pinned at sprite level) to move to the adjacent Pokémon without backing out to the list — steps through whatever the Pokédex list is currently showing (respects its active filters/sort), or dex order when reached some other way (an evolution chain tap, Compare, a team member chip)
 - Team Coverage Impact card: appears whenever you have an active team with room to grow, showing what adding this Pokémon would change about the team's shared weaknesses and coverage gaps
 
@@ -36,8 +37,8 @@ A reference screen for the 16 rock-paper-scissors type cycles, including the 4 "
 
 ### Settings
 
-- Offline prefetch, tiered: Essentials (base stats, moves, type chart, Smogon tiers, ~1MB), Sprites (artwork and sprites for every entry, 50-150MB), and an opt-in Full detail tier (every Pokémon's complete data) — each with live progress and partial-failure reporting that never aborts the run
-- Storage accounting for the API and image caches, with a one-tap "Clear downloaded data"
+- Offline prefetch, tiered: Essentials (base stats, moves, type chart, Smogon tiers, ~1MB), Sprites (artwork and sprites for every entry, 50-150MB), an opt-in Full detail tier (every Pokémon's complete data), and an opt-in Cries tier (every Pokémon's cry, ~1300 short audio clips) — each with live progress and partial-failure reporting that never aborts the run
+- Storage accounting for the API, image, and cry-audio caches, with a one-tap "Clear downloaded data"
 - Team Suggestions tier limit: cap suggested Pokémon to a Gen 9 Smogon tier and below (e.g. UU also allows RU, NU...), off by default
 - AMOLED black toggle: forces dark mode with a pure black background/surface instead of Material's dark grey, off by default
 

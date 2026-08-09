@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -137,6 +138,8 @@ fun PokedexDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val team by viewModel.team.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
+    val isCryPlaying by viewModel.isCryPlaying.collectAsState()
+    val context = LocalContext.current
     val isInTeam = uiState.pokemon?.let { p -> team.any { it.name == p.name } } ?: false
     val isTeamFull = team.size >= com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE
     val isFavorite = uiState.pokemon?.let { p -> favorites.contains(p.name) } ?: false
@@ -191,6 +194,23 @@ fun PokedexDetailScreen(
                                 imageVector = Icons.Filled.Animation,
                                 contentDescription = if (animated) "Show static artwork" else "Show animated battle sprite",
                                 tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                            )
+                        }
+                        // F34: a one-shot action, not a toggle like shiny/animated above — disabled
+                        // rather than hidden while a cry is already playing, so tapping it twice
+                        // fast can't overlap two MediaPlayer instances.
+                        IconButton(
+                            onClick = { viewModel.playCry(context, uiState.pokemon!!.id) },
+                            enabled = !isCryPlaying
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = "Play cry",
+                                tint = if (isCryPlaying) {
+                                    LocalContentColor.current.copy(alpha = 0.38f)
+                                } else {
+                                    LocalContentColor.current
+                                }
                             )
                         }
                         IconButton(

@@ -28,11 +28,11 @@ Your favorites, your team roster, and your app preferences (e.g. offline
 prefetch tiers, the AMOLED display toggle) are saved locally on your device
 only (Android SharedPreferences), so they persist between sessions.
 
-The app also keeps a local cache of the public game data and images it has
-already downloaded, so that it starts faster and needs less network on later
-launches. That cache holds the same Pokémon data anyone can fetch from PokeAPI;
-it contains nothing about you or your device, and no record of what you looked
-at is sent anywhere.
+The app also keeps a local cache of the public game data, images, and cry
+audio it has already downloaded, so that it starts faster and needs less
+network on later launches. That cache holds the same Pokémon data anyone can
+fetch from PokeAPI; it contains nothing about you or your device, and no
+record of what you looked at is sent anywhere.
 
 All of the above stays on your device, and is deleted if you uninstall the app
 or clear its storage.

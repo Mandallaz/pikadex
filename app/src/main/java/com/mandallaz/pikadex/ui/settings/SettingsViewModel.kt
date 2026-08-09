@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.mandallaz.pikadex.data.AppContainer
+import com.mandallaz.pikadex.data.CryCache
 import com.mandallaz.pikadex.data.DisplaySettings
 import com.mandallaz.pikadex.data.JsonDiskCache
 import com.mandallaz.pikadex.data.PrefetchManager
@@ -28,14 +29,20 @@ import kotlinx.coroutines.withContext
  *  `SUGGESTION_TIER_GEN`, kept in sync with it (BACKLOG.md F17). */
 private const val SUGGESTION_TIER_GEN = "sv"
 
-data class StorageUsage(val httpCacheBytes: Long, val diskCacheBytes: Long, val imageCacheBytes: Long) {
-    val totalBytes: Long get() = httpCacheBytes + diskCacheBytes + imageCacheBytes
+data class StorageUsage(
+    val httpCacheBytes: Long,
+    val diskCacheBytes: Long,
+    val imageCacheBytes: Long,
+    val criesCacheBytes: Long = 0L
+) {
+    val totalBytes: Long get() = httpCacheBytes + diskCacheBytes + imageCacheBytes + criesCacheBytes
 }
 
 data class SettingsUiState(
     val essentialsEnabled: Boolean = true,
     val spritesEnabled: Boolean = true,
     val fullDetailEnabled: Boolean = false,
+    val criesEnabled: Boolean = false,
     val storageUsage: StorageUsage? = null,
     val isMeasuringStorage: Boolean = false,
     /** Team-builder Suggestions' competitive tier ceiling (BACKLOG.md F17) — null means no limit. */
@@ -48,7 +55,7 @@ data class SettingsUiState(
     val amoledEnabled: Boolean = false
 ) {
     val hasAnyTierEnabled: Boolean
-        get() = essentialsEnabled || spritesEnabled || fullDetailEnabled
+        get() = essentialsEnabled || spritesEnabled || fullDetailEnabled || criesEnabled
 }
 
 /** [AndroidViewModel], not the usual plain [androidx.lifecycle.ViewModel] — measuring/clearing the
@@ -68,6 +75,7 @@ class SettingsViewModel @JvmOverloads constructor(
         viewModelScope.launch { PrefetchSettings.essentialsEnabled.collect { v -> _uiState.update { it.copy(essentialsEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.spritesEnabled.collect { v -> _uiState.update { it.copy(spritesEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.fullDetailEnabled.collect { v -> _uiState.update { it.copy(fullDetailEnabled = v) } } }
+        viewModelScope.launch { PrefetchSettings.criesEnabled.collect { v -> _uiState.update { it.copy(criesEnabled = v) } } }
         viewModelScope.launch { SuggestionSettings.maxTier.collect { v -> _uiState.update { it.copy(maxSuggestionTier = v) } } }
         viewModelScope.launch { DisplaySettings.amoledEnabled.collect { v -> _uiState.update { it.copy(amoledEnabled = v) } } }
         loadSuggestionTierOptions()
@@ -77,6 +85,7 @@ class SettingsViewModel @JvmOverloads constructor(
     fun setEssentialsEnabled(enabled: Boolean) = PrefetchSettings.setEssentialsEnabled(enabled)
     fun setSpritesEnabled(enabled: Boolean) = PrefetchSettings.setSpritesEnabled(enabled)
     fun setFullDetailEnabled(enabled: Boolean) = PrefetchSettings.setFullDetailEnabled(enabled)
+    fun setCriesEnabled(enabled: Boolean) = PrefetchSettings.setCriesEnabled(enabled)
     fun setMaxSuggestionTier(tier: String?) = SuggestionSettings.setMaxTier(tier)
     fun setAmoledEnabled(enabled: Boolean) = DisplaySettings.setAmoledEnabled(enabled)
 
@@ -105,6 +114,7 @@ class SettingsViewModel @JvmOverloads constructor(
             if (state.essentialsEnabled) add(PrefetchTier.ESSENTIALS)
             if (state.spritesEnabled) add(PrefetchTier.SPRITES)
             if (state.fullDetailEnabled) add(PrefetchTier.FULL_DETAIL)
+            if (state.criesEnabled) add(PrefetchTier.CRIES)
         }
         PrefetchManager.start(getApplication(), AppContainer.repository, tiers)
     }
@@ -123,7 +133,8 @@ class SettingsViewModel @JvmOverloads constructor(
                 StorageUsage(
                     httpCacheBytes = try { httpCache?.size() ?: 0L } catch (e: Exception) { 0L },
                     diskCacheBytes = JsonDiskCache.sizeBytes(),
-                    imageCacheBytes = getApplication<Application>().imageLoader.diskCache?.size ?: 0L
+                    imageCacheBytes = getApplication<Application>().imageLoader.diskCache?.size ?: 0L,
+                    criesCacheBytes = CryCache.sizeBytes(getApplication())
                 )
             }
             _uiState.update { it.copy(storageUsage = usage, isMeasuringStorage = false) }
@@ -142,6 +153,7 @@ class SettingsViewModel @JvmOverloads constructor(
                 }
                 JsonDiskCache.clear()
                 getApplication<Application>().imageLoader.diskCache?.clear()
+                CryCache.clear(getApplication())
             }
             measureStorage()
         }
