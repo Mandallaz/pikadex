@@ -955,11 +955,24 @@ Not yet scoped:
 **To groom** — requested 2026-08-09, scope refined same day. Priority **Medium**. Not yet planned
 or implemented.
 
-Request: localize the app into the 14 languages PokeAPI's `/language` endpoint lists (verified
-directly against the API for F32's survey — see that section for the full list and the `official`
-flag per language). **Default is English regardless of device locale**; a Settings picker lets the
-user choose a language that then drives **both** axes at once — the app's own UI chrome and the
-game data — not a per-axis choice.
+Request: localize the app into a subset of the 14 languages PokeAPI's `/language` endpoint lists
+(verified directly against the API for F32's survey — see that section for the full list and the
+`official` flag per language). **Default is English regardless of device locale**; a Settings picker
+lets the user choose a language that then drives **both** axes at once — the app's own UI chrome
+and the game data — not a per-axis choice.
+
+**Translation source and language list, decided 2026-08-09: Claude translates the UI chrome
+directly** (no external translation service) — reliable for major languages, but with no in-game
+reference text to check against for `cs`, unlike every other language where PokeAPI's own
+`names`/`flavor_text_entries` double as a correctness check. **The picker is therefore restricted to
+languages Claude can translate with reasonable confidence, dropping `cs`** (Czech, unofficial, no
+in-game reference — see below) and **collapsing the `ja`/`ja-hrkt`/`ja-roma` trio to just `ja`**
+(kanji/kana, the one an actual Japanese-locale user would expect — `ja-hrkt`/`ja-roma` stay as
+internal fallback candidates for game-data lookups, never separate picker entries). Resulting
+picker list (10): `en` (default), `fr`, `de`, `es`, `es-419`, `it`, `pt-br`, `ja`, `ko`, `zh-hans`,
+`zh-hant` — every *official* language except the two redundant Japanese variants. A native-speaker
+review pass before any real release remains a good idea (noted when this source was proposed), but
+isn't a blocker for a first implementation.
 
 The two axes remain worth naming even though both are now in scope, since they're implemented
 completely differently:
@@ -986,21 +999,10 @@ Not yet scoped:
   is missing needs to be the rule from the start, not an afterthought — applies to both axes (a
   missing `strings.xml` translation falls back to the default resource the same way Android already
   handles missing locale-qualified resources).
-- **`cs` (Czech) is `official: false`** — a fan translation PokeAPI hosts but that never shipped in
-  a real game. Worth deciding whether to expose it in the picker at all, or restrict it to the 13
-  official ones — a `cs` UI-chrome translation would also need writing from scratch either way,
-  with no in-game reference text to translate *from*.
-- **`ja`/`ja-hrkt`/`ja-roma` are 3 entries for what a user would think of as "Japanese"** (kanji/
-  kana vs. katakana-only vs. romanized) — needs deciding whether all 3 belong in the picker or just
-  one (likely `ja`).
 - **Picker UI and persistence.** Where it lives in Settings (presumably the same section as the
   existing display/prefetch toggles), and how `DisplaySettings`-style `SharedPreferences`
   persistence would store the choice — no code looked at yet. Default is decided (English), so this
   is just the mechanism, not the default value.
-- **Translation source for UI chrome.** 14 languages' worth of every UI string is a lot of text to
-  translate accurately — worth deciding whether that's done by hand, via a translation service, or
-  starts with a subset of languages (e.g. the ones with the fullest game-data coverage) rather than
-  all 14 at once.
 
 ## Cancelled
 
