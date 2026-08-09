@@ -60,8 +60,12 @@ fun PokemonCard(
             // "Pikachu") next to a 2-line-name card in the same grid row (e.g. "Zamazenta
             // Crowned") ends up visibly shorter, top-aligned against a taller neighbor — the
             // Column's own Arrangement.Center below only centers *within* its own measured height,
-            // which differs per-card since nothing constrains it.
-            modifier = Modifier.fillMaxWidth().heightIn(min = 190.dp)
+            // which differs per-card since nothing constrains it. Kept close to a real 2-line
+            // name's own measured height, ~173dp (issue #49; see
+            // PokemonCardLayoutTest.oneLineAndTwoLineNameCardsHaveEqualHeight), with a small margin
+            // rather than padded further — any smaller and that case is shorter than its neighbor
+            // again.
+            modifier = Modifier.fillMaxWidth().heightIn(min = 176.dp)
         ) {
             Column(
                 modifier = Modifier
