@@ -209,4 +209,34 @@ class TypeEffectivenessTest {
     fun `an empty team has no gaps to report`() {
         assertEquals(emptyList<String>(), coverageGaps(emptyMap(), emptyList()))
     }
+
+    // --- Shared weaknesses (BACKLOG.md F15) ----------------------------------
+
+    @Test
+    fun `a type is shared when at least half the team is weak to it`() {
+        val matrix = mapOf(
+            "electric" to mapOf("a" to 2.0, "b" to 1.0, "c" to 1.0),
+            "fire" to mapOf("a" to 2.0, "b" to 2.0, "c" to 1.0)
+        )
+        val weaknesses = sharedWeaknesses(matrix, listOf("a", "b", "c"))
+        assertTrue("fire" in weaknesses) // 2 of 3 >= half
+        assertTrue("electric" !in weaknesses) // 1 of 3 < half
+    }
+
+    @Test
+    fun `an exact half-team tie counts as shared`() {
+        val matrix = mapOf("water" to mapOf("a" to 2.0, "b" to 1.0))
+        assertTrue("water" in sharedWeaknesses(matrix, listOf("a", "b")))
+    }
+
+    @Test
+    fun `a type absent from the matrix is not reported as a shared weakness`() {
+        val matrix = mapOf("water" to mapOf("a" to 2.0, "b" to 2.0))
+        assertTrue("fire" !in sharedWeaknesses(matrix, listOf("a", "b")))
+    }
+
+    @Test
+    fun `an empty team has no shared weaknesses to report`() {
+        assertEquals(emptyList<String>(), sharedWeaknesses(emptyMap(), emptyList()))
+    }
 }

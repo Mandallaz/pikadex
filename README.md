@@ -20,6 +20,7 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 - Links to the [Smogon](https://www.smogon.com) strategy dex, limited to the generations the Pokémon actually has a page in — a Mega links to Gen 6-7 only, not to games that removed the mechanic. Opened in an in-app Custom Tab, so closing one returns straight to the Pokémon
 - The type triangles this Pokémon belongs to or counters
 - Swipe left/right (or tap the chevrons pinned at sprite level) to move to the adjacent Pokémon without backing out to the list — steps through whatever the Pokédex list is currently showing (respects its active filters/sort), or dex order when reached some other way (an evolution chain tap, Compare, a team member chip)
+- Preview impact on my team: shows what adding this Pokémon (or swapping it in for a member you pick, once the team is full) would change about the team's shared weaknesses and coverage gaps
 
 ### Team builder
 

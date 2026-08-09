@@ -71,6 +71,22 @@ fun coverageGaps(offensiveMatrix: Map<String, Map<String, Double>>, memberNames:
     }
 }
 
+/**
+ * Attacking types at least half the team is weak (>1x) to — the team's shared vulnerabilities, and
+ * the defensive counterpart of [coverageGaps].
+ *
+ * [defensiveMatrix] is keyed attackingType -> memberName -> multiplier, matching the shape the
+ * offensive matrix already uses.
+ */
+fun sharedWeaknesses(defensiveMatrix: Map<String, Map<String, Double>>, memberNames: Collection<String>): List<String> {
+    if (memberNames.isEmpty()) return emptyList()
+    return TypeIds.standardTypeNames.filter { type ->
+        val row = defensiveMatrix[type] ?: return@filter false
+        val weakCount = memberNames.count { (row[it] ?: 1.0) > 1.0 }
+        weakCount * 2 >= memberNames.size && weakCount > 0
+    }
+}
+
 data class MatchupBucket(val label: String, val multiplier: Double, val types: List<String>)
 
 // "×" + vulgar fractions to match the notation TeamScreen's matrix already uses ("×4", "×½"...)

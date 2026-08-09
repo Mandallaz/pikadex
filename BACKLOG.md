@@ -8,7 +8,7 @@
 
 | Feature | Priority | Status | Issue |
 |---|---|---|---|
-| F15 — Team coverage impact preview | **High** | Plan ready | [#2](https://github.com/Mandallaz/pikadex/issues/2) |
+| F15 — Team coverage impact preview | — | Done | [#2](https://github.com/Mandallaz/pikadex/issues/2) |
 | F20 — Radical Red mode (rebalanced stats + trainer teams) | Medium | To groom | [#3](https://github.com/Mandallaz/pikadex/issues/3) |
 | F19 — Black/AMOLED mode | — | Done | [#4](https://github.com/Mandallaz/pikadex/issues/4) |
 | F17 — Filter dex by "is legendary" | — | Done | [#5](https://github.com/Mandallaz/pikadex/issues/5) |
@@ -231,8 +231,47 @@ entry's last edit.
 
 ## F15 — Preview a Pokémon's impact on the current team's coverage
 
-**Plan finalized 2026-08-08** — simplest option chosen for every open question; implement when asked.
-Entry point and output format agreed with the user.
+**Done 2026-08-09.** Built exactly to the finalized plan below, with the extraction/reuse steps
+verified to actually land rather than assumed:
+
+- `util/TeamMatrixCalculator.kt`: new `computeTeamMatrices(repository, members): TeamMatrixResult`
+  (`TeamMatrixResult(defensive, offensive)`) — the `supervisorScope` body that used to be inlined in
+  `TeamViewModel.computeMatrix()` moved out verbatim. `TeamViewModel.computeMatrix()` now just calls
+  it and copies the two maps into `TeamUiState`; behavior and exception handling unchanged (its own
+  `supervisorScope`/try-catch stays in `computeMatrix`, per plan — the extracted function assumes a
+  caller already provides both).
+- `util/TypeEffectiveness.kt`: new `sharedWeaknesses(defensiveMatrix, memberNames): List<String>`,
+  a twin of the existing `coverageGaps`. `TeamUiState.sharedWeaknesses` is now a one-line delegate to
+  it — no behavior change, confirmed by the full existing `TeamViewModel`/Team screen test coverage
+  still passing.
+- `util/TeamImpact.kt`: `TeamImpactSummary(weaknessesFixed, weaknessesIntroduced, gapsClosed,
+  gapsOpened)` + `computeTeamImpact(...)`, plain set differences exactly as planned.
+- `PokedexDetailViewModel`: `teamImpact`/`isTeamImpactLoading`/`teamImpactError` on
+  `PokedexDetailUiState`; `loadTeamImpact(replacingIndex: Int? = null)` builds `afterMembers` from
+  `TeamRepository.team.value` (append or swap at index), computes `computeTeamMatrices` for both the
+  current roster and `afterMembers` concurrently (`async` inside one `supervisorScope`, not
+  sequential — the plan's "costs nothing extra on a warm cache" held, this doesn't leave one on the
+  table either), derives shared-weaknesses/coverage-gaps for both via the two extracted pure
+  functions, and calls `computeTeamImpact`. `clearTeamImpact()` cancels the tracked job and resets
+  the three fields.
+- `PokedexDetailScreen.kt`: new top-bar `IconButton` (`Icons.AutoMirrored.Filled.TrendingUp`,
+  "Preview impact on my team"), hidden when `team.isEmpty()`. Team not full → calls
+  `loadTeamImpact(null)` directly. Team full → a small inline `AlertDialog` member picker (sprite +
+  name per row, tap to pick) rather than reusing `TeamScreen`'s private `TeamMemberChip`, per plan.
+  Result shown in its own `AlertDialog`: spinner while loading, error text + Retry (re-issues the
+  exact same request via a remembered `pendingReplaceIndex`) on failure, else the four-line summary
+  with "no new..."/"no..." wording whenever a list is empty, matching the user's original example
+  phrasing. `onDismissRequest` calls `clearTeamImpact()`.
+- Tests: `util/TeamImpactTest.kt` (fixed/introduced/closed/opened set-difference cases, plus a
+  no-op case) and 4 new `sharedWeaknesses` cases in `TypeEffectivenessTest.kt` (half-or-more weak,
+  exact-half tie, a type absent from the matrix, empty team) — mirroring `coverageGaps`' existing
+  test shape per plan. No dedicated `PokedexDetailViewModel` test, consistent with the rest of that
+  ViewModel's untested wiring (`TeamViewModel`'s F11 wiring wasn't unit-tested either); the two pure
+  functions above are where the real logic risk lives, and both are covered.
+- `./gradlew compileDebugKotlin` and `./gradlew testDebugUnitTest` both green.
+
+Original plan, finalized 2026-08-08 — simplest option chosen for every open question; entry point and
+output format agreed with the user:
 
 From a Pokémon's detail screen (`PokedexDetailScreen.kt`), a new top-bar icon — same slot pattern as
 the existing shiny toggle and the Compare entry point (`showCompareDialog` /

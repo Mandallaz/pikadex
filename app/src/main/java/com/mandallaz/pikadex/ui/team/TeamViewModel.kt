@@ -13,17 +13,15 @@ import com.mandallaz.pikadex.util.PresetTeams
 import com.mandallaz.pikadex.util.SuggestionCandidate
 import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
-import com.mandallaz.pikadex.util.bestOffensiveMultipliers
-import com.mandallaz.pikadex.util.computeDefensiveMultipliers
-import com.mandallaz.pikadex.util.computeOffensiveMultipliers
+import com.mandallaz.pikadex.util.computeTeamMatrices
 import com.mandallaz.pikadex.util.coverageGaps
 import com.mandallaz.pikadex.util.filterByTierCeiling
 import com.mandallaz.pikadex.util.findConflictingForms
 import com.mandallaz.pikadex.util.rankSuggestions
+import com.mandallaz.pikadex.util.sharedWeaknesses
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -72,11 +70,7 @@ data class TeamUiState(
     val sharedWeaknesses: List<String>
         get() {
             if (members.isEmpty() || isMatrixStale) return emptyList()
-            return TypeIds.standardTypeNames.filter { type ->
-                val row = matrix[type] ?: return@filter false
-                val weakCount = members.count { (row[it.name] ?: 1.0) > 1.0 }
-                weakCount * 2 >= members.size && weakCount > 0
-            }
+            return sharedWeaknesses(matrix, members.map { it.name })
         }
 
     /** Types nobody on the team can hit for more than neutral — the offensive counterpart of
@@ -87,17 +81,6 @@ data class TeamUiState(
             return coverageGaps(offensiveMatrix, members.map { it.name })
         }
 }
-
-/** One member's raw inputs, gathered concurrently before the two matrices are assembled. */
-private data class MemberMatchups(
-    val name: String,
-    val defensive: Map<String, Double>,
-    val stabTypes: List<String>,
-    val moveNames: List<String>
-)
-
-/** PokeAPI's damage_class for moves that deal no damage. */
-private const val STATUS_DAMAGE_CLASS = "status"
 
 /** Smogon generation Suggestions' tier ceiling (BACKLOG.md F17) is checked against — always the
  *  most recent generation, so Settings doesn't also need a generation picker for this. */
@@ -165,72 +148,14 @@ class TeamViewModel @JvmOverloads constructor(
         matrixJob = viewModelScope.launch {
             try {
                 // supervisorScope so one member's failed fetch surfaces as a normal catchable
-                // exception at awaitAll() rather than risking an uncaught crash — see the
-                // identical fix (and full explanation) in PokedexDetailViewModel.load().
-                val (matrix, offensiveMatrix) = supervisorScope {
-                    // One bulk, already-cached lookup for the whole app rather than one call per
-                    // move: a team's six movepools run to well over a thousand entries between them.
-                    val moveInfoDeferred = async { repository.getAllMoveInfo() }
-
-                    // Every member is independent of every other, and every type detail lookup
-                    // is independent too — sequentially this was up to 18 round trips (6
-                    // members x up to 3 calls each) before the matrix could render at all.
-                    val memberResults = members.map { member ->
-                        async {
-                            val types = repository.getPokemonTypes(member.name)
-                            val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
-                            // Same cache entry as getPokemonTypes above, so this is free.
-                            val moveNames = repository.getPokemonLevelUpMoveNames(member.name)
-                            MemberMatchups(
-                                name = member.name,
-                                defensive = computeDefensiveMultipliers(typeDetails),
-                                stabTypes = types,
-                                moveNames = moveNames
-                            )
-                        }
-                    }.awaitAll()
-
-                    val moveInfo = moveInfoDeferred.await()
-
-                    // What each member can attack with: its own types, plus the type of every
-                    // *damaging* move it can learn. Status moves are excluded — Thunder Wave being
-                    // Electric says nothing about whether this pokemon can dent a Water type.
-                    val attackingTypesByMember = memberResults.associate { member ->
-                        val fromMoves = member.moveNames.mapNotNull { moveName ->
-                            moveInfo[moveName]?.takeIf { it.damageClass != STATUS_DAMAGE_CLASS }?.type
-                        }
-                        member.name to (member.stabTypes + fromMoves).toSet()
-                    }
-
-                    val offensiveByType = attackingTypesByMember.values.flatten().distinct()
-                        .map { type -> async { type to computeOffensiveMultipliers(repository.getTypeDetail(type)) } }
-                        .awaitAll().toMap()
-
-                    val defensive = mutableMapOf<String, MutableMap<String, Double>>()
-                    val offensive = mutableMapOf<String, MutableMap<String, Double>>()
-                    TypeIds.standardTypeNames.forEach {
-                        defensive[it] = mutableMapOf()
-                        offensive[it] = mutableMapOf()
-                    }
-                    memberResults.forEach { member ->
-                        member.defensive.forEach { (attackType, multiplier) ->
-                            defensive.getOrPut(attackType) { mutableMapOf() }[member.name] = multiplier
-                        }
-                        val best = bestOffensiveMultipliers(
-                            attackingTypesByMember[member.name].orEmpty(),
-                            offensiveByType
-                        )
-                        best.forEach { (defendingType, multiplier) ->
-                            offensive.getOrPut(defendingType) { mutableMapOf() }[member.name] = multiplier
-                        }
-                    }
-                    defensive to offensive
-                }
+                // exception rather than risking an uncaught crash — see the identical fix (and
+                // full explanation) in PokedexDetailViewModel.load().
+                val result = computeTeamMatrices(repository, members)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        matrix = matrix,
-                        offensiveMatrix = offensiveMatrix,
+                        matrix = result.defensive,
+                        offensiveMatrix = result.offensive,
                         matrixComputedFor = members.map { m -> m.name }.toSet()
                     )
                 }

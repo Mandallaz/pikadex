@@ -14,14 +14,20 @@ import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.repository.PokedexRepository
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.MoveCategory
+import com.mandallaz.pikadex.util.TeamImpactSummary
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.adjacentNames
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
+import com.mandallaz.pikadex.util.computeTeamImpact
+import com.mandallaz.pikadex.util.computeTeamMatrices
+import com.mandallaz.pikadex.util.coverageGaps
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.namesForAdjacency
+import com.mandallaz.pikadex.util.sharedWeaknesses
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,7 +70,14 @@ data class PokedexDetailUiState(
      *  [PokedexDetailViewModel.load]'s `orNullUnlessCancelled` use for it) rather than blocking the
      *  rest of the page on a feature that's a convenience, not the point of the page. */
     val previousPokemonName: String? = null,
-    val nextPokemonName: String? = null
+    val nextPokemonName: String? = null,
+    /** Result of BACKLOG.md F15's "preview impact on my team" — what adding/swapping this Pokémon
+     *  in would change about the team's shared weaknesses and coverage gaps. Null until requested,
+     *  and reset by [PokedexDetailViewModel.clearTeamImpact] whenever the preview dialog closes so a
+     *  later reopen for a different replace target doesn't flash stale data. */
+    val teamImpact: TeamImpactSummary? = null,
+    val isTeamImpactLoading: Boolean = false,
+    val teamImpactError: String? = null
 )
 
 /** Result of [block], or null if it failed — but never swallowing coroutine cancellation, which
@@ -88,6 +101,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
     val favorites: StateFlow<Set<String>> = FavoritesRepository.favorites
 
     private var loadedFor: String? = null
+    private var teamImpactJob: Job? = null
 
     fun load(nameOrId: String) {
         if (loadedFor == nameOrId) return
@@ -212,6 +226,55 @@ class PokedexDetailViewModel @JvmOverloads constructor(
     fun toggleFavorite() {
         val pokemon = _uiState.value.pokemon ?: return
         FavoritesRepository.toggle(pokemon.name)
+    }
+
+    /** BACKLOG.md F15 — previews what adding this Pokémon to the active team (or swapping it in for
+     *  [replacingIndex], when the team is already full) would change about the team's shared
+     *  weaknesses and coverage gaps. Computes the "before" matrix fresh alongside "after" rather
+     *  than threading TeamViewModel's already-computed one across ViewModels — every fetch involved
+     *  is AsyncCache'd, so recomputing costs nothing extra in practice on a warm cache. */
+    fun loadTeamImpact(replacingIndex: Int? = null) {
+        val pokemon = _uiState.value.pokemon ?: return
+        val candidate = NamedApiResource(pokemon.name, "https://pokeapi.co/api/v2/pokemon/${pokemon.id}/")
+        val beforeMembers = TeamRepository.team.value
+        val afterMembers = if (replacingIndex == null) {
+            beforeMembers + candidate
+        } else {
+            beforeMembers.toMutableList().apply { set(replacingIndex, candidate) }
+        }
+        teamImpactJob?.cancel()
+        _uiState.update { it.copy(isTeamImpactLoading = true, teamImpactError = null, teamImpact = null) }
+        teamImpactJob = viewModelScope.launch {
+            try {
+                val (before, after) = supervisorScope {
+                    val beforeDeferred = async { computeTeamMatrices(repository, beforeMembers) }
+                    val afterDeferred = async { computeTeamMatrices(repository, afterMembers) }
+                    beforeDeferred.await() to afterDeferred.await()
+                }
+                val beforeNames = beforeMembers.map { it.name }
+                val afterNames = afterMembers.map { it.name }
+                val impact = computeTeamImpact(
+                    beforeSharedWeaknesses = sharedWeaknesses(before.defensive, beforeNames),
+                    afterSharedWeaknesses = sharedWeaknesses(after.defensive, afterNames),
+                    beforeCoverageGaps = coverageGaps(before.offensive, beforeNames),
+                    afterCoverageGaps = coverageGaps(after.offensive, afterNames)
+                )
+                _uiState.update { it.copy(isTeamImpactLoading = false, teamImpact = impact) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isTeamImpactLoading = false, teamImpactError = "Network error while previewing team impact.")
+                }
+            }
+        }
+    }
+
+    /** Resets the F15 preview's state, called when the dialog is dismissed so reopening it for a
+     *  different replace target doesn't flash the previous result while the new one loads. */
+    fun clearTeamImpact() {
+        teamImpactJob?.cancel()
+        _uiState.update { it.copy(isTeamImpactLoading = false, teamImpactError = null, teamImpact = null) }
     }
 
     fun loadCompareCandidatesIfNeeded() {
