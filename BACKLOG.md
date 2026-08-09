@@ -31,7 +31,7 @@
 | F32 — Survey: unused PokeAPI data | — | To groom | [#22](https://github.com/Mandallaz/pikadex/issues/22) |
 | F33 — Filter dex by "perfect counter to a type triangle" | — | To groom | [#23](https://github.com/Mandallaz/pikadex/issues/23) |
 | F34 — Play a Pokémon's cry + prefetch tier for cry audio | Medium | To groom | [#24](https://github.com/Mandallaz/pikadex/issues/24) |
-| F35 — Translate the app into PokeAPI's supported languages | Medium | To groom | [#25](https://github.com/Mandallaz/pikadex/issues/25) |
+| F35 — Translate the app into PokeAPI's supported languages | Medium | Plan ready | [#25](https://github.com/Mandallaz/pikadex/issues/25) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -952,8 +952,8 @@ Not yet scoped:
 
 ## F35 — Translate the app into the languages PokeAPI supports
 
-**To groom** — requested 2026-08-09, scope refined same day. Priority **Medium**. Not yet planned
-or implemented.
+**Plan ready** — requested 2026-08-09, scope fully settled same day. Priority **Medium**. Every open
+question below resolved; implement when asked.
 
 Request: localize the app into a subset of the 14 languages PokeAPI's `/language` endpoint lists
 (verified directly against the API for F32's survey — see that section for the full list and the
@@ -992,17 +992,20 @@ completely differently:
   "en" }` on the detail screen). Switching this axis is "read a different language code" at
   existing call sites, not a new fetch — the smaller of the two efforts.
 
-Not yet scoped:
+**Coverage fallback, decided 2026-08-09: falls back to English** wherever a chosen language's entry
+is missing — applies to both axes identically. For game data, this is the exact same
+`firstOrNull { it.language.name == "xx" }`-style lookup already in use, just changing which code is
+tried first, with a second `firstOrNull { it.language.name == "en" }` (or equivalent) behind it
+rather than the lookup returning null. For UI chrome, this is Android's own default resource-fallback
+behavior when a `values-{locale}/strings.xml` entry is absent — nothing bespoke to build for it, just
+something to rely on rather than re-implement.
 
-- **Coverage isn't uniform.** Not every resource has a translation in all 14 languages for every
-  entry — rarer/newer species in particular. Falling back to `"en"` when a chosen language's entry
-  is missing needs to be the rule from the start, not an afterthought — applies to both axes (a
-  missing `strings.xml` translation falls back to the default resource the same way Android already
-  handles missing locale-qualified resources).
-- **Picker UI and persistence.** Where it lives in Settings (presumably the same section as the
-  existing display/prefetch toggles), and how `DisplaySettings`-style `SharedPreferences`
-  persistence would store the choice — no code looked at yet. Default is decided (English), so this
-  is just the mechanism, not the default value.
+**Picker UI and persistence, decided 2026-08-09: a dropdown at the top of the Settings screen**,
+ahead of the existing Essentials/Sprites/Full detail prefetch section — the first choice a user
+makes on that screen, before anything else. Persistence follows the same
+`SharedPreferences`-backed singleton pattern every other setting already uses (`DisplaySettings`,
+`PrefetchSettings`, `SuggestionSettings`) — a new `LanguageSettings` object of the same shape,
+`init()`'d from `PikaDexApplication.onCreate()` alongside the others.
 
 ## Cancelled
 
