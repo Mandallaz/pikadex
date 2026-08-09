@@ -189,37 +189,6 @@ fun PokedexDetailScreen(
                 },
                 actions = {
                     if (uiState.pokemon != null) {
-                        IconButton(onClick = { shiny = !shiny }) {
-                            Icon(
-                                imageVector = Icons.Filled.AutoAwesome,
-                                contentDescription = if (shiny) "Show normal coloring" else "Show shiny coloring",
-                                tint = if (shiny) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                            )
-                        }
-                        IconButton(onClick = { animated = !animated }) {
-                            Icon(
-                                imageVector = Icons.Filled.Animation,
-                                contentDescription = if (animated) "Show static artwork" else "Show animated battle sprite",
-                                tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                            )
-                        }
-                        // F34: a one-shot action, not a toggle like shiny/animated above — disabled
-                        // rather than hidden while a cry is already playing, so tapping it twice
-                        // fast can't overlap two MediaPlayer instances.
-                        IconButton(
-                            onClick = { viewModel.playCry(context, uiState.pokemon!!.id) },
-                            enabled = !isCryPlaying
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                contentDescription = "Play cry",
-                                tint = if (isCryPlaying) {
-                                    LocalContentColor.current.copy(alpha = 0.38f)
-                                } else {
-                                    LocalContentColor.current
-                                }
-                            )
-                        }
                         IconButton(
                             // Stays enabled when the team is full and explains itself instead, the
                             // same way the Pokédex grid's own add button does — a disabled top-bar
@@ -334,6 +303,13 @@ fun PokedexDetailScreen(
                     groupedMoves = uiState.groupedMoves,
                     shiny = shiny,
                     animated = animated,
+                    onToggleShiny = { shiny = !shiny },
+                    onToggleAnimated = { animated = !animated },
+                    isCryPlaying = isCryPlaying,
+                    // uiState.pokemon is non-null here (this whole branch is gated on `pokemon`
+                    // above), but that's `pokemon`, not `uiState.pokemon` — same underlying value,
+                    // captured locally so playCry doesn't need its own null check.
+                    onPlayCry = { viewModel.playCry(context, pokemon.id) },
                     showTeamImpactCard = shouldShowTeamImpactCard(team, isInTeam),
                     isTeamImpactLoading = uiState.isTeamImpactLoading,
                     teamImpactError = uiState.teamImpactError,
@@ -436,8 +412,10 @@ private fun DetailLoadingSkeleton() {
     }
 }
 
+// Internal rather than private: instrumented tests render this directly with fake DTOs, rather
+// than driving the whole screen through a real ViewModel/network fetch.
 @Composable
-private fun DetailContent(
+internal fun DetailContent(
     pokemon: PokemonDto,
     species: PokemonSpeciesDto,
     evolutionChain: com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto?,
@@ -450,6 +428,10 @@ private fun DetailContent(
     groupedMoves: Map<MoveCategory, List<LearnedMove>>,
     shiny: Boolean,
     animated: Boolean,
+    onToggleShiny: () -> Unit,
+    onToggleAnimated: () -> Unit,
+    isCryPlaying: Boolean,
+    onPlayCry: () -> Unit,
     showTeamImpactCard: Boolean,
     isTeamImpactLoading: Boolean,
     teamImpactError: String?,
@@ -492,6 +474,39 @@ private fun DetailContent(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Shiny/animated/cry live right above the sprite they affect (issue #50), not in
+                // the top bar — grouped with what they act on rather than with unrelated actions
+                // like Back and add-to-team.
+                Row(horizontalArrangement = Arrangement.Center) {
+                    IconButton(onClick = onToggleShiny) {
+                        Icon(
+                            imageVector = Icons.Filled.AutoAwesome,
+                            contentDescription = if (shiny) "Show normal coloring" else "Show shiny coloring",
+                            tint = if (shiny) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                        )
+                    }
+                    IconButton(onClick = onToggleAnimated) {
+                        Icon(
+                            imageVector = Icons.Filled.Animation,
+                            contentDescription = if (animated) "Show static artwork" else "Show animated battle sprite",
+                            tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                        )
+                    }
+                    // F34: a one-shot action, not a toggle like shiny/animated above — disabled
+                    // rather than hidden while a cry is already playing, so tapping it twice fast
+                    // can't overlap two MediaPlayer instances.
+                    IconButton(onClick = onPlayCry, enabled = !isCryPlaying) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = "Play cry",
+                            tint = if (isCryPlaying) {
+                                LocalContentColor.current.copy(alpha = 0.38f)
+                            } else {
+                                LocalContentColor.current
+                            }
+                        )
+                    }
+                }
                 PokemonArtwork(
                     id = pokemon.id,
                     contentDescription = pokemon.name,
