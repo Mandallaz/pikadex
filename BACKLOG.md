@@ -31,6 +31,7 @@
 | F32 — Survey: unused PokeAPI data | — | To groom | [#22](https://github.com/Mandallaz/pikadex/issues/22) |
 | F33 — Filter dex by "perfect counter to a type triangle" | — | To groom | [#23](https://github.com/Mandallaz/pikadex/issues/23) |
 | F34 — Play a Pokémon's cry + prefetch tier for cry audio | Medium | To groom | [#24](https://github.com/Mandallaz/pikadex/issues/24) |
+| F35 — Translate the app into PokeAPI's supported languages | Medium | To groom | [#25](https://github.com/Mandallaz/pikadex/issues/25) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -948,6 +949,47 @@ Not yet scoped:
 - **Caching.** Whether downloaded cries reuse the same disk-cache mechanism `PrefetchManager`
   already uses for sprite images, or need their own — likely yes (same shape: URL keyed by
   Pokémon id, immutable content), but not confirmed against the actual cache abstraction yet.
+
+## F35 — Translate the app into the languages PokeAPI supports
+
+**To groom** — requested 2026-08-09. Priority **Medium**. Not yet planned or implemented.
+
+Request: localize the app into the 14 languages PokeAPI's `/language` endpoint lists (verified
+directly against the API for F32's survey — see that section for the full list and the `official`
+flag per language).
+
+Two genuinely separate axes bundled in "translate the app", both worth naming before scoping either:
+
+- **The app's own UI chrome** — button labels, screen titles, static strings like "Base Stats",
+  "Type Matchups", "Would fix these shared weaknesses:"... This is a normal Android
+  `strings.xml`/`values-{locale}` localization, entirely unrelated to PokeAPI — the API has no
+  bearing on it at all, since none of these strings come from network data.
+- **Game data itself** — species/move/ability/type names and flavor text. This part *is* already
+  server-side localized: every relevant resource (`PokemonSpeciesDto`, moves, abilities, types) has
+  a `names` and/or `flavor_text_entries` field carrying every language PokeAPI has a translation
+  for, filtered to `"en"` everywhere in the app today (e.g. `flavorTextEntries.firstOrNull {
+  it.language.name == "en" }` on the detail screen). Switching this axis is "read a different
+  language code" at existing call sites, not a new fetch.
+
+Not yet scoped:
+
+- **Which axis, or both** — a language picker that only swaps game data while the buttons around it
+  stay in English is a real, shippable half-step; UI chrome without game data would be the opposite
+  and arguably less useful. Needs the user's call on scope before implementing either.
+- **Coverage isn't uniform.** Not every resource has a translation in all 14 languages for every
+  entry — rarer/newer species in particular. Falling back to `"en"` (already the only language read
+  today) when a chosen language's entry is missing needs to be the rule from the start, not an
+  afterthought.
+- **`cs` (Czech) is `official: false`** — a fan translation PokeAPI hosts but that never shipped in
+  a real game. Worth deciding whether to expose it in a language picker at all, or restrict the
+  picker to the 13 official ones.
+- **`ja`/`ja-hrkt`/`ja-roma` are 3 entries for what a user would think of as "Japanese"** (kanji/
+  kana vs. katakana-only vs. romanized) — needs deciding whether all 3 belong in a picker or just
+  one (likely `ja`).
+- **Picker UI, persistence, and default.** Where the picker lives (Settings, presumably, same
+  section as the existing display/prefetch toggles), whether it defaults to the device's system
+  locale when that locale is one of the 13-14 supported, and how `DisplaySettings`-style
+  `SharedPreferences` persistence would store the choice — no code looked at yet.
 
 ## Cancelled
 
