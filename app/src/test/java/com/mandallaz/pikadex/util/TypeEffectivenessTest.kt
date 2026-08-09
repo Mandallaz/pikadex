@@ -239,4 +239,39 @@ class TypeEffectivenessTest {
     fun `an empty team has no shared weaknesses to report`() {
         assertEquals(emptyList<String>(), sharedWeaknesses(emptyMap(), emptyList()))
     }
+
+    // --- Team immunities / quad weaknesses (BACKLOG.md F15, Toedscool feedback) ---------------
+
+    @Test
+    fun `a single immune member is enough to report a team immunity`() {
+        val matrix = mapOf("electric" to mapOf("a" to 1.0, "b" to 0.0))
+        // Only 1 of 2 members is immune — far below sharedWeaknesses' half-team threshold, but
+        // that's irrelevant here: one immune member is already a real defensive asset.
+        assertEquals(listOf("electric"), teamImmunities(matrix, listOf("a", "b")))
+    }
+
+    @Test
+    fun `a single quad-weak member is enough to report a team quad weakness`() {
+        val matrix = mapOf("ice" to mapOf("a" to 1.0, "b" to 4.0))
+        assertEquals(listOf("ice"), teamQuadWeaknesses(matrix, listOf("a", "b")))
+    }
+
+    @Test
+    fun `a merely double weakness does not count as a quad weakness`() {
+        val matrix = mapOf("ice" to mapOf("a" to 2.0))
+        assertTrue(teamQuadWeaknesses(matrix, listOf("a")).isEmpty())
+    }
+
+    @Test
+    fun `a type absent from the matrix is neither an immunity nor a quad weakness`() {
+        val matrix = mapOf("water" to mapOf("a" to 0.0))
+        assertTrue("fire" !in teamImmunities(matrix, listOf("a")))
+        assertTrue("fire" !in teamQuadWeaknesses(matrix, listOf("a")))
+    }
+
+    @Test
+    fun `an empty team has no immunities or quad weaknesses to report`() {
+        assertEquals(emptyList<String>(), teamImmunities(emptyMap(), emptyList()))
+        assertEquals(emptyList<String>(), teamQuadWeaknesses(emptyMap(), emptyList()))
+    }
 }

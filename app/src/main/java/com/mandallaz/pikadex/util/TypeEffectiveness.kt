@@ -87,6 +87,41 @@ fun sharedWeaknesses(defensiveMatrix: Map<String, Map<String, Double>>, memberNa
     }
 }
 
+/**
+ * Attacking types at least one team member is immune (0x) to — a real defensive asset regardless of
+ * how many others share it, unlike [sharedWeaknesses]' majority threshold. BACKLOG.md F15's
+ * per-member "adds immunity to..." signal reads off this rather than the team-wide majority rule,
+ * since a single immune member is already worth calling out (see the Toedscool/Electric example
+ * that motivated this).
+ *
+ * [defensiveMatrix] is keyed attackingType -> memberName -> multiplier, same shape [sharedWeaknesses]
+ * reads.
+ */
+fun teamImmunities(defensiveMatrix: Map<String, Map<String, Double>>, memberNames: Collection<String>): List<String> {
+    if (memberNames.isEmpty()) return emptyList()
+    return TypeIds.standardTypeNames.filter { type ->
+        val row = defensiveMatrix[type].orEmpty()
+        memberNames.any { abs((row[it] ?: 1.0) - 0.0) < EPSILON }
+    }
+}
+
+/**
+ * Attacking types at least one team member is quadruple-weak (×4) to — the severe individual
+ * counterpart of [teamImmunities]: worth flagging as a liability even when only one member carries
+ * it, same as a lone immunity is worth flagging as an asset (see the Toedscool/Ice example that
+ * motivated this).
+ *
+ * [defensiveMatrix] is keyed attackingType -> memberName -> multiplier, same shape [sharedWeaknesses]
+ * reads.
+ */
+fun teamQuadWeaknesses(defensiveMatrix: Map<String, Map<String, Double>>, memberNames: Collection<String>): List<String> {
+    if (memberNames.isEmpty()) return emptyList()
+    return TypeIds.standardTypeNames.filter { type ->
+        val row = defensiveMatrix[type].orEmpty()
+        memberNames.any { abs((row[it] ?: 1.0) - 4.0) < EPSILON }
+    }
+}
+
 data class MatchupBucket(val label: String, val multiplier: Double, val types: List<String>)
 
 // "×" + vulgar fractions to match the notation TeamScreen's matrix already uses ("×4", "×½"...)

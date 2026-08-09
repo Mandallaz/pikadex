@@ -22,6 +22,8 @@
 | F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
 | F24 — Reorder detail screen sections | — | To groom | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
 | F25 — Shrink Smogon Strategy Dex card | — | To groom | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
+| F26 — Simplify Type Triangles card to perfect-counter-only | — | To groom | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
+| F27 — Tap a suggestion's sprite to open its detail page | — | To groom | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -391,6 +393,36 @@ coverage gaps), via a new `ImpactSection(heading, vararg rows)` that also omits 
 (heading included) when both of its rows are empty — not just each row individually as before. No
 logic change, no new tests.
 
+**Bug fixed 2026-08-09** — user-reported: adding Toedscool (Ground/Grass) to Blaine's all-Fire
+preset team correctly showed the offensive side but said nothing on defense, even though Toedscool
+brings the team's first immunity to Electric and its own ×4 weakness to Ice. Root cause:
+`weaknessesFixed`/`weaknessesIntroduced` are majority-based (`sharedWeaknesses` requires at least
+half the roster to share a weakness) — a real systemic-risk signal, but blind to a single new
+member's own severe typing, which never moves a 5-6-Pokémon team's majority on its own.
+
+- `util/TypeEffectiveness.kt`: two new pure functions parallel to `sharedWeaknesses`/`coverageGaps`
+  but per-member rather than majority-based — `teamImmunities(defensiveMatrix, memberNames)` (types
+  at least one member is immune, 0x, to) and `teamQuadWeaknesses(...)` (types at least one member is
+  ×4 weak to). A lone immunity is already a real asset and a lone ×4 weakness a real liability,
+  regardless of how many teammates share it.
+- `util/TeamImpact.kt`: `TeamImpactSummary` gains `immunitiesGained`/`quadWeaknessesGained`;
+  `computeTeamImpact` takes the before/after immunity and quad-weakness lists and set-diffs them,
+  same shape as the other 2 axes. Gained-only (no symmetric "lost" case) is correct here: the
+  screen only ever *adds* a candidate, never removes one, and a team's collective min (immunity)
+  and max (quad weakness) multiplier per type can only move toward "more covered" as members are
+  added, never regress.
+- `PokedexDetailViewModel.loadTeamImpact()`: computes `teamImmunities`/`teamQuadWeaknesses` for both
+  rosters alongside the existing `sharedWeaknesses`/`coverageGaps` calls, same before/after pattern.
+- `PokedexDetailScreen.kt`: "Defensively" section gains two more rows, "Adds an immunity to:" and
+  "Adds a severe (×4) weakness to:", using the same `ImpactTypeRow` (type badges, omitted when
+  empty) as the other four. `TeamImpactCard`'s `hasNoImpact` check (for the "Nothing." case) now
+  covers all 6 lists, not 4.
+- Tests: `TeamImpactTest.kt` rewritten around a `impact(...)` helper defaulting every axis to "no
+  change" so each case only spells out what it exercises, plus 3 new cases for the two gained-only
+  axes. `TypeEffectivenessTest.kt` gains 5 cases for `teamImmunities`/`teamQuadWeaknesses` (single
+  member is enough, a double weakness doesn't count as quad, absent-from-matrix, empty team) —
+  regression coverage for the exact bug reported (a lone immune/quad-weak member being missed).
+
 ## F16 — Swipe between Pokémon on the detail screen
 
 **Done 2026-08-08.** From `PokedexDetailScreen.kt`, swipe left/right (or tap a chevron) to move to
@@ -545,6 +577,73 @@ Not yet scoped — options to weigh when this gets planned:
   independent, smaller change first.
 
 No implementation, sizing values, or before/after mockup agreed yet.
+
+## F26 — Simplify Type Triangles card to perfect-counter-only
+
+**To groom** — requested 2026-08-09, not yet planned or implemented.
+
+`TypeTrianglesCard` (`PokedexDetailScreen.kt`, around line 924) currently shows two sections for a
+Pokémon's typing: triangles it *counters* (`TypeTriangles.counteredBy(types)` — its typing exactly
+matches a triangle's best-counter pair, "This typing is the best counter to:") and triangles it's
+merely *a member of* (`TypeTriangles.containing(types)` — one of its types appears somewhere in the
+3-type loop, regardless of whether it's a good defensive answer to it). Both lists get combined,
+capped at `COLLAPSED_TRIANGLE_LIMIT` with a "show all" expand, per the doc comment around line 916-921.
+
+Request: drop the "member of" section (`memberTriangles`/`containing(...)`) entirely — a Pokémon
+merely sharing a type with one leg of a triangle isn't a meaningful callout on its own. Keep only the
+counter section: show the card **only when** the Pokémon's typing is an exact match to a triangle's
+`counter.types` (i.e. `TypeTriangles.counteredBy(types)` is non-empty), and hide the whole card
+otherwise instead of falling back to listing membership.
+
+Not yet scoped:
+
+- Whether "perfect counter" here should also require `TypeTriangle.isPerfect == true` on the
+  triangle being countered, or apply to imperfect triangles too (today `counteredBy` doesn't filter
+  on `isPerfect` — it already returns counters for both perfect and imperfect triangles, e.g.
+  Aegislash counters both Fighting/Rock/Flying (perfect) and Fighting/Ice/Flying (imperfect)). The
+  feature name says "perfect counter to a particular triangle", which reads as being a perfect
+  counter-typing, not necessarily to a triangle flagged `isPerfect` — needs the user's confirmation
+  either way before implementing.
+- Whether `PokedexDetailViewModel`'s current computation of both `memberTriangles` and
+  `counteredTriangles` (and the `showTeamImpactCard`-style wiring passing both into
+  `PokedexDetailScreen`) simplifies to just computing `counteredTriangles`, dropping `containing(...)`
+  calls and the now-unused `counterOnlyTriangles`/`visibleMember` branching, expand/collapse state,
+  and `COLLAPSED_TRIANGLE_LIMIT` handling in `TypeTrianglesCard` — likely yes, since with only one
+  list left there's much less reason to collapse, but worth confirming during implementation rather
+  than assuming.
+- Whether `TypeTrianglesScreen.kt` (the full type-chart screen reached via "View chart") is in scope
+  too, or only this one embedded card on the detail screen — the ask specifically says "le bloc
+  triangle", read here as the detail-screen card only.
+
+## F27 — Tap a suggestion's sprite to open its detail page
+
+**To groom** — requested 2026-08-09, not yet planned or implemented.
+
+On the Team screen's Suggestions card (`SuggestionTile` in `TeamScreen.kt`, around line 590), each
+tile shows a `PokemonSprite`, name, BST, type badges, "why" text, and an `IconButton` (`+`) that adds
+the suggestion to the team via `onAdd`. There's currently no way to open a suggested Pokémon's own
+detail page from this tile — tapping the sprite does nothing.
+
+Request: tapping the sprite opens that Pokémon's detail screen (same destination as tapping a row in
+the Pokédex list or an evolution-chain sprite elsewhere in the app).
+
+Not yet scoped:
+
+- `TeamScreen` currently only takes `onBrowsePokedex: () -> Unit` as a navigation callback (see
+  `TeamScreen(onBrowsePokedex = { switchTab(ROUTE_LIST) })` in `PokedexNavHost.kt`). Needs a new
+  callback, e.g. `onPokemonClick: (String) -> Unit`, threaded from `TeamScreen` down through the
+  suggestions section into `SuggestionTile`, then wired in `PokedexNavHost.kt` the same way the list
+  screen's `onPokemonClick` is: `{ name -> ifIdle { navController.navigate("detail/$name") } }`.
+  Whether it should also carry `popUpTo`/back-stack behavior like `F16`'s adjacent-swipe navigation,
+  or a plain push (so Back returns to the Team screen) — plain push is the obvious default here,
+  matching how tapping a Pokédex list row or an evolution stage already behaves, but not yet
+  confirmed with the user.
+- Whether only the sprite is tappable, or the whole tile minus the `+` button (`IconButton` already
+  claims its own tap target, so the rest of the `Column` would need its own `Modifier.clickable`) —
+  the ask specifically says "le sprite", read narrowly as sprite-only for now.
+- Whether this should extend to other sprite-only tap targets on the Team screen (e.g. the team
+  member chips higher up, `AddMemberChip`/`TeamMemberChip`) — out of scope unless the user asks;
+  this entry covers the Suggestions row only.
 
 ## Cancelled
 
