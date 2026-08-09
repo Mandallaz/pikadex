@@ -819,14 +819,15 @@ private fun TeamImpactCard(
     error: String?,
     impact: com.mandallaz.pikadex.util.TeamImpactSummary?
 ) {
-    // A loaded result with all 6 categories empty means this Pokémon genuinely wouldn't change
+    // A loaded result with all 7 categories empty means this Pokémon genuinely wouldn't change
     // anything about the team's coverage — worth saying explicitly ("Nothing.") rather than leaving
     // the generic subtitle as the only text on an otherwise-blank card, which read as if the card
     // just hadn't finished loading.
     val hasNoImpact = impact != null &&
         impact.weaknessesFixed.isEmpty() && impact.weaknessesIntroduced.isEmpty() &&
         impact.gapsClosed.isEmpty() && impact.gapsOpened.isEmpty() &&
-        impact.immunitiesGained.isEmpty() && impact.quadWeaknessesGained.isEmpty()
+        impact.immunitiesGained.isEmpty() && impact.quadWeaknessesGained.isEmpty() &&
+        impact.resistancesGained.isEmpty()
 
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -870,6 +871,7 @@ private fun TeamImpactSummaryText(impact: com.mandallaz.pikadex.util.TeamImpactS
             "Fixes these shared weaknesses:" to impact.weaknessesFixed,
             "Introduces these shared weaknesses:" to impact.weaknessesIntroduced,
             "Adds an immunity to:" to impact.immunitiesGained,
+            "Adds a resistance to:" to impact.resistancesGained,
             "Adds a severe (×4) weakness to:" to impact.quadWeaknessesGained
         )
         ImpactSection(

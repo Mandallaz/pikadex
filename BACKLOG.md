@@ -24,6 +24,7 @@
 | F25 — Shrink Smogon Strategy Dex card | — | To groom | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
 | F26 — Simplify Type Triangles card to perfect-counter-only | — | To groom | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
 | F27 — Tap a suggestion's sprite to open its detail page | — | To groom | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
+| F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card | High | To groom | [#18](https://github.com/Mandallaz/pikadex/issues/18) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -423,7 +424,29 @@ member's own severe typing, which never moves a 5-6-Pokémon team's majority on 
   member is enough, a double weakness doesn't count as quad, absent-from-matrix, empty team) —
   regression coverage for the exact bug reported (a lone immune/quad-weak member being missed).
 
-## F16 — Swipe between Pokémon on the detail screen
+**Bug fixed again 2026-08-09** — user-reported: adding Kingdra (Water/Dragon) to Blaine's all-Fire
+preset team didn't mention it bringing its own ½x resistance to Water. Same root cause and shape as
+the immunity/quad-weakness fix above, just the third and last cell of the same 0/½·¼/1/2/4
+multiplier spectrum left uncovered by a per-member (not majority-based) signal.
+
+- `util/TypeEffectiveness.kt`: `teamResistances(defensiveMatrix, memberNames)` — types at least one
+  member resists (½x or ¼x), explicitly excluding 0x since that's already `teamImmunities`'
+  territory rather than folded in as "any resistance".
+- `util/TeamImpact.kt`: `TeamImpactSummary` gains `resistancesGained`; `computeTeamImpact` takes the
+  before/after resistance lists and set-diffs them, same shape as the other two per-member axes.
+  Gained-only again for the same reason (add-only flow, a team's collective min multiplier per type
+  can only improve as members are added).
+- `PokedexDetailViewModel.loadTeamImpact()`: computes `teamResistances` for both rosters alongside
+  the other 3 pairs.
+- `PokedexDetailScreen.kt`: "Defensively" section gains "Adds a resistance to:" between the
+  immunity and ×4-weakness rows (0x → ½x/¼x → ×4, matching the multiplier's own severity order).
+  `hasNoImpact` now covers all 7 lists.
+- Tests: `TeamImpactTest.kt`'s `impact(...)` helper gains the two resistance parameters (still
+  defaulted to "no change"), plus a gained-only case and both existing "already present"/"unchanged"
+  cases extended to also cover resistances. `TypeEffectivenessTest.kt` gains 5 cases for
+  `teamResistances` (single member, ¼x counts too, 0x is not double-counted as a resistance,
+  absent-from-matrix, empty team).
+
 
 **Done 2026-08-08.** From `PokedexDetailScreen.kt`, swipe left/right (or tap a chevron) to move to
 the adjacent Pokémon without backing out to the list and re-selecting.
@@ -644,6 +667,50 @@ Not yet scoped:
 - Whether this should extend to other sprite-only tap targets on the Team screen (e.g. the team
   member chips higher up, `AddMemberChip`/`TeamMemberChip`) — out of scope unless the user asks;
   this entry covers the Suggestions row only.
+
+## F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card
+
+**To groom** — reported 2026-08-09. Priority High (all bugs are High). Root cause not yet confirmed
+on-device, but grounded in the code below; needs an emulator repro before a fix is written.
+
+**Symptom.** From Kubfu's detail screen, tapping Urshifu in the "Evolution" card fails to open
+Urshifu's detail page.
+
+**Likely root cause.** Urshifu has no bare `urshifu` Pokémon resource on PokeAPI — like Deoxys/
+Giratina (see F20's `pokeapi_metadata` notes on `"base-species-default-variety"` matching), its only
+real Pokémon entries are the named forms `urshifu-single-strike` and `urshifu-rapid-strike`. The
+Evolution card's tap handler doesn't know that:
+
+- `util/EvolutionUtils.kt`'s `evolutionPaths()` builds each `EvolutionStage` from
+  `link.species.name` (line 17) — the evolution-chain **species** name, i.e. `"urshifu"`, not a
+  resolvable Pokémon/variety name.
+- `PokedexDetailScreen.kt`'s `EvolutionStageBox` (line 770) calls
+  `onPokemonClick(stage.speciesName)` — passing that bare species name straight through.
+- `PokedexRepository.getPokemonDetailBundle()` (line 200) resolves it via
+  `api.getPokemon(nameOrId)` — a direct PokeAPI `/pokemon/{name}` call with whatever string it's
+  given, no species → default-variety resolution step. `api.getPokemon("urshifu")` almost certainly
+  404s, since that Pokémon resource doesn't exist under that exact name.
+
+This differs from the Mega Evolution row two lines below it (line 729,
+`onClick = { onPokemonClick(variety.pokemon.name) }`), which already passes a real Pokémon/variety
+name rather than a species name — so Mega Evolution taps aren't expected to hit this bug, only the
+plain evolution-chain stages.
+
+Not yet scoped:
+
+- Confirm the repro on the emulator (Kubfu → Evolution → tap Urshifu) and capture what actually
+  happens today — silent no-op, error screen, or crash — before writing the fix.
+- Whether other split-form species reachable via an evolution chain hit the same bug (any species
+  whose evolution result has no bare-name default variety) — Urshifu is the one reported, but the
+  root cause described above isn't specific to it.
+- Fix shape: likely resolving each `EvolutionStage`'s species name to its default variety's Pokémon
+  name (via `pokemon-species` → `varieties[].is_default`) before/instead of passing the bare species
+  name to `onPokemonClick`, mirroring the `is_default` resolution the F20 dataset pipeline already
+  does for Deoxys/Giratina-style species — exact mechanism (resolve at evolution-chain-parse time vs.
+  at tap time vs. in the repository's `getPokemonDetailBundle` lookup itself) not yet decided.
+- Regression test once fixed, per project convention (add a unit test covering this exact bug after
+  the fix) — likely in `EvolutionUtilsTest.kt` and/or a new repository-level test, once the fix
+  location is chosen.
 
 ## Cancelled
 

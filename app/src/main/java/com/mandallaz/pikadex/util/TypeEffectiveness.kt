@@ -106,6 +106,25 @@ fun teamImmunities(defensiveMatrix: Map<String, Map<String, Double>>, memberName
 }
 
 /**
+ * Attacking types at least one team member resists (½x or ¼x — outright immunity is
+ * [teamImmunities], kept separate rather than folded in here) — the per-member counterpart of
+ * [sharedWeaknesses] on the "good news" side. Motivated by the same gap as [teamImmunities]/
+ * [teamQuadWeaknesses]: adding Kingdra (Water/Dragon) to an all-Fire preset team resists Water
+ * (½x from its own Water typing), a real defensive gain the majority-based rule can't see from one
+ * new member alone.
+ *
+ * [defensiveMatrix] is keyed attackingType -> memberName -> multiplier, same shape [sharedWeaknesses]
+ * reads.
+ */
+fun teamResistances(defensiveMatrix: Map<String, Map<String, Double>>, memberNames: Collection<String>): List<String> {
+    if (memberNames.isEmpty()) return emptyList()
+    return TypeIds.standardTypeNames.filter { type ->
+        val row = defensiveMatrix[type].orEmpty()
+        memberNames.any { val m = row[it] ?: 1.0; m > 0.0 && m < 1.0 }
+    }
+}
+
+/**
  * Attacking types at least one team member is quadruple-weak (×4) to — the severe individual
  * counterpart of [teamImmunities]: worth flagging as a liability even when only one member carries
  * it, same as a lone immunity is worth flagging as an asset (see the Toedscool/Ice example that

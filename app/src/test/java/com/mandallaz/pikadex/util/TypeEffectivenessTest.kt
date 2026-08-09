@@ -240,6 +240,37 @@ class TypeEffectivenessTest {
         assertEquals(emptyList<String>(), sharedWeaknesses(emptyMap(), emptyList()))
     }
 
+    // --- Team resistances (BACKLOG.md F15, Kingdra feedback) ------------------------------------
+
+    @Test
+    fun `a single half-resistant member is enough to report a team resistance`() {
+        val matrix = mapOf("water" to mapOf("a" to 1.0, "b" to 0.5))
+        assertEquals(listOf("water"), teamResistances(matrix, listOf("a", "b")))
+    }
+
+    @Test
+    fun `a quarter resistance also counts as a resistance`() {
+        val matrix = mapOf("water" to mapOf("a" to 0.25))
+        assertEquals(listOf("water"), teamResistances(matrix, listOf("a")))
+    }
+
+    @Test
+    fun `an outright immunity is not double-counted as a resistance`() {
+        val matrix = mapOf("water" to mapOf("a" to 0.0))
+        assertTrue(teamResistances(matrix, listOf("a")).isEmpty())
+    }
+
+    @Test
+    fun `a type absent from the matrix is not reported as a resistance`() {
+        val matrix = mapOf("water" to mapOf("a" to 0.5))
+        assertTrue("fire" !in teamResistances(matrix, listOf("a")))
+    }
+
+    @Test
+    fun `an empty team has no resistances to report`() {
+        assertEquals(emptyList<String>(), teamResistances(emptyMap(), emptyList()))
+    }
+
     // --- Team immunities / quad weaknesses (BACKLOG.md F15, Toedscool feedback) ---------------
 
     @Test

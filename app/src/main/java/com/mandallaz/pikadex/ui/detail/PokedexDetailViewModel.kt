@@ -27,6 +27,7 @@ import com.mandallaz.pikadex.util.namesForAdjacency
 import com.mandallaz.pikadex.util.sharedWeaknesses
 import com.mandallaz.pikadex.util.teamImmunities
 import com.mandallaz.pikadex.util.teamQuadWeaknesses
+import com.mandallaz.pikadex.util.teamResistances
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -269,7 +270,9 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     beforeImmunities = teamImmunities(before.defensive, beforeNames),
                     afterImmunities = teamImmunities(after.defensive, afterNames),
                     beforeQuadWeaknesses = teamQuadWeaknesses(before.defensive, beforeNames),
-                    afterQuadWeaknesses = teamQuadWeaknesses(after.defensive, afterNames)
+                    afterQuadWeaknesses = teamQuadWeaknesses(after.defensive, afterNames),
+                    beforeResistances = teamResistances(before.defensive, beforeNames),
+                    afterResistances = teamResistances(after.defensive, afterNames)
                 )
                 _uiState.update { it.copy(isTeamImpactLoading = false, teamImpact = impact) }
             } catch (e: CancellationException) {

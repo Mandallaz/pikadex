@@ -17,12 +17,15 @@ class TeamImpactTest {
         beforeImmunities: List<String> = emptyList(),
         afterImmunities: List<String> = emptyList(),
         beforeQuadWeaknesses: List<String> = emptyList(),
-        afterQuadWeaknesses: List<String> = emptyList()
+        afterQuadWeaknesses: List<String> = emptyList(),
+        beforeResistances: List<String> = emptyList(),
+        afterResistances: List<String> = emptyList()
     ) = computeTeamImpact(
         beforeSharedWeaknesses, afterSharedWeaknesses,
         beforeCoverageGaps, afterCoverageGaps,
         beforeImmunities, afterImmunities,
-        beforeQuadWeaknesses, afterQuadWeaknesses
+        beforeQuadWeaknesses, afterQuadWeaknesses,
+        beforeResistances, afterResistances
     )
 
     @Test
@@ -69,23 +72,34 @@ class TeamImpactTest {
         assertEquals(listOf("ice"), result.quadWeaknessesGained)
     }
 
+    // Kingdra (Water/Dragon) added to an all-Fire preset team — its own ½x resistance to Water is
+    // a real defensive gain the majority rule can't see from one new member alone either.
     @Test
-    fun `an immunity or quad weakness already present before is not reported as newly gained`() {
-        val result = impact(
-            beforeImmunities = listOf("electric"), afterImmunities = listOf("electric"),
-            beforeQuadWeaknesses = listOf("ice"), afterQuadWeaknesses = listOf("ice")
-        )
-        assertEquals(emptyList<String>(), result.immunitiesGained)
-        assertEquals(emptyList<String>(), result.quadWeaknessesGained)
+    fun `a resistance only one member carries is still reported as gained`() {
+        val result = impact(beforeResistances = emptyList(), afterResistances = listOf("water"))
+        assertEquals(listOf("water"), result.resistancesGained)
     }
 
     @Test
-    fun `an unchanged before and after reports nothing on any of the six lists`() {
+    fun `an immunity, quad weakness or resistance already present before is not reported as newly gained`() {
+        val result = impact(
+            beforeImmunities = listOf("electric"), afterImmunities = listOf("electric"),
+            beforeQuadWeaknesses = listOf("ice"), afterQuadWeaknesses = listOf("ice"),
+            beforeResistances = listOf("water"), afterResistances = listOf("water")
+        )
+        assertEquals(emptyList<String>(), result.immunitiesGained)
+        assertEquals(emptyList<String>(), result.quadWeaknessesGained)
+        assertEquals(emptyList<String>(), result.resistancesGained)
+    }
+
+    @Test
+    fun `an unchanged before and after reports nothing on any of the seven lists`() {
         val result = impact(
             beforeSharedWeaknesses = listOf("water"), afterSharedWeaknesses = listOf("water"),
             beforeCoverageGaps = listOf("dragon"), afterCoverageGaps = listOf("dragon"),
             beforeImmunities = listOf("electric"), afterImmunities = listOf("electric"),
-            beforeQuadWeaknesses = listOf("ice"), afterQuadWeaknesses = listOf("ice")
+            beforeQuadWeaknesses = listOf("ice"), afterQuadWeaknesses = listOf("ice"),
+            beforeResistances = listOf("water"), afterResistances = listOf("water")
         )
         assertEquals(emptyList<String>(), result.weaknessesFixed)
         assertEquals(emptyList<String>(), result.weaknessesIntroduced)
@@ -93,5 +107,6 @@ class TeamImpactTest {
         assertEquals(emptyList<String>(), result.gapsOpened)
         assertEquals(emptyList<String>(), result.immunitiesGained)
         assertEquals(emptyList<String>(), result.quadWeaknessesGained)
+        assertEquals(emptyList<String>(), result.resistancesGained)
     }
 }
