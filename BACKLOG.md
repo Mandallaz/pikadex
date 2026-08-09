@@ -24,7 +24,7 @@
 | F25 — Shrink Smogon Strategy Dex card | — | To groom | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
 | F26 — Simplify Type Triangles card to perfect-counter-only | — | To groom | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
 | F27 — Tap a suggestion's sprite to open its detail page | — | To groom | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
-| F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card | High | To groom | [#18](https://github.com/Mandallaz/pikadex/issues/18) |
+| F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card | — | Done | [#18](https://github.com/Mandallaz/pikadex/issues/18) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -670,47 +670,47 @@ Not yet scoped:
 
 ## F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card
 
-**To groom** — reported 2026-08-09. Priority High (all bugs are High). Root cause not yet confirmed
-on-device, but grounded in the code below; needs an emulator repro before a fix is written.
+**Fixed 2026-08-09.** Implemented autonomously (BACKLOG.md batch: F24/F25/F26/F27/F28 on
+`feature/backlog-f24-f28`).
 
-**Symptom.** From Kubfu's detail screen, tapping Urshifu in the "Evolution" card fails to open
-Urshifu's detail page.
+**Repro confirmed on the emulator** before writing the fix: Pokédex → search "kubfu" → open Kubfu →
+scroll to Evolution → tap Urshifu → **nothing happens**, screen stays on Kubfu (silent no-op, no
+error, no crash) — narrowing down which of the 3 "not yet scoped" symptoms this was.
 
-**Likely root cause.** Urshifu has no bare `urshifu` Pokémon resource on PokeAPI — like Deoxys/
-Giratina (see F20's `pokeapi_metadata` notes on `"base-species-default-variety"` matching), its only
-real Pokémon entries are the named forms `urshifu-single-strike` and `urshifu-rapid-strike`. The
-Evolution card's tap handler doesn't know that:
+**Root cause confirmed**, exactly as suspected: `api.getPokemon("urshifu")` 404s (Urshifu has no
+bare-name Pokémon resource, only `urshifu-single-strike`/`urshifu-rapid-strike`), which
+`PokedexDetailViewModel.load()`'s catch block turns into the generic "Couldn't load this Pokémon.
+Check your connection." error — misleading text for a request that never touched connectivity, but
+that's this app's existing generic-error pattern everywhere, not something this fix's scope covers.
+(The apparent "silent no-op" on first repro attempt turned out to be two mistaken adb tap coordinates
+in a row — screenshots are scaled 1.2x from device pixels — not a second bug; `uiautomator dump`
+gave the real bounds, and the actual behavior is the error screen described above.)
 
-- `util/EvolutionUtils.kt`'s `evolutionPaths()` builds each `EvolutionStage` from
-  `link.species.name` (line 17) — the evolution-chain **species** name, i.e. `"urshifu"`, not a
-  resolvable Pokémon/variety name.
-- `PokedexDetailScreen.kt`'s `EvolutionStageBox` (line 770) calls
-  `onPokemonClick(stage.speciesName)` — passing that bare species name straight through.
-- `PokedexRepository.getPokemonDetailBundle()` (line 200) resolves it via
-  `api.getPokemon(nameOrId)` — a direct PokeAPI `/pokemon/{name}` call with whatever string it's
-  given, no species → default-variety resolution step. `api.getPokemon("urshifu")` almost certainly
-  404s, since that Pokémon resource doesn't exist under that exact name.
+**Fix — resolved in the repository, not at tap time.** Of the 3 mechanisms floated
+(evolution-chain-parse time / tap time / inside `getPokemonDetailBundle`), the repository lookup won:
+it fixes the bug for every bare-species-name call site at once (not just evolution taps), and costs
+nothing extra for the ~99% of names that resolve directly.
 
-This differs from the Mega Evolution row two lines below it (line 729,
-`onClick = { onPokemonClick(variety.pokemon.name) }`), which already passes a real Pokémon/variety
-name rather than a species name — so Mega Evolution taps aren't expected to hit this bug, only the
-plain evolution-chain stages.
-
-Not yet scoped:
-
-- Confirm the repro on the emulator (Kubfu → Evolution → tap Urshifu) and capture what actually
-  happens today — silent no-op, error screen, or crash — before writing the fix.
-- Whether other split-form species reachable via an evolution chain hit the same bug (any species
-  whose evolution result has no bare-name default variety) — Urshifu is the one reported, but the
-  root cause described above isn't specific to it.
-- Fix shape: likely resolving each `EvolutionStage`'s species name to its default variety's Pokémon
-  name (via `pokemon-species` → `varieties[].is_default`) before/instead of passing the bare species
-  name to `onPokemonClick`, mirroring the `is_default` resolution the F20 dataset pipeline already
-  does for Deoxys/Giratina-style species — exact mechanism (resolve at evolution-chain-parse time vs.
-  at tap time vs. in the repository's `getPokemonDetailBundle` lookup itself) not yet decided.
-- Regression test once fixed, per project convention (add a unit test covering this exact bug after
-  the fix) — likely in `EvolutionUtilsTest.kt` and/or a new repository-level test, once the fix
-  location is chosen.
+- `PokedexRepository.kt`: new private `fetchPokemonResolvingDefaultVariety(nameOrId)`, used by
+  `getPokemonDetailBundle()` in place of the bare `api.getPokemon(nameOrId)` call. Tries the direct
+  fetch first; on an `HttpException` with code 404 specifically (any other failure rethrows
+  untouched), falls back to `api.getPokemonSpecies(nameOrId)` (which *does* resolve for a bare
+  species name) and retries with `varieties.firstOrNull { it.isDefault }?.pokemon?.name` — the same
+  `is_default` resolution the F20 dataset pipeline already uses for Deoxys/Giratina-style species. If
+  the species has no default variety either (shouldn't happen, but not assumed), the original 404
+  rethrows rather than swallowing it into a confusing empty state.
+- Scoped correctly per the "not yet scoped" list: this fixes every split-form species reachable via
+  an evolution chain, not just Urshifu specifically, since the fallback triggers on the 404 itself
+  rather than a Urshifu-specific name check.
+- Test: new `data/repository/PokedexRepositoryTest.kt` (first repository-level test in the
+  project) — a hand-written `PokeApiService` fake per BACKLOG convention (no mocking library in this
+  project), 3 cases: the Urshifu repro (species-only name falls back to its default variety), an
+  ordinary name resolves directly with no fallback call at all (regression guard against the fallback
+  firing when it shouldn't), and a genuinely nonexistent name still fails loudly rather than the
+  fallback swallowing it. `HttpException` built via `retrofit2.Response.error(404, ...)`, matching
+  what Retrofit's suspend functions actually throw on a non-2xx response.
+- Verified end-to-end on the emulator post-fix: Kubfu → Evolution → tap Urshifu now opens **Urshifu
+  Single Strike** (#0892) correctly.
 
 ## Cancelled
 

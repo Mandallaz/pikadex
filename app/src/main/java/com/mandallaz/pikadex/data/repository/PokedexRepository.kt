@@ -18,6 +18,7 @@ import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.TypeIds
 import java.util.concurrent.TimeUnit
+import retrofit2.HttpException
 
 data class PokemonDetailBundle(
     val pokemon: PokemonDto,
@@ -198,7 +199,7 @@ class PokedexRepository(private val api: PokeApiService) {
     }
 
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
-        val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
+        val pokemon = pokemonDetailCache.get(nameOrId) { fetchPokemonResolvingDefaultVariety(nameOrId) }
         // Alternate forms (mega/gmax/regional/gender/cosmetic...) have a pokemon.id in the 10000+
         // range that does NOT match any pokemon-species id — the species must be looked up via the
         // "species" reference embedded in the pokemon payload instead (e.g. basculegion-female,
@@ -209,6 +210,31 @@ class PokedexRepository(private val api: PokeApiService) {
         val chain = chainId?.let { id -> evolutionChainCache.get(id) { api.getEvolutionChain(id) } }
         return PokemonDetailBundle(pokemon, species, chain)
     }
+
+    /**
+     * BACKLOG.md F28 — [nameOrId] resolves directly for almost every call site, but a species
+     * reached only via its evolution chain (e.g. Kubfu's evolution result names the *species*
+     * "urshifu", which has no bare-name Pokémon resource of its own — only its named varieties
+     * `urshifu-single-strike`/`urshifu-rapid-strike` exist) 404s on a plain `/pokemon/{name}`
+     * fetch, previously surfacing as an opaque "check your connection" error for a request that
+     * never touched connectivity at all.
+     *
+     * Falls back to `pokemon-species/{name}` (which *does* resolve for a bare species name) and
+     * retries with its default variety's Pokémon name — the same `is_default` resolution
+     * Deoxys/Giratina-style split-form species already need elsewhere (see F20's dataset notes).
+     * Left as a fallback behind a normal fetch, not a first step, since it costs an extra request
+     * only in this narrow case rather than doubling every ordinary lookup.
+     */
+    private suspend fun fetchPokemonResolvingDefaultVariety(nameOrId: String): PokemonDto =
+        try {
+            api.getPokemon(nameOrId)
+        } catch (e: HttpException) {
+            if (e.code() != 404) throw e
+            val defaultVarietyName = api.getPokemonSpecies(nameOrId).varieties.orEmpty()
+                .firstOrNull { it.isDefault }?.pokemon?.name
+                ?: throw e
+            api.getPokemon(defaultVarietyName)
+        }
 
     private companion object {
         val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
