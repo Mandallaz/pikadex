@@ -21,6 +21,7 @@
 | F9 — Showdown export | — | Cancelled | [#12](https://github.com/Mandallaz/pikadex/issues/12) |
 | F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
 | F24 — Reorder detail screen sections | — | To groom | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
+| F25 — Shrink Smogon Strategy Dex card | — | To groom | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -374,6 +375,14 @@ gap: Dragon."
   `TeamViewModel`'s own F11 wiring wasn't unit-tested either; the two pure-function suites above are
   where the real logic risk is.
 
+**Revised a third time 2026-08-09** — a loaded result where all 4 categories are empty (this
+Pokémon genuinely changes nothing about the team's coverage) used to leave the generic subtitle
+("What adding this Pokémon to your active team would change.") as the only text on an otherwise
+blank card body, reading as if it had silently failed to load. `TeamImpactCard` now computes
+`hasNoImpact` (all 4 of `TeamImpactSummary`'s lists empty) and swaps that subtitle for "Nothing."
+in that case, skipping the now-pointless call to `TeamImpactSummaryText`. No logic change, no new
+tests — same `TeamImpactSummary` shape, just one more UI branch on it.
+
 ## F16 — Swipe between Pokémon on the detail screen
 
 **Done 2026-08-08.** From `PokedexDetailScreen.kt`, swipe left/right (or tap a chevron) to move to
@@ -508,6 +517,26 @@ Requested order:
 Net effect: Evolution moves up (from after Smogon to right after Base Stats); Team Impact/Type Triangle/Smogon keep their relative order but now sit after Evolution instead of before it; Level Up Moves/TM/HM/Breeding/Tutor keep their existing relative order, unchanged apart from following Smogon as they already do.
 
 Not yet scoped: exact composable-reordering diff in `PokedexDetailScreen.kt`, whether `MIN_TYPE_TRIANGLES_BEFORE_COLLAPSE`-style scroll-position assumptions in the doc comments (line ~107) need updating, and any manual-test pass on the emulator confirming scroll/swipe behavior is unaffected.
+
+## F25 — Shrink Smogon Strategy Dex card
+
+**To groom** — requested 2026-08-09, not yet planned or implemented.
+
+User feedback: the "Smogon Strategy Dex" card (`SmogonLinksCard` in `PokedexDetailScreen.kt`, around
+line 1013) takes up too much visual space on the detail screen relative to what it actually shows —
+a title plus a `FlowRow` of `AssistChip`s (one per format link, from `Smogon.linksFor(...)`).
+
+Not yet scoped — options to weigh when this gets planned:
+
+- Reduce the `Card`'s own padding (currently `Modifier.padding(16.dp)` outer + `16.dp` inner Column
+  padding — the double 16dp is likely most of the excess).
+- Smaller/denser chips, or a plain text-link row instead of `AssistChip`s with their trailing icon.
+- Drop the section title's bottom padding, or fold the title inline with the first chip row instead
+  of stacking it above.
+- Whether this should also feed into F24's reordering work (same file, same screen) or land as an
+  independent, smaller change first.
+
+No implementation, sizing values, or before/after mockup agreed yet.
 
 ## Cancelled
 
