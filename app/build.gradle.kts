@@ -76,6 +76,8 @@ dependencies {
 
     // Chargement des sprites/artworks des Pokémon
     implementation(libs.coil.compose)
+    // Animated GIF decoding for Showdown battle sprites (F38)
+    implementation(libs.coil.gif)
 
     // Custom Tabs : ouvre les liens Smogon dans l'app plutôt que dans une tâche navigateur séparée
     implementation(libs.androidx.browser)

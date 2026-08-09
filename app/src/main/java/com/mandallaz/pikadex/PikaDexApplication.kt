@@ -1,8 +1,11 @@
 package com.mandallaz.pikadex
 
 import android.app.Application
+import android.os.Build
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.mandallaz.pikadex.data.AppContainer
@@ -45,6 +48,16 @@ class PikaDexApplication : Application(), ImageLoaderFactory {
     override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
         .okHttpClient(imageCacheOkHttpClient)
         .crossfade(200)
+        // Registers GIF decoding for the F38 animated Showdown sprite toggle — without this, Coil
+        // renders a GIF's first frame as a static image instead of animating it. ImageDecoderDecoder
+        // needs API 28+; GifDecoder (Android's Movie API under the hood) covers minSdk 24-27.
+        .components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }
         .memoryCache {
             MemoryCache.Builder(this)
                 .maxSizePercent(0.25)

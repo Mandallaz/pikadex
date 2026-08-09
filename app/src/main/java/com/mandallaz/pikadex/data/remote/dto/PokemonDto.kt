@@ -56,10 +56,22 @@ data class PokemonSprites(
 )
 
 data class OtherSprites(
-    @SerializedName("official-artwork") val officialArtwork: OfficialArtworkSprites?
+    @SerializedName("official-artwork") val officialArtwork: OfficialArtworkSprites?,
+    // Animated battle-sprite GIFs sourced from Pokémon Showdown (F38) — coverage is incomplete
+    // (especially newer forms), so both this and its fields are nullable, degrading at the read
+    // site the same way as every other sprite field here.
+    val showdown: ShowdownSprites?
 )
 
 data class OfficialArtworkSprites(
+    @SerializedName("front_default") val frontDefault: String?,
+    @SerializedName("front_shiny") val frontShiny: String?
+)
+
+/** Front-only, matching the rest of the app: no back sprites are shown anywhere today (the
+ *  existing shiny toggle on [PokemonSprites] is front-only too), so [back_default]/[back_shiny]
+ *  aren't read here. */
+data class ShowdownSprites(
     @SerializedName("front_default") val frontDefault: String?,
     @SerializedName("front_shiny") val frontShiny: String?
 )

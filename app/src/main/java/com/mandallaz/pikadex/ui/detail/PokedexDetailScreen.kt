@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -82,6 +83,7 @@ import coil.compose.AsyncImage
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
+import com.mandallaz.pikadex.data.remote.dto.ShowdownSprites
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
 import com.mandallaz.pikadex.ui.components.PokemonSprite
@@ -141,6 +143,9 @@ fun PokedexDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     // rememberSaveable: rotating the screen used to silently drop back to the normal artwork.
     var shiny by rememberSaveable { mutableStateOf(false) }
+    // F38: off by default — an animated GIF looping from the moment the screen opens would be a
+    // surprising default for every visit, not just something a user opts into.
+    var animated by rememberSaveable { mutableStateOf(false) }
     var showCompareDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
@@ -178,6 +183,13 @@ fun PokedexDetailScreen(
                                 imageVector = Icons.Filled.AutoAwesome,
                                 contentDescription = if (shiny) "Show normal coloring" else "Show shiny coloring",
                                 tint = if (shiny) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                            )
+                        }
+                        IconButton(onClick = { animated = !animated }) {
+                            Icon(
+                                imageVector = Icons.Filled.Animation,
+                                contentDescription = if (animated) "Show static artwork" else "Show animated battle sprite",
+                                tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
                             )
                         }
                         IconButton(
@@ -293,6 +305,7 @@ fun PokedexDetailScreen(
                     formVersionGroup = uiState.formVersionGroup,
                     groupedMoves = uiState.groupedMoves,
                     shiny = shiny,
+                    animated = animated,
                     // Card visibility is the exact same condition the LaunchedEffect above gates
                     // loadTeamImpact()/clearTeamImpact() on — kept as one boolean computed once here
                     // rather than re-derived inside DetailContent, so the two can't drift apart.
@@ -411,6 +424,7 @@ private fun DetailContent(
     formVersionGroup: String?,
     groupedMoves: Map<MoveCategory, List<LearnedMove>>,
     shiny: Boolean,
+    animated: Boolean,
     showTeamImpactCard: Boolean,
     isTeamImpactLoading: Boolean,
     teamImpactError: String?,
@@ -459,7 +473,9 @@ private fun DetailContent(
                     // Exact here, no name-based guessing: the payload already names this form's species.
                     baseSpeciesId = pokemon.species.id,
                     modifier = Modifier.size(200.dp),
-                    shiny = shiny
+                    shiny = shiny,
+                    animated = animated,
+                    showdownUrl = selectShowdownUrl(shiny, pokemon.sprites.other?.showdown)
                 )
                 Text(
                     text = "#${pokemon.id.toString().padStart(4, '0')}",
@@ -1166,6 +1182,13 @@ internal fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
 /** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would
  *  render that as "No Eggs", which reads like a typo rather than the actual game term. Internal,
  *  not private, so it's unit-testable directly. */
+/** F38: which Showdown sprite URL (if any) [PokemonArtwork] should show when animated is on —
+ *  the shiny variant when the shiny toggle is also active, falling back to the regular animated
+ *  sprite if this Pokémon has no animated shiny (a real coverage gap, not an error), and null when
+ *  there's no Showdown sprite at all so the caller's own static-artwork fallback chain takes over. */
+internal fun selectShowdownUrl(shiny: Boolean, showdown: ShowdownSprites?): String? =
+    showdown?.let { if (shiny) it.frontShiny ?: it.frontDefault else it.frontDefault }
+
 internal fun eggGroupDisplayName(name: String): String = when (name) {
     "no-eggs" -> "Undiscovered"
     else -> name.toDisplayName()

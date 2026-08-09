@@ -30,10 +30,19 @@ fun PokemonArtwork(
     contentScale: ContentScale = ContentScale.Fit,
     // Only the detail screen's header offers a shiny toggle — evolution-chain tiles and team
     // chips (which use PokemonSprite, not this) always show the regular form.
-    shiny: Boolean = false
+    shiny: Boolean = false,
+    // F38: animated Showdown battle sprite, only offered alongside this toggle on the detail
+    // screen header. Unlike every other URL here, this one can't be rebuilt from just the id by
+    // convention — coverage is incomplete, so it comes from the actual fetched DTO
+    // (PokemonDto.sprites.other.showdown) rather than a guessed CDN path. Null when animated is
+    // off, or when this Pokémon has no Showdown sprite — either way the fallback chain below
+    // covers it the same way a 404 on any other candidate already does.
+    animated: Boolean = false,
+    showdownUrl: String? = null
 ) {
     FallbackImage(
         candidates = listOfNotNull(
+            if (animated) showdownUrl else null,
             if (shiny) Sprites.shinyOfficialArtworkUrl(id) else null,
             Sprites.officialArtworkUrl(id),
             Sprites.defaultSpriteUrl(id),
