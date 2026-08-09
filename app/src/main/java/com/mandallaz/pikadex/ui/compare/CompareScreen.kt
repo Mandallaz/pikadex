@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
+import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
 import com.mandallaz.pikadex.ui.components.SearchableListDialog
 import com.mandallaz.pikadex.ui.components.StatBar
@@ -74,7 +74,7 @@ fun CompareScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            PikaDexTopBar(
                 title = { Text("Compare") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

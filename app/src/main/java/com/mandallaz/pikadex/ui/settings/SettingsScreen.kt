@@ -21,7 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.data.PrefetchState
 import com.mandallaz.pikadex.ui.components.OptionsDialog
+import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import kotlin.math.roundToInt
 
@@ -46,7 +46,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     var showFullDetailWarning by remember { mutableStateOf(false) }
     var showTierDialog by remember { mutableStateOf(false) }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
+    Scaffold(topBar = { PikaDexTopBar(title = { Text("Settings") }) }) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)

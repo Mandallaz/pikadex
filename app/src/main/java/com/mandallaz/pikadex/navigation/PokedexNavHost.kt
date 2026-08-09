@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -98,9 +98,12 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
             // destination of its own, so showing the bar there would offer a confusing 4th "tab"
             // that's really just a worse Back button.
             if (BOTTOM_TABS.any { it.route == currentRoute }) {
-                NavigationBar {
+                // ShortNavigationBar is Material3's compact bar variant — the standard NavigationBar
+                // reserves a fixed 80dp container regardless of content, which on device left a
+                // disproportionate chunk of the screen for a 4-item tab strip (GitHub issue F30).
+                ShortNavigationBar {
                     BOTTOM_TABS.forEach { tab ->
-                        NavigationBarItem(
+                        ShortNavigationBarItem(
                             selected = currentRoute == tab.route,
                             onClick = { switchTab(tab.route) },
                             icon = {

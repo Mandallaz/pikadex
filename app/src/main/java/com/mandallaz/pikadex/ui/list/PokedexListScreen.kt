@@ -46,8 +46,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -175,7 +175,7 @@ fun PokedexListScreen(
         // Team/Type Triangles access moved to the bottom navigation bar (see PokedexNavHost) — a
         // labelled, always-visible tab reads as a much clearer destination than an icon-only button
         // buried in this screen's own top bar, and it no longer disappears while browsing this list.
-        topBar = { TopAppBar(title = { Text("PikaDex") }) },
+        topBar = { PikaDexTopBar(title = { Text("PikaDex") }) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         BoxWithConstraints(modifier = Modifier.padding(padding).fillMaxSize()) {

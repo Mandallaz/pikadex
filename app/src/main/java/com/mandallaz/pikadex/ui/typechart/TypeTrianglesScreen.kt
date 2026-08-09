@@ -18,13 +18,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.ui.components.TypeTriangleDiagram
 import com.mandallaz.pikadex.util.TypeIds
@@ -39,11 +39,11 @@ import com.mandallaz.pikadex.util.TypeTriangles
 fun TypeTrianglesScreen(onBack: (() -> Unit)? = null) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            PikaDexTopBar(
                 title = { Text("Type Triangles") },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
+                navigationIcon = onBack?.let { back ->
+                    {
+                        IconButton(onClick = back) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
