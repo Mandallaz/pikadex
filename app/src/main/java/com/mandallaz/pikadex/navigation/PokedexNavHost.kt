@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationItemIconPosition
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
@@ -20,6 +21,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -41,6 +44,11 @@ private const val ROUTE_TEAM = "team"
 private const val ROUTE_TYPE_TRIANGLES = "type-triangles"
 private const val ROUTE_COMPARE = "compare/{leftName}/{rightName}"
 private const val ROUTE_SETTINGS = "settings"
+
+/** Below this screen height, the bottom nav bar's items switch from icon-above-label to
+ *  icon-beside-label (issue #48) — landscape on a phone has ~400dp to work with, and a label
+ *  under every icon there eats a disproportionate share of the whole screen's height. */
+private val COMPACT_NAV_BAR_MAX_HEIGHT = 500.dp
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
 
@@ -96,6 +104,8 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
                 // ShortNavigationBar is Material3's compact bar variant — the standard NavigationBar
                 // reserves a fixed 80dp container regardless of content, which on device left a
                 // disproportionate chunk of the screen for a 4-item tab strip (GitHub issue F30).
+                val isCompactHeight = LocalConfiguration.current.screenHeightDp.dp < COMPACT_NAV_BAR_MAX_HEIGHT
+                val iconPosition = if (isCompactHeight) NavigationItemIconPosition.Start else NavigationItemIconPosition.Top
                 ShortNavigationBar {
                     BOTTOM_TABS.forEach { tab ->
                         ShortNavigationBarItem(
@@ -110,7 +120,8 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
                                     Icon(tab.icon, contentDescription = tab.label)
                                 }
                             },
-                            label = { Text(tab.label) }
+                            label = { Text(tab.label) },
+                            iconPosition = iconPosition
                         )
                     }
                 }
