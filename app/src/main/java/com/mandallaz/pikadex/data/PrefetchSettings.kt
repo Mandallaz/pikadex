@@ -8,14 +8,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Which [PrefetchTier]s the Settings screen's "Prefetch now" button runs, persisted across app
- *  restarts. Essentials/Sprites default on, Full detail and Cries opt-in
+ *  restarts. Essentials/Sprites default on, Full detail/Cries/Sprites-extra opt-in
  *  (Cries added for issue #24, same opt-in-by-default reasoning as Full detail: ~1300 audio files
- *  is a real download, not a trivial one). Same SharedPreferences-backed-StateFlow pattern as
- *  [FavoritesRepository]/[TeamRepository]. */
+ *  is a real download, not a trivial one; Sprites-extra added for issue #31, same reasoning —
+ *  shiny + animated Showdown GIFs roughly double SPRITES' own volume). Same
+ *  SharedPreferences-backed-StateFlow pattern as [FavoritesRepository]/[TeamRepository]. */
 object PrefetchSettings {
     private const val PREFS_NAME = "prefetch_settings"
     private const val KEY_ESSENTIALS = "essentials_enabled"
     private const val KEY_SPRITES = "sprites_enabled"
+    private const val KEY_SPRITES_EXTRA = "sprites_extra_enabled"
     private const val KEY_FULL_DETAIL = "full_detail_enabled"
     private const val KEY_CRIES = "cries_enabled"
 
@@ -26,6 +28,9 @@ object PrefetchSettings {
 
     private val _spritesEnabled = MutableStateFlow(true)
     val spritesEnabled: StateFlow<Boolean> = _spritesEnabled.asStateFlow()
+
+    private val _spritesExtraEnabled = MutableStateFlow(false)
+    val spritesExtraEnabled: StateFlow<Boolean> = _spritesExtraEnabled.asStateFlow()
 
     private val _fullDetailEnabled = MutableStateFlow(false)
     val fullDetailEnabled: StateFlow<Boolean> = _fullDetailEnabled.asStateFlow()
@@ -38,12 +43,14 @@ object PrefetchSettings {
         prefs = sharedPrefs
         _essentialsEnabled.value = sharedPrefs.getBoolean(KEY_ESSENTIALS, true)
         _spritesEnabled.value = sharedPrefs.getBoolean(KEY_SPRITES, true)
+        _spritesExtraEnabled.value = sharedPrefs.getBoolean(KEY_SPRITES_EXTRA, false)
         _fullDetailEnabled.value = sharedPrefs.getBoolean(KEY_FULL_DETAIL, false)
         _criesEnabled.value = sharedPrefs.getBoolean(KEY_CRIES, false)
     }
 
     fun setEssentialsEnabled(enabled: Boolean) = set(_essentialsEnabled, KEY_ESSENTIALS, enabled)
     fun setSpritesEnabled(enabled: Boolean) = set(_spritesEnabled, KEY_SPRITES, enabled)
+    fun setSpritesExtraEnabled(enabled: Boolean) = set(_spritesExtraEnabled, KEY_SPRITES_EXTRA, enabled)
     fun setFullDetailEnabled(enabled: Boolean) = set(_fullDetailEnabled, KEY_FULL_DETAIL, enabled)
     fun setCriesEnabled(enabled: Boolean) = set(_criesEnabled, KEY_CRIES, enabled)
 

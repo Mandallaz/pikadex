@@ -79,6 +79,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 onCheckedChange = viewModel::setSpritesEnabled
             )
             PrefetchTierRow(
+                title = "Shiny & animated sprites",
+                subtitle = "Shiny artwork/sprites and animated Showdown GIFs for every Pokémon, so the detail screen's shiny/animated toggles work offline too — roughly doubles the Sprites download.",
+                checked = uiState.spritesExtraEnabled,
+                onCheckedChange = viewModel::setSpritesExtraEnabled
+            )
+            PrefetchTierRow(
                 title = "Full detail",
                 subtitle = "Every Pokémon's complete data (species, evolution chain) for full offline browsing — a large download.",
                 checked = uiState.fullDetailEnabled,

@@ -55,4 +55,10 @@ class SpritesTest {
         assertTrue(Sprites.shinySpriteUrl(25).endsWith("/shiny/25.png"))
         assertTrue(Sprites.shinyOfficialArtworkUrl(25).endsWith("/official-artwork/shiny/25.png"))
     }
+
+    @Test
+    fun `showdown gif urls are built from the numeric id`() {
+        assertTrue(Sprites.showdownGifUrl(25).endsWith("/showdown/25.gif"))
+        assertTrue(Sprites.shinyShowdownGifUrl(25).endsWith("/showdown/shiny/25.gif"))
+    }
 }

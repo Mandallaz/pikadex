@@ -29,6 +29,10 @@ import kotlinx.coroutines.launch
 enum class PrefetchTier(val label: String) {
     ESSENTIALS("Essentials"),
     SPRITES("Sprites"),
+    // Opt-in, separate from SPRITES (issue #31): shiny + animated Showdown GIFs roughly double
+    // SPRITES' own download volume, so it isn't worth defaulting on for users who never touch
+    // those toggles on the detail screen.
+    SPRITES_EXTRA("Shiny & animated sprites"),
     FULL_DETAIL("Full detail"),
     CRIES("Cries")
 }
@@ -111,23 +115,21 @@ object PrefetchManager {
             Smogon.ALL_GENERATIONS.forEach { gen -> add { repository.getSmogonTiers(gen.code) } }
         }
         PrefetchTier.SPRITES -> {
-            val imageLoader = context.imageLoader
-            repository.getMasterList().mapNotNull { it.id }.flatMap { id ->
+            val ids = repository.getMasterList().mapNotNull { it.id }
+            imagePrefetchUnits(context, ids.flatMap { id ->
                 listOf(Sprites.officialArtworkUrl(id), Sprites.defaultSpriteUrl(id))
-            }.map { url ->
-                suspend {
-                    val request = ImageRequest.Builder(context)
-                        .data(url)
-                        // Sprites are downloaded once and never displayed as part of this run, so
-                        // there's nothing to hold in the (size-limited) memory cache for — only the
-                        // disk cache is what makes them available offline later.
-                        .memoryCachePolicy(CachePolicy.DISABLED)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .build()
-                    imageLoader.execute(request)
-                    Unit
-                }
-            }
+            })
+        }
+        PrefetchTier.SPRITES_EXTRA -> {
+            val ids = repository.getMasterList().mapNotNull { it.id }
+            imagePrefetchUnits(context, ids.flatMap { id ->
+                listOf(
+                    Sprites.shinySpriteUrl(id),
+                    Sprites.shinyOfficialArtworkUrl(id),
+                    Sprites.showdownGifUrl(id),
+                    Sprites.shinyShowdownGifUrl(id)
+                )
+            })
         }
         PrefetchTier.FULL_DETAIL -> repository.getMasterList().map { resource ->
             suspend { repository.getPokemonDetailBundle(resource.name); Unit }
@@ -138,6 +140,26 @@ object PrefetchManager {
             suspend { CryCache.download(context, id, Cries.latestCryUrl(id)); Unit }
         }
     }
+
+    /** One download unit per [urls], via Coil's disk cache — shared by [PrefetchTier.SPRITES] and
+     *  [PrefetchTier.SPRITES_EXTRA]. */
+    private fun imagePrefetchUnits(context: Context, urls: List<String>): List<suspend () -> Unit> {
+        val imageLoader = context.imageLoader
+        return urls.map { url ->
+            suspend {
+                val request = ImageRequest.Builder(context)
+                    .data(url)
+                    // Images are downloaded once and never displayed as part of this run, so
+                    // there's nothing to hold in the (size-limited) memory cache for — only the
+                    // disk cache is what makes them available offline later.
+                    .memoryCachePolicy(CachePolicy.DISABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build()
+                imageLoader.execute(request)
+                Unit
+            }
+        }
+    }
 }
 
 /**
@@ -146,9 +168,9 @@ object PrefetchManager {
  * obscure form, or one dropped connection, shouldn't cost the other ~1300 units their result.
  * [onProgress] fires once per completed unit (success or failure alike) with the running total.
  *
- * Internal rather than private: this is the one part of F13 with real unit test coverage — the
- * tier-specific wiring in [PrefetchManager.buildUnits] is manual-verification only, same as
- * [com.mandallaz.pikadex.ui.team.TeamViewModel]'s own F11 wiring.
+ * Internal rather than private: this is the one part of the prefetch system with real unit test
+ * coverage — the tier-specific wiring in [PrefetchManager.buildUnits] is manual-verification only,
+ * same as [com.mandallaz.pikadex.ui.team.TeamViewModel]'s own suggestion-ranking wiring.
  */
 internal suspend fun runPrefetchBatch(
     units: List<suspend () -> Unit>,

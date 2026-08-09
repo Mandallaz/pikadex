@@ -18,6 +18,17 @@ object Sprites {
     fun shinyOfficialArtworkUrl(id: Int): String =
         "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/$id.png"
 
+    /** Animated Showdown battle sprite by convention, same CDN layout as every URL above — the
+     *  detail screen normally reads this from [com.mandallaz.pikadex.data.remote.dto.PokemonDto]'s
+     *  own `sprites.other.showdown` field instead, but a prefetch tier has no fetched DTO to read
+     *  it from, only the numeric id. */
+    fun showdownGifUrl(id: Int): String =
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/$id.gif"
+
+    /** Shiny counterpart of [showdownGifUrl]. */
+    fun shinyShowdownGifUrl(id: Int): String =
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/$id.gif"
+
     /** Official Scarlet/Violet-style type badge (icon + name baked into the image). */
     fun typeIconUrl(typeId: Int): String =
         "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/$typeId.png"

@@ -38,6 +38,7 @@ data class StorageUsage(
 data class SettingsUiState(
     val essentialsEnabled: Boolean = true,
     val spritesEnabled: Boolean = true,
+    val spritesExtraEnabled: Boolean = false,
     val fullDetailEnabled: Boolean = false,
     val criesEnabled: Boolean = false,
     val storageUsage: StorageUsage? = null,
@@ -52,7 +53,7 @@ data class SettingsUiState(
     val amoledEnabled: Boolean = false
 ) {
     val hasAnyTierEnabled: Boolean
-        get() = essentialsEnabled || spritesEnabled || fullDetailEnabled || criesEnabled
+        get() = essentialsEnabled || spritesEnabled || spritesExtraEnabled || fullDetailEnabled || criesEnabled
 }
 
 /** [AndroidViewModel], not the usual plain [androidx.lifecycle.ViewModel] — measuring/clearing the
@@ -71,6 +72,7 @@ class SettingsViewModel @JvmOverloads constructor(
     init {
         viewModelScope.launch { PrefetchSettings.essentialsEnabled.collect { v -> _uiState.update { it.copy(essentialsEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.spritesEnabled.collect { v -> _uiState.update { it.copy(spritesEnabled = v) } } }
+        viewModelScope.launch { PrefetchSettings.spritesExtraEnabled.collect { v -> _uiState.update { it.copy(spritesExtraEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.fullDetailEnabled.collect { v -> _uiState.update { it.copy(fullDetailEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.criesEnabled.collect { v -> _uiState.update { it.copy(criesEnabled = v) } } }
         viewModelScope.launch { SuggestionSettings.maxTier.collect { v -> _uiState.update { it.copy(maxSuggestionTier = v) } } }
@@ -81,6 +83,7 @@ class SettingsViewModel @JvmOverloads constructor(
 
     fun setEssentialsEnabled(enabled: Boolean) = PrefetchSettings.setEssentialsEnabled(enabled)
     fun setSpritesEnabled(enabled: Boolean) = PrefetchSettings.setSpritesEnabled(enabled)
+    fun setSpritesExtraEnabled(enabled: Boolean) = PrefetchSettings.setSpritesExtraEnabled(enabled)
     fun setFullDetailEnabled(enabled: Boolean) = PrefetchSettings.setFullDetailEnabled(enabled)
     fun setCriesEnabled(enabled: Boolean) = PrefetchSettings.setCriesEnabled(enabled)
     fun setMaxSuggestionTier(tier: String?) = SuggestionSettings.setMaxTier(tier)
@@ -110,6 +113,7 @@ class SettingsViewModel @JvmOverloads constructor(
         val tiers = buildList {
             if (state.essentialsEnabled) add(PrefetchTier.ESSENTIALS)
             if (state.spritesEnabled) add(PrefetchTier.SPRITES)
+            if (state.spritesExtraEnabled) add(PrefetchTier.SPRITES_EXTRA)
             if (state.fullDetailEnabled) add(PrefetchTier.FULL_DETAIL)
             if (state.criesEnabled) add(PrefetchTier.CRIES)
         }
