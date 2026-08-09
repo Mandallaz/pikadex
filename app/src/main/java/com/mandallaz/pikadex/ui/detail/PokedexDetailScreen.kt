@@ -100,6 +100,7 @@ import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
 import com.mandallaz.pikadex.util.openExternalLink
+import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.toDisplayName
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -1164,6 +1165,16 @@ private fun MoveRow(move: LearnedMove, category: MoveCategory, moveInfo: Map<Str
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        // F37: a second line only when there's genuinely competitive info to show (see
+        // moveMetaLabel's own doc on why null means "render nothing" here, not an empty Text).
+        moveMetaLabel(info)?.let { metaText ->
+            Text(
+                text = metaText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
     }
 }
 
@@ -1176,8 +1187,47 @@ internal fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
     val power = info.power?.toString() ?: "—"
     val accuracy = info.accuracy?.let { "$it%" } ?: "—"
     val pp = info.pp?.toString() ?: "—"
-    return "$category · Power $power · Accuracy $accuracy · PP $pp"
+    val base = "$category · Power $power · Accuracy $accuracy · PP $pp"
+    // Priority 0 is the overwhelming majority of moves (turn order follows Speed alone) — worth
+    // calling out only when it actually changes turn order, same "don't show a default" reasoning
+    // as moveMetaLabel below.
+    return if (info.priority != 0) "$base · Priority ${signed(info.priority)}" else base
 }
+
+/** F37: a compact line of competitive info PokeAPI's `movemeta`/`movemetastatchanges` carries but
+ *  every move row ignored until now — critical-hit rate, secondary status ailment + its chance,
+ *  drain/recoil or self-heal, flinch chance, and stat changes + their chance. Returns null (render
+ *  nothing) when a move has none of these, which is most moves — MoveInfo's 0/"none" defaults mean
+ *  "no effect" (see its own doc), so a wall of "0% chance, 0 drain..." would be actively misleading
+ *  filler on the common case rather than useful density. */
+internal fun moveMetaLabel(info: PokeApiGraphQLDataSource.MoveInfo): String? {
+    val parts = buildList {
+        if (info.ailment != "none") {
+            val chance = if (info.ailmentChance > 0) "${info.ailmentChance}%" else "Always"
+            add("$chance ${info.ailment.toDisplayName()}")
+        }
+        if (info.statChanges.isNotEmpty()) {
+            val chance = if (info.statChangeChance > 0) "${info.statChangeChance}% chance: " else ""
+            val changes = info.statChanges.joinToString(", ") { (stat, change) ->
+                "${signed(change)} ${statDisplayName(stat)}"
+            }
+            add("$chance$changes")
+        }
+        if (info.critRate > 0) add("Crit rate +${info.critRate}")
+        if (info.drain > 0) add("Drains ${info.drain}% dealt")
+        if (info.drain < 0) add("Recoil ${-info.drain}% dealt")
+        if (info.healing > 0) add("Heals ${info.healing}% max HP")
+        if (info.flinchChance > 0) add("${info.flinchChance}% Flinch")
+    }
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+}
+
+/** "attack" -> "Attack", "special-defense" -> "Sp. Def" — reuses SortStat's existing labels (the
+ *  Pokédex sort dialog) rather than a second lookup table for the same six stat names. */
+private fun statDisplayName(apiName: String): String =
+    SortStat.entries.firstOrNull { it.apiName == apiName }?.label ?: apiName.toDisplayName()
+
+private fun signed(value: Int): String = if (value > 0) "+$value" else value.toString()
 
 /** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would
  *  render that as "No Eggs", which reads like a typo rather than the actual game term. Internal,

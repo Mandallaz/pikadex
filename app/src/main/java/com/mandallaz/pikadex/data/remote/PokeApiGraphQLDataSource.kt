@@ -53,6 +53,10 @@ object PokeApiGraphQLDataSource {
         }
     """
 
+    // priority and movemeta/movemetastatchanges (F37) verified live against graphql.pokeapi.co's
+    // introspection before being added — movemeta is a to-one relation modeled as a list (real
+    // moves return exactly one entry or none, never more), and movemetastatchanges is its own
+    // top-level field on move, not nested under movemeta, despite the name.
     private const val MOVE_QUERY = """
         query {
           move(limit: $ROW_LIMIT) {
@@ -60,8 +64,22 @@ object PokeApiGraphQLDataSource {
             power
             accuracy
             pp
+            priority
             type { name }
             movedamageclass { name }
+            movemeta {
+              crit_rate
+              drain
+              healing
+              flinch_chance
+              ailment_chance
+              stat_chance
+              movemetaailment { name }
+            }
+            movemetastatchanges {
+              change
+              stat { name }
+            }
           }
         }
     """
@@ -152,23 +170,69 @@ object PokeApiGraphQLDataSource {
     /** A move's type, damage class (physical/special = an attack, status = a buff/debuff/other
      *  non-damaging effect), power and accuracy — null power/accuracy is normal for status moves.
      *  pp is nullable for the same reason as everything else here: a response missing the field
-     *  must degrade at the read site, not crash. */
-    data class MoveInfo(val type: String, val damageClass: String, val power: Int?, val accuracy: Int?, val pp: Int?)
+     *  must degrade at the read site, not crash.
+     *
+     *  [priority]/[critRate]/[drain]/[healing]/[flinchChance]/[ailment]/[ailmentChance] default to
+     *  0/"none" rather than null (F37) — that's PokeAPI's own convention for "this move has no such
+     *  effect" (verified live: Tackle's movemeta row itself reports crit_rate 0, ailment "none",
+     *  not a missing row), so 0/"none" here means the same real "no effect" the API already means,
+     *  not "unknown" — the UI layer decides what's worth displaying, not this data class. */
+    data class MoveInfo(
+        val type: String,
+        val damageClass: String,
+        val power: Int?,
+        val accuracy: Int?,
+        val pp: Int?,
+        val priority: Int = 0,
+        val critRate: Int = 0,
+        val drain: Int = 0,
+        val healing: Int = 0,
+        val flinchChance: Int = 0,
+        val ailment: String = "none",
+        val ailmentChance: Int = 0,
+        val statChanges: List<MoveStatChange> = emptyList(),
+        // Chance (%) that statChanges actually applies — distinct from ailmentChance, which governs
+        // the separate status-ailment effect on the same move (e.g. a move can inflict a status
+        // *and* a stat change at two different probabilities).
+        val statChangeChance: Int = 0
+    )
+
+    /** One entry of a move's `movemetastatchanges` — [change] is signed (e.g. Swords Dance is
+     *  `+2` on `attack`, Acid is `-1` on `special-defense`), not a magnitude plus a separate sign. */
+    data class MoveStatChange(val stat: String, val change: Int)
 
     /** moveName -> info for every move, fetched once in bulk via GraphQL, since showing this
      *  alongside each move in a pokemon's Level Up / TM-HM / Breeding / Tutor lists would otherwise
      *  mean dozens of individual REST calls per pokemon detail screen. */
-    suspend fun fetchAllMoveInfo(): Map<String, MoveInfo> = runQuery(MOVE_QUERY) { body ->
+    suspend fun fetchAllMoveInfo(): Map<String, MoveInfo> = runQuery(MOVE_QUERY, ::parseMoveInfo)
+
+    /** Parses [MOVE_QUERY]'s response body. A separate function (not inlined into
+     *  [fetchAllMoveInfo]) purely so it's unit-testable against a hand-written JSON body, without a
+     *  real network call — same reasoning as [parseBasics]. */
+    internal fun parseMoveInfo(body: String): Map<String, MoveInfo> {
         val moves = gson.fromJson(body, MoveGraphQLResponse::class.java)?.data?.move
             ?: throw IOException("GraphQL response had no move data")
         logIfTruncated("move", moves.size)
-        moves.associate { m ->
+        return moves.associate { m ->
+            // A to-one relation modeled as a list by the schema (see MOVE_QUERY's comment) — real
+            // moves have exactly one movemeta row or none, so firstOrNull is the whole story, not a
+            // "pick one of several" choice.
+            val meta = m.movemeta.orEmpty().firstOrNull()
             m.name to MoveInfo(
                 type = m.type?.name ?: "normal",
                 damageClass = m.movedamageclass?.name ?: "status",
                 power = m.power,
                 accuracy = m.accuracy,
-                pp = m.pp
+                pp = m.pp,
+                priority = m.priority ?: 0,
+                critRate = meta?.critRate ?: 0,
+                drain = meta?.drain ?: 0,
+                healing = meta?.healing ?: 0,
+                flinchChance = meta?.flinchChance ?: 0,
+                ailment = meta?.movemetaailment?.name ?: "none",
+                ailmentChance = meta?.ailmentChance ?: 0,
+                statChanges = m.movemetastatchanges.orEmpty().map { MoveStatChange(it.stat.name, it.change) },
+                statChangeChance = meta?.statChance ?: 0
             )
         }
     }
@@ -180,9 +244,23 @@ object PokeApiGraphQLDataSource {
         val power: Int?,
         val accuracy: Int?,
         val pp: Int?,
+        val priority: Int?,
         val type: MoveGraphQLType?,
-        val movedamageclass: MoveGraphQLDamageClass?
+        val movedamageclass: MoveGraphQLDamageClass?,
+        val movemeta: List<MoveGraphQLMeta>?,
+        val movemetastatchanges: List<MoveGraphQLStatChange>?
     )
     private data class MoveGraphQLType(val name: String)
     private data class MoveGraphQLDamageClass(val name: String)
+    private data class MoveGraphQLMeta(
+        @SerializedName("crit_rate") val critRate: Int?,
+        val drain: Int?,
+        val healing: Int?,
+        @SerializedName("flinch_chance") val flinchChance: Int?,
+        @SerializedName("ailment_chance") val ailmentChance: Int?,
+        @SerializedName("stat_chance") val statChance: Int?,
+        val movemetaailment: MoveGraphQLAilment?
+    )
+    private data class MoveGraphQLAilment(val name: String)
+    private data class MoveGraphQLStatChange(val change: Int, val stat: GraphQLStatName)
 }
