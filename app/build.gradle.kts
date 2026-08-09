@@ -1,6 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+}
+
+// Release signing key material lives outside the repo (see .gitignore: keystore.properties,
+// *.jks). Absent on a fresh checkout/dev machine, so the release build type falls back to debug
+// signing rather than failing — see the `signingConfig` assignment below.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -15,10 +27,23 @@ android {
         applicationId = "com.mandallaz.pikadex"
         minSdk = 24
         targetSdk = 36
+        // SemVer — app isn't published yet, so this starts pre-1.0. Bump versionName per release
+        // and versionCode by 1 each time a build is uploaded to the Play Store.
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -26,10 +51,15 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Not a Play Store build — debug-signed so the release variant can still be installed
-            // and runtime-verified (R8 breaking Gson reflection would otherwise go unnoticed until
-            // a real release).
-            signingConfig = signingConfigs.getByName("debug")
+            // Real release signing when keystore.properties is present (see top of file);
+            // otherwise falls back to debug-signed so the release variant still installs and is
+            // runtime-verifiable (R8 breaking Gson reflection would otherwise go unnoticed until
+            // an actual release) on a machine without the real signing key.
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 

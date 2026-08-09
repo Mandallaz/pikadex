@@ -74,7 +74,14 @@ Unit tests cover the pure logic where the rules are dense enough to get quietly 
 ./gradlew assembleDebug
 ```
 
-Requires an Android SDK (compileSdk 36) and JDK 17+. minSdk 24.
+Requires an Android SDK (compileSdk 37) and JDK 17+. minSdk 24.
+
+### Release signing
+
+`assembleRelease`/`bundleRelease` fall back to debug signing when no `keystore.properties` is
+present, so a fresh checkout still builds. To sign with a real key, copy
+`keystore.properties.example` to `keystore.properties` (gitignored) and fill in the real
+`storeFile`/`storePassword`/`keyAlias`/`keyPassword` for a keystore generated with `keytool`.
 
 ## License
 
