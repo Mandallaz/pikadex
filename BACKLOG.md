@@ -1,21 +1,25 @@
 # PikaDex — Backlog
 
+> Mirrored to [GitHub Issues](https://github.com/Mandallaz/pikadex/issues?q=is%3Aissue) — kept in
+> sync in parallel while we decide which of the two stays the source of truth. Every entry below
+> links to its issue number.
+
 ## Priority (reviewed 2026-08-08)
 
-| Feature | Priority | Status |
-|---|---|---|
-| F15 — Team coverage impact preview | **High** | Plan ready |
-| F20 — Radical Red mode (rebalanced stats + trainer teams) | Medium | To groom |
-| F19 — Black/AMOLED mode | Medium | To groom |
-| F17 — Filter dex by "is legendary" | Medium | To groom |
-| F12 — Match team against a preset trainer | Low | Plan ready |
-| F16 — Swipe between Pokémon on the detail screen | — | Done |
-| F18 — Fix ExperimentalCoilApi warnings at compile time | — | Done |
-| F23 — Fix unreachable coverage matrix on Team screen | — | Done |
-| F22 — Suggestion "why" text and impact-based sort | — | Done |
-| F21 — Suggestion tier ceiling filter | — | Done |
-| F9 — Showdown export | — | Cancelled |
-| F10 — Filter dex by resistance/weakness | — | Cancelled |
+| Feature | Priority | Status | Issue |
+|---|---|---|---|
+| F15 — Team coverage impact preview | **High** | Plan ready | [#2](https://github.com/Mandallaz/pikadex/issues/2) |
+| F20 — Radical Red mode (rebalanced stats + trainer teams) | Medium | To groom | [#3](https://github.com/Mandallaz/pikadex/issues/3) |
+| F19 — Black/AMOLED mode | Medium | To groom | [#4](https://github.com/Mandallaz/pikadex/issues/4) |
+| F17 — Filter dex by "is legendary" | — | Done | [#5](https://github.com/Mandallaz/pikadex/issues/5) |
+| F12 — Match team against a preset trainer | Low | Plan ready | [#6](https://github.com/Mandallaz/pikadex/issues/6) |
+| F16 — Swipe between Pokémon on the detail screen | — | Done | [#7](https://github.com/Mandallaz/pikadex/issues/7) |
+| F18 — Fix ExperimentalCoilApi warnings at compile time | — | Done | [#8](https://github.com/Mandallaz/pikadex/issues/8) |
+| F23 — Fix unreachable coverage matrix on Team screen | — | Done | [#9](https://github.com/Mandallaz/pikadex/issues/9) |
+| F22 — Suggestion "why" text and impact-based sort | — | Done | [#10](https://github.com/Mandallaz/pikadex/issues/10) |
+| F21 — Suggestion tier ceiling filter | — | Done | [#11](https://github.com/Mandallaz/pikadex/issues/11) |
+| F9 — Showdown export | — | Cancelled | [#12](https://github.com/Mandallaz/pikadex/issues/12) |
+| F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -143,13 +147,21 @@ confirming with the user before this moves to "Plan ready".
 
 ## F17 — Filter dex by "is legendary"
 
-**To groom** — raised but no implementation plan agreed yet.
+**Done — found already shipped 2026-08-09**, tracking status here and on the issue was stale. Built
+as commit `9d676b3` ("legendary/mythical badges and dex rarity filter"), predating this backlog
+entry's last edit.
 
-Add a filter to the Pokédex list letting the user show only legendary (and/or mythical) Pokémon.
-Open questions to resolve before this moves to "Plan ready": legendary vs. mythical as one toggle or
-two, where the filter sits relative to the existing type filters in `FilterSheetContent`, and whether
-PokeAPI's per-species `is_legendary`/`is_mythical` flags require a new fetch path or are already
-pulled in by an existing call.
+- `util/RarityFilter.kt`: `RarityFilter` enum (`LEGENDARY`, `MYTHICAL`, `ORDINARY`) — legendary and
+  mythical resolved as two states of one filter rather than independent booleans.
+- `is_legendary`/`is_mythical` were already pulled in by the existing bulk GraphQL call
+  (`PokeApiGraphQLDataSource.QUERY`'s `pokemonspecy { is_legendary is_mythical }`), no new fetch path
+  needed — `PokedexListViewModel.loadBaseStatsIfNeeded()` populates `legendaryNames`/`mythicalNames`
+  alongside `baseStats` in the same call.
+- `PokedexListScreen.kt`'s `FilterSheetContent` — Rarity sits as a `SelectableChip` in the "Other
+  filters" row alongside Favorites/Move/Ability/Format/Tier (not among the type-filter chips), opens
+  an `OptionsDialog` listing Legendary/Mythical/Ordinary/Any.
+- Test: `PokedexListViewModelTest.kt`, "Rarity filter" section — legendary-only, mythical-only,
+  ordinary-exclusion, and the not-yet-loaded no-op case.
 
 ## F12 — Match team against a preset trainer
 
