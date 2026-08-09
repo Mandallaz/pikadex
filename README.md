@@ -15,7 +15,7 @@ An Android Pokédex app built with Kotlin and Jetpack Compose, powered entirely 
 
 - Base stats, with bars colored by percentile rank against every other Pokémon rather than a fixed per-stat hue — so a bar's color tells you whether the number is actually good
 - Type matchup chart (weaknesses, resistances, immunities), computed from PokeAPI's type damage relations
-- Evolution chain, plus Mega Evolutions where the species has them
+- Evolution chain, plus any other alternate forms of the species (Mega Evolutions, Gigantamax, one-off forms like Ursaluna Bloodmoon) that aren't part of the chain itself
 - Moves grouped by learn method (Level Up / TM-HM / Breeding / Tutor), each with its type, damage category, power and accuracy
 - Links to the [Smogon](https://www.smogon.com) strategy dex, limited to the generations the Pokémon actually has a page in — a Mega links to Gen 6-7 only, not to games that removed the mechanic. Opened in an in-app Custom Tab, so closing one returns straight to the Pokémon
 - The type triangles this Pokémon's typing is the exact best counter to (shown only when it is one)

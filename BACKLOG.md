@@ -20,11 +20,14 @@
 | F21 — Suggestion tier ceiling filter | — | Done | [#11](https://github.com/Mandallaz/pikadex/issues/11) |
 | F9 — Showdown export | — | Cancelled | [#12](https://github.com/Mandallaz/pikadex/issues/12) |
 | F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
-| F24 — Reorder detail screen sections | — | To groom | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
+| F24 — Reorder detail screen sections | — | Done | [#14](https://github.com/Mandallaz/pikadex/issues/14) |
 | F25 — Shrink Smogon Strategy Dex card | — | Done | [#15](https://github.com/Mandallaz/pikadex/issues/15) |
 | F26 — Simplify Type Triangles card to perfect-counter-only | — | Done | [#16](https://github.com/Mandallaz/pikadex/issues/16) |
 | F27 — Tap a suggestion's sprite to open its detail page | — | Done | [#17](https://github.com/Mandallaz/pikadex/issues/17) |
 | F28 — Bug: can't open Urshifu's detail from Kubfu's Evolution card | — | Done | [#18](https://github.com/Mandallaz/pikadex/issues/18) |
+| F29 — Bug: Evolution card doesn't surface Ursaluna Bloodmoon / other one-off forms | — | Done | [#19](https://github.com/Mandallaz/pikadex/issues/19) |
+| F30 — Bottom nav bar too tall in portrait mode | — | To groom | [#20](https://github.com/Mandallaz/pikadex/issues/20) |
+| F31 — Top app bar too tall in portrait mode | — | To groom | [#21](https://github.com/Mandallaz/pikadex/issues/21) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -725,6 +728,68 @@ nothing extra for the ~99% of names that resolve directly.
   what Retrofit's suspend functions actually throw on a non-2xx response.
 - Verified end-to-end on the emulator post-fix: Kubfu → Evolution → tap Urshifu now opens **Urshifu
   Single Strike** (#0892) correctly.
+
+## F29 — Bug: Evolution card gives no way to discover Ursaluna Bloodmoon (and other one-off forms)
+
+**Fixed 2026-08-09.** User-reported: opening Ursaluna's page gives no hint that Ursaluna Bloodmoon
+exists or how to reach it — nothing on the Evolution card mentions it.
+
+**Root cause.** Ursaluna Bloodmoon is a `pokemon-species` *variety* of `ursaluna` (like a Mega
+Evolution is), not a further step in the evolution chain — PokeAPI's `evolution-chain` data for
+this family stops at `ursaluna` with zero `evolves_to` entries. Confirmed directly against the API
+(`GET /pokemon-species/ursaluna`'s `varieties` includes both `ursaluna` (default) and
+`ursaluna-bloodmoon`, but `GET /evolution-chain/110` never mentions the latter). It's genuinely
+reachable in the Pokédex today (`#10272`, searchable by name, its own full detail page) — just
+invisible from Ursaluna's *Evolution card* specifically, which is where a user would naturally look
+for "how do I get the other form of this Pokémon". The existing "Mega Evolution" section already
+solved this exact problem for one case (`SpeciesDto.megaEvolutions`, filtering `varieties` for names
+containing `"-mega"`) but never generalized — Gigantamax forms had the identical invisibility bug,
+just not yet reported.
+
+Asked the user how far to take the fix; chose "generalize to all forms" over a Bloodmoon-only patch.
+
+- `SpeciesDto.kt`: `megaEvolutions` (filtered by name) replaced with `otherForms` — every
+  `varieties` entry that isn't the default one, full stop. Covers Mega, Gigantamax, and one-off
+  forms like Bloodmoon in one property, since all three are the same underlying case (a variety
+  PokeAPI doesn't model as an evolution step).
+- `PokedexDetailScreen.kt`: the Evolution card's "Mega Evolution" section (header + the
+  Mega-specific "A temporary in-battle form, not a permanent evolution." subtitle) replaced with a
+  generic "Other Forms" section — header text now "Alternate forms of this species, not covered by
+  the evolution steps above.", deliberately not claiming to explain *how* each is obtained, since
+  PokeAPI has no field for that on a non-evolution variety and fabricating an explanation would be
+  worse than omitting one. Same `PokemonSpriteTile` grid as before, so tapping any listed form still
+  navigates to its own detail page (including back to the default variety, when viewing a form).
+  The whole Evolution card's visibility condition (`evolutionChain != null || ...`) now checks
+  `otherForms.isNotEmpty()` instead of the old Mega-only check.
+- Verified on the emulator: Ursaluna's page now shows "Other Forms" → Ursaluna Bloodmoon, tapping it
+  opens Bloodmoon's detail page (#10272) correctly; Charizard's Mega X/Mega Y still show under the
+  same section (spot-checked the code path, not re-screenshotted — identical rendering logic, only
+  the filter changed).
+- No new tests: `otherForms` is a one-line `filterNot` with no branching logic to cover beyond what
+  compiling against real API shapes already confirms.
+
+## F30 — Bottom nav bar too tall in portrait mode
+
+**To groom** — requested 2026-08-09, not yet planned or implemented.
+
+User feedback: in portrait orientation, the bottom navigation bar (Pokédex / Triangles / Team /
+Settings, `NavigationBar` wired up in `PokedexNavHost.kt`) takes up too much vertical screen space.
+
+Not yet scoped: exact current height vs. target, whether to drop the text labels (icon-only, always
+or only when unselected), reduce `NavigationBarItem` internal padding, or a Material3
+`NavigationBarDefaults` override — no measurements or before/after taken yet, no code looked at.
+
+## F31 — Top app bar too tall in portrait mode
+
+**To groom** — requested 2026-08-09, not yet planned or implemented.
+
+User feedback: in portrait orientation, the top bar showing "PikaDex" takes up too much vertical
+screen space.
+
+Not yet scoped: which screen(s) this refers to (the Pokédex list's large `"PikaDex"` title looks
+different from the smaller per-Pokémon `TopAppBar` on the detail screen — worth confirming which one
+before touching anything), target height, and whether this is a `TopAppBar` vs `LargeTopAppBar`/
+`CenterAlignedTopAppBar` sizing choice or just excess padding — no code looked at yet.
 
 ## Cancelled
 

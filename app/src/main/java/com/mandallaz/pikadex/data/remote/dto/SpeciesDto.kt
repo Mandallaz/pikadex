@@ -21,10 +21,14 @@ data class PokemonSpeciesDto(
      *  field would leave this null anyway (see the same note on NamedApiResource). */
     val varieties: List<SpeciesVariety>?
 ) {
-    /** Mega Evolutions of this species. PokeAPI models them as alternate *varieties*, not as links
-     *  in the evolution chain, so they're invisible to [evolutionChain] and have to be read here. */
-    val megaEvolutions: List<SpeciesVariety>
-        get() = varieties.orEmpty().filter { it.pokemon.name.contains("-mega") }
+    /** Every alternate form of this species other than the default one — Mega Evolutions,
+     *  Gigantamax forms, and one-off special forms like Ursaluna Bloodmoon (BACKLOG.md F29) alike.
+     *  PokeAPI models all of these as [varieties], not as links in [evolutionChain], so none of
+     *  them are otherwise visible anywhere the evolution chain is read. How each one is actually
+     *  obtained isn't in this data at all (it's not a level/item/trade-triggered evolution), so
+     *  this only says a form *exists*, not how to get it. */
+    val otherForms: List<SpeciesVariety>
+        get() = varieties.orEmpty().filterNot { it.isDefault }
 }
 
 data class SpeciesVariety(

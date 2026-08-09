@@ -620,8 +620,10 @@ private fun DetailContent(
         // cluster (Base Stats/Abilities/Type Matchups), ahead of Team Impact/Type Triangles/Smogon
         // rather than after them — those 3 keep their existing relative order among themselves,
         // just now following Evolution instead of leading it.
-        val megaEvolutions = species.megaEvolutions
-        if (evolutionChain != null || megaEvolutions.isNotEmpty()) {
+        // BACKLOG.md F29 — every alternate form of this species (Mega, Gigantamax, one-off special
+        // forms like Ursaluna Bloodmoon...), not just Megas — see SpeciesDto.otherForms.
+        val otherForms = species.otherForms
+        if (evolutionChain != null || otherForms.isNotEmpty()) {
             item {
                 Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -676,15 +678,21 @@ private fun DetailContent(
                             }
                         }
 
-                        if (megaEvolutions.isNotEmpty()) {
+                        if (otherForms.isNotEmpty()) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                             Text(
-                                "Mega Evolution",
+                                "Other Forms",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold
                             )
+                            // Deliberately doesn't say *how* each is obtained — PokeAPI's
+                            // evolution-chain data doesn't cover these at all (Mega/Gigantamax are
+                            // battle-only forms, not evolutions; one-off forms like Ursaluna
+                            // Bloodmoon come from a species-specific in-game method the API has no
+                            // field for), so this only confirms the form exists rather than
+                            // guessing or fabricating an acquisition method.
                             Text(
-                                "A temporary in-battle form, not a permanent evolution.",
+                                "Alternate forms of this species, not covered by the evolution steps above.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 4.dp)
@@ -693,7 +701,7 @@ private fun DetailContent(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                megaEvolutions.forEach { variety ->
+                                otherForms.forEach { variety ->
                                     PokemonSpriteTile(
                                         name = variety.pokemon.name,
                                         id = variety.pokemon.id ?: 0,
