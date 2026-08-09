@@ -174,7 +174,11 @@ fun PokedexDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             PikaDexTopBar(
-                title = { Text(uiState.pokemon?.name?.toDisplayName() ?: pokemonNameOrId.toDisplayName()) },
+                // No title text here: the name is already shown prominently right under the
+                // sprite (DetailContent's header), large and centered — repeating it in the top
+                // bar's titleLarge style just wrapped to two lines in the bar's fixed 48dp height
+                // and overlapped the row below it, adding clutter rather than information.
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
