@@ -853,23 +853,45 @@ private fun TeamImpactCard(
     }
 }
 
-/** The delta summary for BACKLOG.md F15 (revised 2026-08-09 — user feedback: only show what
- *  actually changes, with type badges instead of plain type names). Each of the 4 categories
- *  renders as a label + a row of [TypeBadge]s, and is omitted entirely when empty rather than
- *  spelled out as "no new..." — a Pokémon that changes nothing on any of the 4 shows no text at
- *  all, not four empty-handed lines. */
+/** The delta summary for BACKLOG.md F15 (revised 2026-08-09 twice more — user feedback: only show
+ *  what actually changes, with type badges instead of plain type names, and grouped so it's clear
+ *  which half is this Pokémon's defensive contribution (shared weaknesses, from [computeDefensiveMultipliers]-
+ *  derived data) versus its offensive one (coverage gaps, from the offensive matrix) rather than 4
+ *  same-looking rows a reader has to parse individually. A row (and its parent section, if both of
+ *  its rows are empty) is omitted entirely rather than spelled out as "no new..." — a Pokémon that
+ *  changes nothing on either side shows no text at all here (see [TeamImpactCard]'s "Nothing." case
+ *  for when *both* sections are empty). */
 @Composable
 private fun TeamImpactSummaryText(impact: com.mandallaz.pikadex.util.TeamImpactSummary) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        ImpactTypeRow("Would fix these shared weaknesses:", impact.weaknessesFixed)
-        ImpactTypeRow("Would introduce these shared weaknesses:", impact.weaknessesIntroduced)
-        ImpactTypeRow("Would close these coverage gaps:", impact.gapsClosed)
-        ImpactTypeRow("Would open these coverage gaps:", impact.gapsOpened)
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        ImpactSection(
+            "Defensively",
+            "Fixes these shared weaknesses:" to impact.weaknessesFixed,
+            "Introduces these shared weaknesses:" to impact.weaknessesIntroduced
+        )
+        ImpactSection(
+            "Offensively",
+            "Closes these coverage gaps:" to impact.gapsClosed,
+            "Opens these coverage gaps:" to impact.gapsOpened
+        )
+    }
+}
+
+/** One half (defensive or offensive) of the summary — a heading over its rows, omitted entirely
+ *  when both of [rows] are empty rather than showing a heading over nothing. */
+@Composable
+private fun ImpactSection(heading: String, vararg rows: Pair<String, List<String>>) {
+    if (rows.all { (_, types) -> types.isEmpty() }) return
+    Column {
+        Text(heading, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+            rows.forEach { (label, types) -> ImpactTypeRow(label, types) }
+        }
     }
 }
 
 /** One impact category — omits itself (no label, no row) when [types] is empty, rather than the
- *  Column above having to special-case which of its up-to-4 children actually render. */
+ *  section above having to special-case which of its rows actually render. */
 @Composable
 private fun ImpactTypeRow(label: String, types: List<String>) {
     if (types.isEmpty()) return

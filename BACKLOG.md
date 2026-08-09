@@ -383,6 +383,14 @@ blank card body, reading as if it had silently failed to load. `TeamImpactCard` 
 in that case, skipping the now-pointless call to `TeamImpactSummaryText`. No logic change, no new
 tests — same `TeamImpactSummary` shape, just one more UI branch on it.
 
+**Revised a fourth time 2026-08-09** — the 4 rows (fix/introduce weaknesses, close/open gaps) read
+as 4 same-looking lines with no hint that the first pair is this Pokémon's *defensive* contribution
+and the second pair is its *offensive* one. `TeamImpactSummaryText` now groups them under two
+headings, "Defensively" (fixes/introduces shared weaknesses) and "Offensively" (closes/opens
+coverage gaps), via a new `ImpactSection(heading, vararg rows)` that also omits the whole section
+(heading included) when both of its rows are empty — not just each row individually as before. No
+logic change, no new tests.
+
 ## F16 — Swipe between Pokémon on the detail screen
 
 **Done 2026-08-08.** From `PokedexDetailScreen.kt`, swipe left/right (or tap a chevron) to move to
