@@ -71,10 +71,11 @@ data class PokedexDetailUiState(
      *  rest of the page on a feature that's a convenience, not the point of the page. */
     val previousPokemonName: String? = null,
     val nextPokemonName: String? = null,
-    /** Result of BACKLOG.md F15's "preview impact on my team" — what adding/swapping this Pokémon
-     *  in would change about the team's shared weaknesses and coverage gaps. Null until requested,
-     *  and reset by [PokedexDetailViewModel.clearTeamImpact] whenever the preview dialog closes so a
-     *  later reopen for a different replace target doesn't flash stale data. */
+    /** Result of BACKLOG.md F15's "team coverage impact" card — what adding this Pokémon would
+     *  change about the team's shared weaknesses and coverage gaps. Null until [loadTeamImpact]
+     *  computes it, and reset by [clearTeamImpact] whenever the card's visibility condition stops
+     *  holding (no team, team full, or navigating to a different Pokémon) so a later reappearance
+     *  doesn't flash stale data. */
     val teamImpact: TeamImpactSummary? = null,
     val isTeamImpactLoading: Boolean = false,
     val teamImpactError: String? = null
@@ -228,20 +229,25 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         FavoritesRepository.toggle(pokemon.name)
     }
 
-    /** BACKLOG.md F15 — previews what adding this Pokémon to the active team (or swapping it in for
-     *  [replacingIndex], when the team is already full) would change about the team's shared
-     *  weaknesses and coverage gaps. Computes the "before" matrix fresh alongside "after" rather
-     *  than threading TeamViewModel's already-computed one across ViewModels — every fetch involved
-     *  is AsyncCache'd, so recomputing costs nothing extra in practice on a warm cache. */
-    fun loadTeamImpact(replacingIndex: Int? = null) {
+    /** BACKLOG.md F15 — previews what adding this Pokémon to the active team would change about the
+     *  team's shared weaknesses and coverage gaps. Shown as an always-on card on the detail page
+     *  rather than behind a button (revised 2026-08-09), so this is now a no-op self-gating on
+     *  exactly the same condition the screen uses to decide whether to show that card: a team
+     *  exists, has room to grow, and doesn't already contain this Pokémon (there's nothing to
+     *  preview about "adding" something already on the roster). Safe to call on every recomposition
+     *  the card's visibility condition holds — [clearTeamImpact] is what the screen calls once it
+     *  doesn't.
+     *
+     *  Computes the "before" matrix fresh alongside "after" rather than threading TeamViewModel's
+     *  already-computed one across ViewModels — every fetch involved is AsyncCache'd, so
+     *  recomputing costs nothing extra in practice on a warm cache. */
+    fun loadTeamImpact() {
         val pokemon = _uiState.value.pokemon ?: return
-        val candidate = NamedApiResource(pokemon.name, "https://pokeapi.co/api/v2/pokemon/${pokemon.id}/")
         val beforeMembers = TeamRepository.team.value
-        val afterMembers = if (replacingIndex == null) {
-            beforeMembers + candidate
-        } else {
-            beforeMembers.toMutableList().apply { set(replacingIndex, candidate) }
-        }
+        if (beforeMembers.isEmpty() || beforeMembers.size >= TeamRepository.MAX_SIZE) return
+        if (beforeMembers.any { it.name == pokemon.name }) return
+        val candidate = NamedApiResource(pokemon.name, "https://pokeapi.co/api/v2/pokemon/${pokemon.id}/")
+        val afterMembers = beforeMembers + candidate
         teamImpactJob?.cancel()
         _uiState.update { it.copy(isTeamImpactLoading = true, teamImpactError = null, teamImpact = null) }
         teamImpactJob = viewModelScope.launch {
@@ -270,8 +276,9 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         }
     }
 
-    /** Resets the F15 preview's state, called when the dialog is dismissed so reopening it for a
-     *  different replace target doesn't flash the previous result while the new one loads. */
+    /** Resets the F15 card's state, called by the screen whenever its visibility condition stops
+     *  holding so a later reappearance (different team, or the card returning) doesn't flash the
+     *  previous result while a new one loads. */
     fun clearTeamImpact() {
         teamImpactJob?.cancel()
         _uiState.update { it.copy(isTeamImpactLoading = false, teamImpactError = null, teamImpact = null) }

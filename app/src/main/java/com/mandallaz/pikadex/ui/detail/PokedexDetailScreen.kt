@@ -34,14 +34,12 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -150,15 +148,24 @@ fun PokedexDetailScreen(
     // rememberSaveable: rotating the screen used to silently drop back to the normal artwork.
     var shiny by rememberSaveable { mutableStateOf(false) }
     var showCompareDialog by rememberSaveable { mutableStateOf(false) }
-    // BACKLOG.md F15 — "preview impact on my team". showReplacePicker opens the small member picker
-    // when the team is already full; showImpactPreview shows the loading/result/error dialog once a
-    // target (direct add, or a picked replace index) is known. pendingReplaceIndex is kept around
-    // only so a failed preview's "Retry" button can repeat the exact same request.
-    var showReplacePicker by rememberSaveable { mutableStateOf(false) }
-    var showImpactPreview by rememberSaveable { mutableStateOf(false) }
-    var pendingReplaceIndex by rememberSaveable { mutableStateOf(-1) } // -1 means "add, don't replace"
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
+
+    // BACKLOG.md F15 (revised 2026-08-09) — the "team coverage impact" card lives inline on the
+    // page now, not behind a button, so it needs its own trigger. Keyed on the Pokémon and the
+    // team's membership (not just its size — swapping one member for another leaves the size
+    // unchanged but should still recompute) so it reruns exactly when the card's own visibility
+    // condition below could have changed. loadTeamImpact() is self-gating on that same condition,
+    // so calling it unconditionally here and clearing otherwise keeps the two checks from drifting
+    // apart into two slightly different rules for the same thing.
+    val teamMembership = team.map { it.name }
+    LaunchedEffect(uiState.pokemon?.name, teamMembership) {
+        if (uiState.pokemon != null && team.isNotEmpty() && team.size < com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE) {
+            viewModel.loadTeamImpact()
+        } else {
+            viewModel.clearTeamImpact()
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -219,22 +226,6 @@ fun PokedexDetailScreen(
                             }
                         ) {
                             Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = "Compare with…")
-                        }
-                        // Hidden entirely with no team — there is nothing to preview an impact on.
-                        if (team.isNotEmpty()) {
-                            IconButton(
-                                onClick = {
-                                    if (team.size < com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE) {
-                                        pendingReplaceIndex = -1
-                                        viewModel.loadTeamImpact(null)
-                                        showImpactPreview = true
-                                    } else {
-                                        showReplacePicker = true
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = "Preview impact on my team")
-                            }
                         }
                     }
                 }
@@ -309,6 +300,13 @@ fun PokedexDetailScreen(
                     formVersionGroup = uiState.formVersionGroup,
                     groupedMoves = uiState.groupedMoves,
                     shiny = shiny,
+                    // Card visibility is the exact same condition the LaunchedEffect above gates
+                    // loadTeamImpact()/clearTeamImpact() on — kept as one boolean computed once here
+                    // rather than re-derived inside DetailContent, so the two can't drift apart.
+                    showTeamImpactCard = team.isNotEmpty() && team.size < com.mandallaz.pikadex.data.TeamRepository.MAX_SIZE,
+                    isTeamImpactLoading = uiState.isTeamImpactLoading,
+                    teamImpactError = uiState.teamImpactError,
+                    teamImpact = uiState.teamImpact,
                     onPokemonClick = onPokemonClick,
                     onViewTypeTriangles = onViewTypeTriangles
                 )
@@ -368,111 +366,6 @@ fun PokedexDetailScreen(
         )
     }
 
-    if (showReplacePicker) {
-        AlertDialog(
-            onDismissRequest = { showReplacePicker = false },
-            title = { Text("Replace which team member?") },
-            text = {
-                Column {
-                    team.forEachIndexed { index, member ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    showReplacePicker = false
-                                    pendingReplaceIndex = index
-                                    viewModel.loadTeamImpact(index)
-                                    showImpactPreview = true
-                                }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            PokemonSprite(id = member.id ?: 0, contentDescription = member.name, modifier = Modifier.size(40.dp))
-                            Text(member.name.toDisplayName(), modifier = Modifier.padding(start = 12.dp))
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = { TextButton(onClick = { showReplacePicker = false }) { Text("Cancel") } }
-        )
-    }
-
-    if (showImpactPreview) {
-        AlertDialog(
-            onDismissRequest = {
-                showImpactPreview = false
-                viewModel.clearTeamImpact()
-            },
-            title = { Text("Impact on my team") },
-            text = {
-                when {
-                    uiState.isTeamImpactLoading -> Box(
-                        modifier = Modifier.fillMaxWidth().padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
-                    uiState.teamImpactError != null -> Text(uiState.teamImpactError!!)
-                    uiState.teamImpact != null -> TeamImpactSummaryText(uiState.teamImpact!!)
-                    else -> Text("Nothing to show yet.")
-                }
-            },
-            confirmButton = {
-                if (uiState.teamImpactError != null) {
-                    TextButton(
-                        onClick = {
-                            viewModel.loadTeamImpact(pendingReplaceIndex.takeIf { it >= 0 })
-                        }
-                    ) { Text("Retry") }
-                } else {
-                    TextButton(
-                        onClick = {
-                            showImpactPreview = false
-                            viewModel.clearTeamImpact()
-                        }
-                    ) { Text("Close") }
-                }
-            }
-        )
-    }
-}
-
-/** The four-line delta summary for BACKLOG.md F15 — "no new..." wording whenever a list is empty,
- *  matching the user's example rather than just omitting the line. */
-@Composable
-private fun TeamImpactSummaryText(impact: com.mandallaz.pikadex.util.TeamImpactSummary) {
-    Column {
-        Text(
-            if (impact.weaknessesFixed.isEmpty()) {
-                "Would fix no shared weaknesses."
-            } else {
-                "Would fix these shared weaknesses: ${impact.weaknessesFixed.joinToString(", ") { it.toDisplayName() }}."
-            }
-        )
-        Text(
-            if (impact.weaknessesIntroduced.isEmpty()) {
-                "Would introduce no new shared weaknesses."
-            } else {
-                "Would introduce these shared weaknesses: ${impact.weaknessesIntroduced.joinToString(", ") { it.toDisplayName() }}."
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Text(
-            if (impact.gapsClosed.isEmpty()) {
-                "Would close no coverage gaps."
-            } else {
-                "Would close these coverage gaps: ${impact.gapsClosed.joinToString(", ") { it.toDisplayName() }}."
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Text(
-            if (impact.gapsOpened.isEmpty()) {
-                "Would open no new coverage gaps."
-            } else {
-                "Would open these coverage gaps: ${impact.gapsOpened.joinToString(", ") { it.toDisplayName() }}."
-            },
-            modifier = Modifier.padding(top = 8.dp)
-        )
-    }
 }
 
 /** Placeholder that echoes [DetailContent]'s actual layout (artwork circle, name/genus bars, a
@@ -526,6 +419,10 @@ private fun DetailContent(
     formVersionGroup: String?,
     groupedMoves: Map<MoveCategory, List<LearnedMove>>,
     shiny: Boolean,
+    showTeamImpactCard: Boolean,
+    isTeamImpactLoading: Boolean,
+    teamImpactError: String?,
+    teamImpact: com.mandallaz.pikadex.util.TeamImpactSummary?,
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit
 ) {
@@ -723,6 +620,16 @@ private fun DetailContent(
             }
         }
 
+        // BACKLOG.md F15 — only present while there's an active team with room to grow; a full or
+        // empty team, or a Pokémon already on the roster, has nothing meaningful to preview (see
+        // PokedexDetailScreen's showTeamImpactCard condition and PokedexDetailViewModel.loadTeamImpact's
+        // matching self-gate).
+        if (showTeamImpactCard) {
+            item {
+                TeamImpactCard(isTeamImpactLoading, teamImpactError, teamImpact)
+            }
+        }
+
         item {
             TypeMatchupsCard(typeMatchups)
         }
@@ -897,6 +804,82 @@ private fun PokemonSpriteTile(
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             softWrap = false
+        )
+    }
+}
+
+/** BACKLOG.md F15's "team coverage impact" — what adding this Pokémon to the active team would
+ *  change about its shared weaknesses and coverage gaps. Only ever composed while
+ *  [PokedexDetailScreen]'s showTeamImpactCard condition holds, so there's always a real team to
+ *  preview against; the three states below (loading/error/result) cover everything that condition
+ *  leaves open. */
+@Composable
+private fun TeamImpactCard(
+    isLoading: Boolean,
+    error: String?,
+    impact: com.mandallaz.pikadex.util.TeamImpactSummary?
+) {
+    Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Team Coverage Impact",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                "What adding this Pokémon to your active team would change.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            when {
+                isLoading -> Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+                error != null -> Text(error, color = MaterialTheme.colorScheme.error)
+                impact != null -> TeamImpactSummaryText(impact)
+            }
+        }
+    }
+}
+
+/** The four-line delta summary for BACKLOG.md F15 — "no new..." wording whenever a list is empty,
+ *  matching the user's original phrasing rather than just omitting the line. */
+@Composable
+private fun TeamImpactSummaryText(impact: com.mandallaz.pikadex.util.TeamImpactSummary) {
+    Column {
+        Text(
+            if (impact.weaknessesFixed.isEmpty()) {
+                "Would fix no shared weaknesses."
+            } else {
+                "Would fix these shared weaknesses: ${impact.weaknessesFixed.joinToString(", ") { it.toDisplayName() }}."
+            }
+        )
+        Text(
+            if (impact.weaknessesIntroduced.isEmpty()) {
+                "Would introduce no new shared weaknesses."
+            } else {
+                "Would introduce these shared weaknesses: ${impact.weaknessesIntroduced.joinToString(", ") { it.toDisplayName() }}."
+            },
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Text(
+            if (impact.gapsClosed.isEmpty()) {
+                "Would close no coverage gaps."
+            } else {
+                "Would close these coverage gaps: ${impact.gapsClosed.joinToString(", ") { it.toDisplayName() }}."
+            },
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Text(
+            if (impact.gapsOpened.isEmpty()) {
+                "Would open no new coverage gaps."
+            } else {
+                "Would open these coverage gaps: ${impact.gapsOpened.joinToString(", ") { it.toDisplayName() }}."
+            },
+            modifier = Modifier.padding(top = 8.dp)
         )
     }
 }

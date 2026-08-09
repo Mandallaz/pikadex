@@ -20,6 +20,7 @@
 | F21 — Suggestion tier ceiling filter | — | Done | [#11](https://github.com/Mandallaz/pikadex/issues/11) |
 | F9 — Showdown export | — | Cancelled | [#12](https://github.com/Mandallaz/pikadex/issues/12) |
 | F10 — Filter dex by resistance/weakness | — | Cancelled | [#13](https://github.com/Mandallaz/pikadex/issues/13) |
+| F24 — Reorder detail screen sections | — | To groom | TBD |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -270,6 +271,33 @@ verified to actually land rather than assumed:
   functions above are where the real logic risk lives, and both are covered.
 - `./gradlew compileDebugKotlin` and `./gradlew testDebugUnitTest` both green.
 
+**Revised 2026-08-09** — the user asked to drop the entry-point button entirely and instead show the
+preview as an always-on card. The top-bar icon, the full-team replace picker, and the two dialogs are
+all removed:
+
+- New card ("Team Coverage Impact") sits in `DetailContent`'s `LazyColumn` between the Abilities card
+  and the Type Matchups card, shown only when `team.isNotEmpty() && team.size <
+  TeamRepository.MAX_SIZE` — the "team full" replace-target flow that button used to offer is gone
+  along with the button, since the card's whole premise is "there's room to add this one directly".
+  A Pokémon already on the roster is excluded too (`loadTeamImpact()`'s own self-gate) — nothing to
+  preview about "adding" something already there.
+  Three body states, same as before: a `CircularProgressIndicator` while loading, red error text on
+  failure (no explicit Retry button now — the card recomputes on its own whenever its trigger
+  condition re-fires, e.g. the team changing), or the same four-line delta summary
+  (`TeamImpactSummaryText`, unchanged).
+- `PokedexDetailScreen`: a `LaunchedEffect(uiState.pokemon?.name, team.map { it.name })` calls
+  `viewModel.loadTeamImpact()` whenever the card's visibility condition holds and
+  `viewModel.clearTeamImpact()` otherwise — keyed on team *membership*, not just size, since swapping
+  one member for another externally (e.g. from the Team screen while this page is still open) leaves
+  the count unchanged but should still recompute.
+- `PokedexDetailViewModel.loadTeamImpact()`: dropped the `replacingIndex` parameter (dead once the
+  replace-picker was removed) and made the function self-gating on the same three conditions the
+  screen checks, so calling it unconditionally from the `LaunchedEffect` is safe — the two checks
+  can't drift into slightly different rules for the same thing. Always computes `afterMembers =
+  beforeMembers + candidate` now.
+- No new tests needed: the change is pure wiring/UI reshuffling around the same two pure functions
+  (`computeTeamMatrices`, `computeTeamImpact`) the original F15 tests already cover.
+
 Original plan, finalized 2026-08-08 — simplest option chosen for every open question; entry point and
 output format agreed with the user:
 
@@ -446,6 +474,29 @@ instead.
 - Team screen: `SuggestionsCard` shows "Limited to `<tier>` and below (Settings)" when a ceiling is
   active, so the card explains itself without the user needing to remember a setting on another tab.
 - Tests: `SmogonTierLabelsTest`, tier-ceiling cases added to `TeamSuggestionsTest`.
+
+## F24 — Reorder detail screen sections
+
+**To groom** — requested 2026-08-09, not yet planned or implemented.
+
+Reorder the cards on `PokedexDetailScreen.kt` (`app/src/main/java/com/mandallaz/pikadex/ui/detail/PokedexDetailScreen.kt`). Current order (top to bottom): sprite + description, Base Stats, Team Impact Summary card (F15), Type Triangles, Smogon Strategy Dex, Evolution/Mega Evolution, then further down Level Up Moves, TM/HM, Breeding, Tutor.
+
+Requested order:
+
+1. Sprite + description — unchanged
+2. Base Stats — unchanged
+3. Evolution (+ Mega Evolution) — moved up, ahead of Team Impact/Type Triangle/Smogon
+4. Team Impact Summary (F15)
+5. Type Triangle
+6. Smogon Strategy Dex
+7. Level Up Moves
+8. TM/HM
+9. Breeding
+10. Tutor
+
+Net effect: Evolution moves up (from after Smogon to right after Base Stats); Team Impact/Type Triangle/Smogon keep their relative order but now sit after Evolution instead of before it; Level Up Moves/TM/HM/Breeding/Tutor keep their existing relative order, unchanged apart from following Smogon as they already do.
+
+Not yet scoped: exact composable-reordering diff in `PokedexDetailScreen.kt`, whether `MIN_TYPE_TRIANGLES_BEFORE_COLLAPSE`-style scroll-position assumptions in the doc comments (line ~107) need updating, and any manual-test pass on the emulator confirming scroll/swipe behavior is unaffected.
 
 ## Cancelled
 
