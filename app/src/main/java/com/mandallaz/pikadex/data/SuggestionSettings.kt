@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** The competitive tier ceiling applied to team-builder Suggestions (BACKLOG.md F17) — e.g.
+/** The competitive tier ceiling applied to team-builder Suggestions (issue #11) — e.g.
  *  picking "UU" keeps UU and everything below it (RU, NU, PU...) but drops Uber/OU suggestions,
  *  the same "usable at this tier or below" rule Smogon's own tier list follows. Defaults to "OU"
  *  (drops only Uber/AG) rather than no limit — OU is the tier the overwhelming majority of

@@ -212,7 +212,7 @@ class PokedexRepository(private val api: PokeApiService) {
     }
 
     /**
-     * BACKLOG.md F28 — [nameOrId] resolves directly for almost every call site, but a species
+     * issue #18 — [nameOrId] resolves directly for almost every call site, but a species
      * reached only via its evolution chain (e.g. Kubfu's evolution result names the *species*
      * "urshifu", which has no bare-name Pokémon resource of its own — only its named varieties
      * `urshifu-single-strike`/`urshifu-rapid-strike` exist) 404s on a plain `/pokemon/{name}`

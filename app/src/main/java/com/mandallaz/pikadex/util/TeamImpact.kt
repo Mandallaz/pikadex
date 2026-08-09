@@ -1,7 +1,7 @@
 package com.mandallaz.pikadex.util
 
 /** Delta between a team's shared weaknesses/coverage gaps before and after a hypothetical roster
- *  change (BACKLOG.md F15) — what a candidate Pokémon would change if added to or swapped into the
+ *  change (issue #2) — what a candidate Pokémon would change if added to or swapped into the
  *  team, shown as a text summary on the Pokédex detail screen.
  *
  *  [weaknessesFixed]/[weaknessesIntroduced] are majority-based (see [sharedWeaknesses]) — a real

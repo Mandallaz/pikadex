@@ -89,7 +89,7 @@ fun sharedWeaknesses(defensiveMatrix: Map<String, Map<String, Double>>, memberNa
 
 /**
  * Attacking types at least one team member is immune (0x) to — a real defensive asset regardless of
- * how many others share it, unlike [sharedWeaknesses]' majority threshold. BACKLOG.md F15's
+ * how many others share it, unlike [sharedWeaknesses]' majority threshold. issue #2's
  * per-member "adds immunity to..." signal reads off this rather than the team-wide majority rule,
  * since a single immune member is already worth calling out (see the Toedscool/Electric example
  * that motivated this).

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** True-black variant of dark mode for AMOLED screens (BACKLOG.md F19) — off by default, since it
+/** True-black variant of dark mode for AMOLED screens (issue #4) — off by default, since it
  *  replaces Material's dark grey background/surface with pure black, a look not everyone wants.
  *  Same SharedPreferences-backed-StateFlow pattern as [PrefetchSettings]/[SuggestionSettings]. */
 object DisplaySettings {

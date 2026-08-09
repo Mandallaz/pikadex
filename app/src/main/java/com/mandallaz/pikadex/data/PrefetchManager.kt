@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** One optional download tier — see BACKLOG.md F13. [label] doubles as the "phase" shown in
+/** One optional download tier. [label] doubles as the "phase" shown in
  *  [PrefetchState.Running]. */
 enum class PrefetchTier(val label: String) {
     ESSENTIALS("Essentials"),

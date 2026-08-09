@@ -26,7 +26,7 @@ private data class MemberMatchups(
 private const val STATUS_DAMAGE_CLASS = "status"
 
 /** Full movepool-based defensive/offensive matrix for [members] — extracted out of
- *  `TeamViewModel.computeMatrix()` (BACKLOG.md F15) so `PokedexDetailViewModel` can call the exact
+ *  `TeamViewModel.computeMatrix()` (issue #2) so `PokedexDetailViewModel` can call the exact
  *  same logic for a hypothetical roster without depending on `TeamViewModel`. Caller is expected to
  *  wrap this in its own `supervisorScope`/try-catch for cancellation and error handling, same as
  *  `TeamViewModel.computeMatrix()` does. */

@@ -42,13 +42,13 @@ data class SettingsUiState(
     val criesEnabled: Boolean = false,
     val storageUsage: StorageUsage? = null,
     val isMeasuringStorage: Boolean = false,
-    /** Team-builder Suggestions' competitive tier ceiling (BACKLOG.md F17) — null means no limit. */
+    /** Team-builder Suggestions' competitive tier ceiling (issue #11) — null means no limit. */
     val maxSuggestionTier: String? = null,
     /** Every tier code Gen 9 actually uses, most-used first — empty until [SettingsViewModel]'s
      *  init block resolves it (best-effort; the picker just shows "Loading..." until then, same
      *  as the Pokédex list's own tier dialog). */
     val suggestionTierOptions: List<String> = emptyList(),
-    /** True-black dark theme variant for AMOLED screens (BACKLOG.md F19). */
+    /** True-black dark theme variant for AMOLED screens (issue #4). */
     val amoledEnabled: Boolean = false
 ) {
     val hasAnyTierEnabled: Boolean

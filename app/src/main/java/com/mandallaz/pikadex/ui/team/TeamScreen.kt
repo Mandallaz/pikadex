@@ -104,7 +104,7 @@ private enum class MatrixMode(val label: String, val caption: String) {
 @Composable
 fun TeamScreen(
     onBrowsePokedex: () -> Unit,
-    // BACKLOG.md F27 — opens a suggestion tile's own detail page on sprite tap. Distinct from
+    // issue #17 — opens a suggestion tile's own detail page on sprite tap. Distinct from
     // onBrowsePokedex (which switches to the Pokédex list tab); this pushes a detail screen the
     // same way tapping a Pokédex list row does, so Back returns here.
     onPokemonClick: (String) -> Unit,
@@ -525,7 +525,7 @@ private fun multiplierColors(multiplier: Double, isOffense: Boolean = false): Pa
 }
 
 /** Candidates that would fix both a shared weakness and a coverage gap at once — see
- *  [TeamViewModel.loadSuggestions]/BACKLOG.md F11/F21. Sorted by total impact (weaknesses resisted
+ *  [TeamViewModel.loadSuggestions]/issue #11. Sorted by total impact (weaknesses resisted
  *  plus gaps hit) descending, stat total ascending as a tiebreak, so the most useful, least
  *  overpowering options lead the row. */
 @Composable
@@ -598,7 +598,7 @@ private fun SuggestionTile(
     suggestion: TeamSuggestion,
     spriteId: Int,
     onAdd: () -> Unit,
-    // BACKLOG.md F27 — sprite-only tap target, not the whole tile: the "+" IconButton already
+    // issue #17 — sprite-only tap target, not the whole tile: the "+" IconButton already
     // claims its own tap area, and the ask specifically named "the sprite", read narrowly.
     onSpriteClick: () -> Unit
 ) {

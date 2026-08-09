@@ -54,7 +54,7 @@ data class PokedexDetailUiState(
     val evolutionChain: EvolutionChainDto? = null,
     val typeMatchups: Map<String, Double> = emptyMap(),
     val abilityDescriptions: Map<String, String> = emptyMap(),
-    /** BACKLOG.md F26 — triangles this Pokémon's typing is the exact best counter to (see
+    /** issue #16 — triangles this Pokémon's typing is the exact best counter to (see
      *  [TypeTriangles.counteredBy]). The card that reads this is hidden entirely when it's empty;
      *  merely being *part of* a triangle (the pre-F26 `memberTriangles`) was dropped as too weak a
      *  signal to be worth a callout on its own. */
@@ -76,14 +76,14 @@ data class PokedexDetailUiState(
      *  [PokedexDetailViewModel.loadCompareCandidatesIfNeeded]), not as part of [load], since most
      *  visits to a detail page never open that picker. */
     val compareCandidates: List<String> = emptyList(),
-    /** Swipe/chevron targets for BACKLOG.md F16 — the Pokédex list's own current filtered/sorted
+    /** Swipe/chevron targets for issue #7 — the Pokédex list's own current filtered/sorted
      *  order when this Pokémon is part of it (see [PokedexListContext]/[namesForAdjacency]),
      *  otherwise [getMasterList]'s order. Best-effort: a failure here leaves both null (see
      *  [PokedexDetailViewModel.load]'s `orNullUnlessCancelled` use for it) rather than blocking the
      *  rest of the page on a feature that's a convenience, not the point of the page. */
     val previousPokemonName: String? = null,
     val nextPokemonName: String? = null,
-    /** Result of BACKLOG.md F15's "team coverage impact" card — what adding this Pokémon would
+    /** Result of issue #2's "team coverage impact" card — what adding this Pokémon would
      *  change about the team's shared weaknesses and coverage gaps. Null until [loadTeamImpact]
      *  computes it, and reset by [clearTeamImpact] whenever the card's visibility condition stops
      *  holding (no team, team full, or navigating to a different Pokémon) so a later reappearance
@@ -262,7 +262,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         FavoritesRepository.toggle(pokemon.name)
     }
 
-    /** BACKLOG.md F15 — previews what adding this Pokémon to the active team would change about the
+    /** issue #2 — previews what adding this Pokémon to the active team would change about the
      *  team's shared weaknesses and coverage gaps. Shown as an always-on card on the detail page
      *  rather than behind a button (revised 2026-08-09), so this is now a no-op self-gating on
      *  exactly the same condition the screen uses to decide whether to show that card: a team

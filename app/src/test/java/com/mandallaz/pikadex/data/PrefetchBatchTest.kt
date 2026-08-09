@@ -8,9 +8,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** [runPrefetchBatch] is the concurrency/failure-counting engine shared by every F13 prefetch tier —
- *  see BACKLOG.md's note on why this is the one part of F13 with real unit test coverage (the
- *  tier-specific wiring in [PrefetchManager] is network-backed and manual-verification only). */
+/** [runPrefetchBatch] is the concurrency/failure-counting engine shared by every [PrefetchTier] —
+ *  the one part of the prefetch system with real unit test coverage (the tier-specific wiring in
+ *  [PrefetchManager] is network-backed and manual-verification only). */
 class PrefetchBatchTest {
 
     @Test

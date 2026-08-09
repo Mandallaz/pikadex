@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * The Pokédex list screen's current filtered/sorted order (names only), published so the detail
- * screen's swipe/chevron navigation (BACKLOG.md F16) can step through *that* order instead of
+ * screen's swipe/chevron navigation (issue #7) can step through *that* order instead of
  * always the full master list — filtered to Fire types, swiping from a Fire Pokémon should only
  * ever land on another Fire Pokémon, not the next dex number regardless of type.
  *

@@ -20,7 +20,7 @@ import retrofit2.HttpException
 import retrofit2.Response
 
 /**
- * BACKLOG.md F28 — Kubfu's evolution chain names the *species* "urshifu", which has no bare-name
+ * issue #18 — Kubfu's evolution chain names the *species* "urshifu", which has no bare-name
  * Pokémon resource of its own (only its named varieties `urshifu-single-strike`/
  * `urshifu-rapid-strike` do), so a plain `/pokemon/urshifu` fetch 404s. Reproduced on the emulator:
  * tapping Urshifu in Kubfu's Evolution card silently did nothing before the fix.

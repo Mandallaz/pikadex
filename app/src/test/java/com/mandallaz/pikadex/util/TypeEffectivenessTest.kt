@@ -210,7 +210,7 @@ class TypeEffectivenessTest {
         assertEquals(emptyList<String>(), coverageGaps(emptyMap(), emptyList()))
     }
 
-    // --- Shared weaknesses (BACKLOG.md F15) ----------------------------------
+    // --- Shared weaknesses (issue #2) ----------------------------------
 
     @Test
     fun `a type is shared when at least half the team is weak to it`() {
@@ -240,7 +240,7 @@ class TypeEffectivenessTest {
         assertEquals(emptyList<String>(), sharedWeaknesses(emptyMap(), emptyList()))
     }
 
-    // --- Team resistances (BACKLOG.md F15, Kingdra feedback) ------------------------------------
+    // --- Team resistances (issue #2, Kingdra feedback) ------------------------------------
 
     @Test
     fun `a single half-resistant member is enough to report a team resistance`() {
@@ -271,7 +271,7 @@ class TypeEffectivenessTest {
         assertEquals(emptyList<String>(), teamResistances(emptyMap(), emptyList()))
     }
 
-    // --- Team immunities / quad weaknesses (BACKLOG.md F15, Toedscool feedback) ---------------
+    // --- Team immunities / quad weaknesses (issue #2, Toedscool feedback) ---------------
 
     @Test
     fun `a single immune member is enough to report a team immunity`() {

@@ -35,7 +35,7 @@ private val DarkColors = darkColorScheme(
     surface = Color(0xFF1E1E1E)
 )
 
-/** Same as [DarkColors] but background/surface dropped to pure black (BACKLOG.md F19) — Material's
+/** Same as [DarkColors] but background/surface dropped to pure black (issue #4) — Material's
  *  dark grey (`#121212`/`#1E1E1E`) still lights up every pixel on an AMOLED panel; true black turns
  *  those pixels off entirely, which is the whole point of an AMOLED mode. */
 private val AmoledDarkColors = DarkColors.copy(
@@ -62,7 +62,7 @@ fun PokeDexTheme(
     // Left as a parameter (not deleted) in case a future settings toggle wants to offer it as an
     // opt-in.
     dynamicColor: Boolean = false,
-    // Settings-backed (DisplaySettings.amoledEnabled) — see F19 in BACKLOG.md.
+    // Settings-backed (DisplaySettings.amoledEnabled) — see issue #4.
     amoledBlack: Boolean = false,
     content: @Composable () -> Unit
 ) {

@@ -134,7 +134,7 @@ fun PokedexDetailScreen(
     // like evolution stages, where Back should return to the page you tapped from. This one
     // replaces the current back-stack entry instead (see PokedexNavHost.kt), so Back from a
     // swiped-through Pokémon always returns to wherever the user actually entered the detail flow
-    // from, not back through every Pokémon swiped past on the way (BACKLOG.md F16).
+    // from, not back through every Pokémon swiped past on the way (issue #7).
     onNavigateAdjacent: (String) -> Unit,
     viewModel: PokedexDetailViewModel = viewModel()
 ) {
@@ -157,7 +157,7 @@ fun PokedexDetailScreen(
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
 
-    // BACKLOG.md F15 (revised 2026-08-09) — the "team coverage impact" card lives inline on the
+    // issue #2 (revised 2026-08-09) — the "team coverage impact" card lives inline on the
     // page now, not behind a button, so it needs its own trigger. Keyed on the Pokémon and the
     // team's membership (not just its size — swapping one member for another leaves the size
     // unchanged but should still recompute) so it reruns exactly when the card's own visibility
@@ -657,11 +657,11 @@ private fun DetailContent(
             TypeMatchupsCard(typeMatchups)
         }
 
-        // BACKLOG.md F24 — Evolution moved up to sit right after the core stat/ability/matchup
+        // issue #14 — Evolution moved up to sit right after the core stat/ability/matchup
         // cluster (Base Stats/Abilities/Type Matchups), ahead of Team Impact/Type Triangles/Smogon
         // rather than after them — those 3 keep their existing relative order among themselves,
         // just now following Evolution instead of leading it.
-        // BACKLOG.md F29 — every alternate form of this species (Mega, Gigantamax, one-off special
+        // issue #19 — every alternate form of this species (Mega, Gigantamax, one-off special
         // forms like Ursaluna Bloodmoon...), not just Megas — see SpeciesDto.otherForms.
         val otherForms = species.otherForms
         if (evolutionChain != null || otherForms.isNotEmpty()) {
@@ -757,7 +757,7 @@ private fun DetailContent(
             }
         }
 
-        // BACKLOG.md F15 — only present while there's an active team with room to grow; a full or
+        // issue #2 — only present while there's an active team with room to grow; a full or
         // empty team, or a Pokémon already on the roster, has nothing meaningful to preview (see
         // PokedexDetailScreen's showTeamImpactCard condition and PokedexDetailViewModel.loadTeamImpact's
         // matching self-gate).
@@ -853,7 +853,7 @@ private fun PokemonSpriteTile(
     }
 }
 
-/** BACKLOG.md F15's "team coverage impact" — what adding this Pokémon to the active team would
+/** issue #2's "team coverage impact" — what adding this Pokémon to the active team would
  *  change about its shared weaknesses and coverage gaps. Only ever composed while
  *  [PokedexDetailScreen]'s showTeamImpactCard condition holds, so there's always a real team to
  *  preview against; the three states below (loading/error/result) cover everything that condition
@@ -900,7 +900,7 @@ private fun TeamImpactCard(
     }
 }
 
-/** The delta summary for BACKLOG.md F15 (revised 2026-08-09 twice more — user feedback: only show
+/** The delta summary for issue #2 (revised 2026-08-09 twice more — user feedback: only show
  *  what actually changes, with type badges instead of plain type names, and grouped so it's clear
  *  which half is this Pokémon's defensive contribution (shared weaknesses, from [computeDefensiveMultipliers]-
  *  derived data) versus its offensive one (coverage gaps, from the offensive matrix) rather than 4
@@ -973,7 +973,7 @@ private fun TypeMatchupsCard(typeMatchups: Map<String, Double>) {
 }
 
 /**
- * BACKLOG.md F26 (simplified 2026-08-09) — used to also list every triangle this Pokémon's typing
+ * issue #16 (simplified 2026-08-09) — used to also list every triangle this Pokémon's typing
  * is merely a *member* of (`TypeTriangles.containing`, since removed as unused), collapsed behind
  * a "show all" past a small limit. Dropped per user feedback: sharing a type with one leg of a
  * triangle isn't a meaningful callout on its own, unlike being the loop's exact best counter
@@ -1051,7 +1051,7 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, form
     if (links.isEmpty()) return
     val context = LocalContext.current
 
-    // BACKLOG.md F25 — user feedback: this card took up too much visual space for what it shows (a
+    // issue #15 — user feedback: this card took up too much visual space for what it shows (a
     // title plus a handful of link chips). The outer 16dp Card padding plus a second, separate 16dp
     // inner Column padding (every other card on this page has that exact same double-16dp — worth
     // revisiting more broadly later, but out of scope here) was the single biggest lever: shrunk to

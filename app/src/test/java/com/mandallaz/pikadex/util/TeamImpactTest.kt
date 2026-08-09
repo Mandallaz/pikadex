@@ -3,7 +3,7 @@ package com.mandallaz.pikadex.util
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** BACKLOG.md F15's "preview impact on my team" — plain set differences between the before/after
+/** issue #2's "preview impact on my team" — plain set differences between the before/after
  *  lists on every axis, so no case here needs a real matrix. */
 class TeamImpactTest {
 

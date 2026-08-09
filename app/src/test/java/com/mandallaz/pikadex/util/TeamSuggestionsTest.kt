@@ -173,7 +173,7 @@ class TeamSuggestionsTest {
         assertEquals(listOf("victreebel-x", "victreebel-y"), conflicts)
     }
 
-    // --- Tier ceiling filter (BACKLOG.md F17) ---------------------------------
+    // --- Tier ceiling filter (issue #11) ---------------------------------
 
     @Test
     fun `no ceiling set is a no-op`() {

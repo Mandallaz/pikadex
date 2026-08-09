@@ -266,7 +266,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 _uiState.update { it.copy(favorites = favs) }
             }
         }
-        // Published for the detail screen's swipe/chevron navigation (BACKLOG.md F16) to step
+        // Published for the detail screen's swipe/chevron navigation (issue #7) to step
         // through whatever's actually on screen — filtered to Fire types, swiping should only ever
         // land on another Fire type. See PokedexListContext's own doc for the fallback when a
         // Pokémon isn't part of this list at all.

@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /** Thin wrapper around [MediaPlayer] for F34's cry playback — the one place in the app that plays
  *  audio, so there's no existing player abstraction to reuse. Owned by `PokedexDetailViewModel`,
  *  released from its `onCleared()` so playback doesn't outlive the screen or leak across a swipe
- *  to the next Pokémon (same per-screen-resource concern BACKLOG.md F16 already raised elsewhere). */
+ *  to the next Pokémon (same per-screen-resource concern issue #7 already raised elsewhere). */
 class CryPlayer {
     private var mediaPlayer: MediaPlayer? = null
 

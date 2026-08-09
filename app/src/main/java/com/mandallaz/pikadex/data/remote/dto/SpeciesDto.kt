@@ -22,7 +22,7 @@ data class PokemonSpeciesDto(
     val varieties: List<SpeciesVariety>?
 ) {
     /** Every alternate form of this species other than the default one — Mega Evolutions,
-     *  Gigantamax forms, and one-off special forms like Ursaluna Bloodmoon (BACKLOG.md F29) alike.
+     *  Gigantamax forms, and one-off special forms like Ursaluna Bloodmoon (issue #19) alike.
      *  PokeAPI models all of these as [varieties], not as links in [evolutionChain], so none of
      *  them are otherwise visible anywhere the evolution chain is read. How each one is actually
      *  obtained isn't in this data at all (it's not a level/item/trade-triggered evolution), so

@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
-/** Covers [selectColorScheme] (BACKLOG.md F19) — the pure decision of which color scheme to use,
+/** Covers [selectColorScheme] (issue #4) — the pure decision of which color scheme to use,
  *  kept separate from [PokeDexTheme] so it doesn't need a Compose runtime to test. */
 class ThemeTest {
 

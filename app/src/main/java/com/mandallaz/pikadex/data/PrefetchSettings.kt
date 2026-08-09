@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Which [PrefetchTier]s the Settings screen's "Prefetch now" button runs, persisted across app
- *  restarts. Essentials/Sprites default on, Full detail and Cries opt-in — matches BACKLOG.md F13
- *  (Cries added for F34, same opt-in-by-default reasoning as Full detail: ~1300 audio files is a
- *  real download, not a trivial one). Same SharedPreferences-backed-StateFlow pattern as
+ *  restarts. Essentials/Sprites default on, Full detail and Cries opt-in
+ *  (Cries added for issue #24, same opt-in-by-default reasoning as Full detail: ~1300 audio files
+ *  is a real download, not a trivial one). Same SharedPreferences-backed-StateFlow pattern as
  *  [FavoritesRepository]/[TeamRepository]. */
 object PrefetchSettings {
     private const val PREFS_NAME = "prefetch_settings"

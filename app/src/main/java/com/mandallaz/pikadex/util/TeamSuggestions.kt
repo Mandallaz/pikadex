@@ -62,7 +62,7 @@ private fun qualifies(
 
 /**
  * Drops candidates whose competitive tier is above [maxTier] — see [SmogonTierLabels.isAtOrBelowCeiling]
- * for the "this tier or below" rule and BACKLOG.md F17. [maxTier] null (no limit set) is a no-op.
+ * for the "this tier or below" rule and issue #11. [maxTier] null (no limit set) is a no-op.
  * A candidate absent from [tierByShowdownKey] (untiered/unclassified on Showdown) is kept rather
  * than excluded — "unknown" isn't evidence it's too strong for the chosen ceiling.
  */
@@ -86,7 +86,7 @@ fun filterByTierCeiling(
  * at once leads; [SuggestionCandidate.statTotal] ascending breaks ties, so among equally useful
  * picks the least overpowering one leads. Capped at [limit].
  *
- * Offense is STAB only (a candidate's own types, not its movepool) — see BACKLOG.md F11.
+ * Offense is STAB only (a candidate's own types, not its movepool).
  * [typeDetailsByType] must have an entry for every type referenced by [sharedWeaknesses],
  * [coverageGaps], or a candidate's [SuggestionCandidate.types]; a missing entry just drops that
  * type's contribution rather than failing the whole candidate.

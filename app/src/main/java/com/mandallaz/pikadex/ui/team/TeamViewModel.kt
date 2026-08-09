@@ -51,7 +51,7 @@ data class TeamUiState(
      *  picker then falls back to names), since presets deliberately store names, not ids. */
     val presetSpriteIds: Map<String, Int> = emptyMap(),
     /** Candidates that would improve both the team's shared weaknesses and coverage gaps at once —
-     *  see [rankSuggestions]/BACKLOG.md F11/F21. Cleared whenever the gate in [loadSuggestions]
+     *  see [rankSuggestions]/issue #11. Cleared whenever the gate in [loadSuggestions]
      *  no longer holds (team full, empty, or the matrix isn't fresh). */
     val suggestions: List<TeamSuggestion> = emptyList(),
     val isSuggestionsLoading: Boolean = false,
@@ -59,7 +59,7 @@ data class TeamUiState(
      *  cosmetic, not part of the pure ranking, so they're kept out of [TeamSuggestion] itself. */
     val suggestionSpriteIds: Map<String, Int> = emptyMap(),
     /** The competitive tier ceiling [suggestions] was filtered against, mirrored from
-     *  [SuggestionSettings] at the moment [suggestions] was computed (BACKLOG.md F17) — read by
+     *  [SuggestionSettings] at the moment [suggestions] was computed (issue #11) — read by
      *  the Suggestions card so it can explain why the list is short/empty rather than leaving that
      *  unexplained, since the setting itself lives on a different screen. Null means no limit. */
     val suggestionTierCeiling: String? = null
@@ -183,7 +183,7 @@ class TeamViewModel @JvmOverloads constructor(
     }
 
     /** Candidates that would fix both a shared weakness and a coverage gap at once — see
-     *  BACKLOG.md F11. Gated on the matrix being fresh (it's what [TeamUiState.sharedWeaknesses]
+     *  [rankSuggestions]/issue #11. Gated on the matrix being fresh (it's what [TeamUiState.sharedWeaknesses]
      *  and [TeamUiState.coverageGaps] are read from) and the team having room to grow; anything
      *  outside that gate just clears the list rather than showing suggestions for a team that no
      *  longer applies. */
