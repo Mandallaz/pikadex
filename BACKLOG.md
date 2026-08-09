@@ -560,26 +560,36 @@ instead.
 
 ## F24 — Reorder detail screen sections
 
-**To groom** — requested 2026-08-09, not yet planned or implemented.
+**Done 2026-08-09.** Implemented autonomously (BACKLOG.md batch: F24/F25/F26/F27/F28 on
+`feature/backlog-f24-f28`) — landed last in the batch, after F25/F26 had already settled the final
+shape of the Smogon and Type Triangles cards this reorder moves around.
 
-Reorder the cards on `PokedexDetailScreen.kt` (`app/src/main/java/com/mandallaz/pikadex/ui/detail/PokedexDetailScreen.kt`). Current order (top to bottom): sprite + description, Base Stats, Team Impact Summary card (F15), Type Triangles, Smogon Strategy Dex, Evolution/Mega Evolution, then further down Level Up Moves, TM/HM, Breeding, Tutor.
+**One gap in the original spec, resolved.** The requested order never mentioned the Abilities or
+Type Matchups cards, which the actual page has always had between Base Stats and the
+Team-Impact/Triangle/Smogon cluster — an oversight in the original ask, not a real ambiguity once
+noticed. Resolved by treating them as part of the same "core stat block" as Base Stats (both are
+this Pokémon's own always-present profile data, same as Base Stats, unlike Team Impact/Triangles/
+Smogon which are either conditional or link out) and leaving them exactly where they already were:
+right after Base Stats, before Evolution.
 
-Requested order:
+**Final order** (sprite/description and Base Stats unchanged at the top, moves unchanged at the
+bottom, per the original spec): sprite/description → Base Stats → Abilities → Type Matchups →
+**Evolution (+ Mega Evolution)** → Team Impact (F15, conditional) → Type Triangles (conditional,
+F26) → Smogon Strategy Dex (F25) → Level Up → TM/HM → Breeding → Tutor. Net change from before:
+only the Evolution card moved, from after Smogon to right after Type Matchups — every other card
+kept its existing relative order, exactly as the original "net effect" paragraph specified.
 
-1. Sprite + description — unchanged
-2. Base Stats — unchanged
-3. Evolution (+ Mega Evolution) — moved up, ahead of Team Impact/Type Triangle/Smogon
-4. Team Impact Summary (F15)
-5. Type Triangle
-6. Smogon Strategy Dex
-7. Level Up Moves
-8. TM/HM
-9. Breeding
-10. Tutor
-
-Net effect: Evolution moves up (from after Smogon to right after Base Stats); Team Impact/Type Triangle/Smogon keep their relative order but now sit after Evolution instead of before it; Level Up Moves/TM/HM/Breeding/Tutor keep their existing relative order, unchanged apart from following Smogon as they already do.
-
-Not yet scoped: exact composable-reordering diff in `PokedexDetailScreen.kt`, whether `MIN_TYPE_TRIANGLES_BEFORE_COLLAPSE`-style scroll-position assumptions in the doc comments (line ~107) need updating, and any manual-test pass on the emulator confirming scroll/swipe behavior is unaffected.
+- Single change in `PokedexDetailScreen.kt`: the `if (evolutionChain != null || megaEvolutions.isNotEmpty())`
+  item block cut from after `SmogonLinksCard(...)` and reinserted right after the
+  `TypeMatchupsCard(typeMatchups)` item, ahead of the `showTeamImpactCard`/`counteredTriangles`/
+  `SmogonLinksCard` block. No composable bodies changed, just their order in the `LazyColumn`.
+- No `MIN_TYPE_TRIANGLES_BEFORE_COLLAPSE`-style scroll-position assumptions existed to update — that
+  was speculative in the original ask; F26 already removed the Type Triangles card's own
+  collapse/expand state entirely, and nothing else in the file assumed a fixed card order.
+- Verified on the emulator on Charizard (has Evolution + Mega Evolution + Type Triangles + Smogon,
+  the busiest realistic case): scrolled the full page top to bottom, confirmed the order above,
+  swipe-to-adjacent-Pokémon (F16) and the move-category expand/collapse both still worked normally.
+- No new tests: pure reordering of existing composables, no new logic to cover.
 
 ## F25 — Shrink Smogon Strategy Dex card
 

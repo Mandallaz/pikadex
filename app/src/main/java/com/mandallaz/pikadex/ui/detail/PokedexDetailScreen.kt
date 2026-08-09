@@ -612,34 +612,14 @@ private fun DetailContent(
             }
         }
 
-        // BACKLOG.md F15 — only present while there's an active team with room to grow; a full or
-        // empty team, or a Pokémon already on the roster, has nothing meaningful to preview (see
-        // PokedexDetailScreen's showTeamImpactCard condition and PokedexDetailViewModel.loadTeamImpact's
-        // matching self-gate).
-        if (showTeamImpactCard) {
-            item {
-                TeamImpactCard(isTeamImpactLoading, teamImpactError, teamImpact)
-            }
-        }
-
         item {
             TypeMatchupsCard(typeMatchups)
         }
 
-        if (counteredTriangles.isNotEmpty()) {
-            item {
-                TypeTrianglesCard(counteredTriangles, onViewTypeTriangles)
-            }
-        }
-
-        item {
-            SmogonLinksCard(
-                pokemonName = pokemon.name,
-                speciesGeneration = species.generation.name,
-                formVersionGroup = formVersionGroup
-            )
-        }
-
+        // BACKLOG.md F24 — Evolution moved up to sit right after the core stat/ability/matchup
+        // cluster (Base Stats/Abilities/Type Matchups), ahead of Team Impact/Type Triangles/Smogon
+        // rather than after them — those 3 keep their existing relative order among themselves,
+        // just now following Evolution instead of leading it.
         val megaEvolutions = species.megaEvolutions
         if (evolutionChain != null || megaEvolutions.isNotEmpty()) {
             item {
@@ -726,6 +706,30 @@ private fun DetailContent(
                     }
                 }
             }
+        }
+
+        // BACKLOG.md F15 — only present while there's an active team with room to grow; a full or
+        // empty team, or a Pokémon already on the roster, has nothing meaningful to preview (see
+        // PokedexDetailScreen's showTeamImpactCard condition and PokedexDetailViewModel.loadTeamImpact's
+        // matching self-gate).
+        if (showTeamImpactCard) {
+            item {
+                TeamImpactCard(isTeamImpactLoading, teamImpactError, teamImpact)
+            }
+        }
+
+        if (counteredTriangles.isNotEmpty()) {
+            item {
+                TypeTrianglesCard(counteredTriangles, onViewTypeTriangles)
+            }
+        }
+
+        item {
+            SmogonLinksCard(
+                pokemonName = pokemon.name,
+                speciesGeneration = species.generation.name,
+                formVersionGroup = formVersionGroup
+            )
         }
 
         moveSection(
