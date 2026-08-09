@@ -9,12 +9,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,6 +49,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val prefetchState by viewModel.prefetchState.collectAsState()
     var showFullDetailWarning by remember { mutableStateOf(false) }
     var showTierDialog by remember { mutableStateOf(false) }
+    var showTierExplanationDialog by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { PikaDexTopBar(title = { Text("Settings") }) }) { padding ->
         Column(
@@ -177,11 +182,16 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-            Text(
-                "Team suggestions",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Team suggestions",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                IconButton(onClick = { showTierExplanationDialog = true }) {
+                    Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = "What are competitive tiers?")
+                }
+            }
             Text(
                 "Cap the team builder's Suggestions card to a competitive tier and below (e.g. " +
                     "UU also allows RU, NU...), based on Gen 9 Smogon tiers.",
@@ -215,6 +225,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 showTierDialog = false
             }
         )
+    }
+
+    if (showTierExplanationDialog) {
+        SmogonTierExplanationDialog(onDismiss = { showTierExplanationDialog = false })
     }
 
     if (showFullDetailWarning) {
