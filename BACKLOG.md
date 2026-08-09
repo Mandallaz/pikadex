@@ -28,6 +28,8 @@
 | F29 — Bug: Evolution card doesn't surface Ursaluna Bloodmoon / other one-off forms | — | Done | [#19](https://github.com/Mandallaz/pikadex/issues/19) |
 | F30 — Bottom nav bar too tall in portrait mode | — | To groom | [#20](https://github.com/Mandallaz/pikadex/issues/20) |
 | F31 — Top app bar too tall in portrait mode | — | To groom | [#21](https://github.com/Mandallaz/pikadex/issues/21) |
+| F32 — Survey: unused PokeAPI data | — | To groom | [#22](https://github.com/Mandallaz/pikadex/issues/22) |
+| F33 — Filter dex by "perfect counter to a type triangle" | — | To groom | [#23](https://github.com/Mandallaz/pikadex/issues/23) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -790,6 +792,128 @@ Not yet scoped: which screen(s) this refers to (the Pokédex list's large `"Pika
 different from the smaller per-Pokémon `TopAppBar` on the detail screen — worth confirming which one
 before touching anything), target height, and whether this is a `TopAppBar` vs `LargeTopAppBar`/
 `CenterAlignedTopAppBar` sizing choice or just excess padding — no code looked at yet.
+
+## F32 — Survey: PokeAPI data fetched but not yet used
+
+**To groom** — requested 2026-08-09. Research only, nothing implemented. Compiled by diffing every
+DTO in `data/remote/dto/` against the live PokeAPI response for each endpoint the app already calls
+(`pokemon/6`, `pokemon-species/6`, `move/1`, `ability/1`, `type/1`), plus the full endpoint list at
+`GET /api/v2/`. Each item below is a grooming candidate, not a commitment — pick from this list when
+deciding what's next, don't treat it as a queue.
+
+### Unused fields on resources the app already fetches (no new request needed)
+
+- **`PokemonDto`**: `held_items` (wild-encounter held items — a "held item" fact card), `cries`
+  (Gen 9 added `cries.latest`/`cries.legacy` audio URLs — a play-cry button), `forms` (list of form
+  URLs, distinct from `species.varieties`), `game_indices`, `past_types`/`past_abilities` (a
+  Pokémon's typing/abilities in older generations, e.g. pre-Fairy-type Clefable) — the last one is
+  the most interesting: a "this used to be different" note tied to the existing Smogon
+  generation-links pattern.
+- **`PokemonSprites`**: only `front_default`/`front_shiny`/`official-artwork` read today. Unused:
+  `back_default`/`back_shiny` (+ their `_female` variants), `sprites.other.home` (higher-res HOME
+  renders), `sprites.other["dream_world"]` (art style, Gen 5-era), `sprites.other.showdown`
+  (animated battle sprites — Sprites.kt already builds GBA-style RR sprites by hand, so
+  `showdown` is the one source of *animated* sprites without a bespoke asset pipeline),
+  `sprites.versions` (per-generation historical sprites — a "how this Pokémon looked across games"
+  strip).
+- **`PokemonSpeciesDto`**: `capture_rate`, `base_happiness`, `growth_rate` (leveling curve),
+  `gender_rate`, `has_gender_differences`, `hatch_counter`, `shape`, `habitat`, `is_baby`,
+  `evolves_from_species`, `pokedex_numbers` (per-regional-dex numbering, not just national),
+  `pal_park_encounters`, `names` (species name in other languages — an in-app language picker).
+  `capture_rate`/`base_happiness`/`growth_rate`/`gender_rate` together would round out the detail
+  screen's existing Height/Weight/Egg Groups row into a fuller "Breeding & Capture" info block.
+- **`MoveDetailDto`**: `priority` (e.g. Quick Attack's +1 — currently invisible even though damage
+  class/power/accuracy/PP are all shown), `target` (single foe / all foes / user / field...),
+  `meta` (critical-hit rate, status ailment inflicted + its chance, drain/healing %, flinch
+  chance, stat changes — genuinely useful competitive info absent from every move row today),
+  `contest_type`/`contest_effect`/`super_contest_effect` (Contest stats, unlikely to be worth it
+  outside a dedicated Contests feature), `generation` (first game a move appeared in),
+  `effect_chance` (secondary effect probability, pairs with `effect_entries`' text).
+- **`AbilityDetailDto`**: `generation`, `is_main_series` (filters out Colosseum/XD-only abilities),
+  `flavor_text_entries` (an in-game flavor blurb, same shape as species flavor text already shown).
+- **`TypeDetailDto`**: `generation` (when a type's damage relations last changed — relevant since
+  `past_damage_relations` exists precisely because they've shifted, e.g. Steel resisting Ghost/Dark
+  pre-Gen-6), `past_damage_relations` (older-generation matchups, same "this used to be different"
+  idea as `PokemonDto.past_types`), `moves` (every move of this type, redundant with the existing
+  per-move `type` field so low value), `sprites` (small type-icon images — `TypeBadge.kt` currently
+  builds its own icon URL by convention rather than reading this).
+- **`EvolutionDetail`** (`util/EvolutionUtils.kt`'s `describeEvolutionDetail`): only 8 of its ~20
+  real fields are read (`trigger`, `min_level`, `item`, `held_item`, `known_move`, `min_happiness`,
+  `min_beauty`, `time_of_day`, `needs_overworld_rain`). Unused: `location` (region-specific
+  evolutions, e.g. Magneton at Mt. Coronet), `min_affection`, `party_species`/`party_type`
+  (evolve-with-a-specific-teammate, e.g. Mantyke needs a Remoraid in-party), `trade_species`
+  (species-specific trade evolutions, e.g. Karrablast/Shelmet), `relative_physical_stats`
+  (Attack-vs-Defense evolutions, Tyrogue's 3-way split), `turn_upside_down` (Inkay), `used_move`
+  (Rhyperior-style move-known-at-evolution triggers, distinct from `known_move`), `gender`,
+  `min_steps` (Feebas-in-Let's-Go-style), `region`, `needs_multiplayer`, `min_damage_taken`,
+  `near_special_rock`, `min_move_count`. `describeEvolutionDetail`'s `else -> trigger.toDisplayName()`
+  fallback likely already produces something readable for many of these triggers even unread — but
+  the condition-specific detail (which teammate, which move, which location) is missing.
+
+### Whole endpoints never called
+
+- **`/nature`** — the 25 natures (stat +10%/-10% pairs) with no in-app representation at all; a
+  natural fit for the existing Base Stats card (e.g. "+Attack/-Defense" note) if ever paired with
+  a way to pick a nature, but has no obvious hook without one.
+- **`/item`** — held items, their effects, sprites. `PokemonDto.held_items` above only lists *wild
+  encounter* items; the full `/item/{name}` resource has the effect text. Relevant to Peat Block
+  (Ursaluna) and every other held-item evolution trigger already surfaced via `EvolutionDetail.item`.
+- **`/pokedex`** — the real regional dex groupings (Kanto, Johto, National...) and their own
+  numbering, pairs with `PokemonSpeciesDto.pokedex_numbers` above. Would let the Pokédex list sort/
+  filter/number by a specific game's dex instead of only the national one.
+- **`/location`, `/location-area`, `/encounter-method`, `/encounter-condition*`** — where a wild
+  Pokémon is actually found, by game and area (`PokemonDto.location_area_encounters` is the URL
+  into this data). A "Where to catch" card.
+- **`/generation`, `/version`, `/version-group`** — already read piecemeal by *name* everywhere
+  (`species.generation.name`, evolution `EvolutionDetail.version_group`...), but the full resources
+  (a generation's own Pokémon range, a version's release year) are never fetched.
+- **`/growth-rate`** — the actual level-vs-experience curve/formula, pairs with
+  `PokemonSpeciesDto.growth_rate` above.
+- **`/characteristic`** — flavor text tied to a Pokémon's highest IV stat; needs an IV input the
+  app has no other use for, so low priority without a broader "build a specific Pokémon" feature.
+- **`/berry`, `/berry-firmness`, `/berry-flavor`, `/contest-*`, `/super-contest-effect`,
+  `/pal-park-area`, `/pokeathlon-stat`, `/machine`, `/move-battle-style`, `/move-ailment`,
+  `/move-category`, `/item-attribute`, `/item-category`, `/item-fling-effect`, `/item-pocket`,
+  `/currency`** — niche/legacy game-mechanic data (Contests, Pal Park, Pokéathlon, item-crafting
+  categories) with no obvious fit for this app's current scope; listed for completeness, not as
+  candidates.
+- **`/language`** — every `names`/localized-text field across every resource above (species,
+  move, ability, type...) is keyed by language; the app always filters to `"en"`. A language
+  picker/setting would be the actual feature this unlocks, not the endpoint itself.
+
+## F33 — Filter dex by "is a perfect counter to a type triangle"
+
+**To groom** — requested 2026-08-09, not yet planned or implemented.
+
+Request: a Pokédex filter that only shows Pokémon whose typing is the exact best counter to a type
+triangle — e.g. Charizard (Fire/Flying), the counter typing to the Fire/Grass/Ground triangle per
+`util/TypeTriangles.kt`'s own existing entry for it. The mechanism is exactly
+`TypeTriangles.counteredBy(pokemonTypes).isNotEmpty()`, the same predicate BACKLOG.md F26 already
+uses to decide whether the detail screen's "Type Triangles" card shows at all for a given Pokémon.
+
+Not yet scoped:
+
+- **Binary toggle vs. pick-a-specific-triangle.** "Counters *any* triangle" is a single boolean,
+  matching `RarityFilter`'s on/off shape in `PokedexListViewModel`. "Counters *this specific*
+  triangle" (e.g. only Fighting/Rock/Flying's counters) is closer to the existing Move/Ability
+  filters, which pick one value from a list — here that list would be the 15 triangles in
+  `TypeTriangles.ALL`, shown by title or by their 3 types. The user's phrasing ("un triangle") reads
+  ambiguously between the two; needs confirming which (or both, as a 2-step filter: toggle on, then
+  optionally narrow to one triangle) before implementing.
+- **Data already available, no new fetch needed.** Every Pokémon's types are already bulk-fetched
+  via `getAllBasics()` (same source `RarityFilter`/type filtering already reads), so
+  `TypeTriangles.counteredBy(types)` can run client-side over the full ~1300-entry list with no
+  network cost — likely a `util/TypeTriangles.kt` addition like
+  `fun perfectCounters(allTypesByName: Map<String, List<String>>): Set<String>` (name -> filters in)
+  or reusing `counteredBy` per-entry, whichever reads cleaner at the call site.
+- **UI slot.** Likely alongside `RarityFilter`'s `SelectableChip` in `FilterSheetContent`'s "Other
+  filters" row (`PokedexListScreen.kt`), not the type-filter chips — this is a triangle-counter
+  predicate, not a type selection, same reasoning `RarityFilter` used to land in that row rather
+  than among the type chips.
+- **Should this share code with, or fully replace, `util/TypeTriangles.kt`'s existing per-Pokémon
+  `counteredBy` call on the detail screen** (BACKLOG.md F26), or stay a separate list-level
+  predicate — likely the same function reused both places, but worth confirming there's no
+  detail-vs-list-scope mismatch (e.g. alternate forms) before assuming.
 
 ## Cancelled
 
