@@ -30,6 +30,7 @@
 | F31 — Top app bar too tall in portrait mode | — | To groom | [#21](https://github.com/Mandallaz/pikadex/issues/21) |
 | F32 — Survey: unused PokeAPI data | — | To groom | [#22](https://github.com/Mandallaz/pikadex/issues/22) |
 | F33 — Filter dex by "perfect counter to a type triangle" | — | To groom | [#23](https://github.com/Mandallaz/pikadex/issues/23) |
+| F34 — Play a Pokémon's cry + prefetch tier for cry audio | Medium | To groom | [#24](https://github.com/Mandallaz/pikadex/issues/24) |
 
 Status values: **To groom** (idea captured, not yet planned) · **Plan ready** (spec finalized,
 implement when asked) · **In progress** (currently being implemented) · **Done** (built and in the
@@ -813,7 +814,11 @@ deciding what's next, don't treat it as a queue.
   `back_default`/`back_shiny` (+ their `_female` variants), `sprites.other.home` (higher-res HOME
   renders), `sprites.other["dream_world"]` (art style, Gen 5-era), `sprites.other.showdown`
   (animated battle sprites — Sprites.kt already builds GBA-style RR sprites by hand, so
-  `showdown` is the one source of *animated* sprites without a bespoke asset pipeline),
+  `showdown` is the one source of *animated* sprites without a bespoke asset pipeline; if this ever
+  gets picked up, the natural fit is a toggle on the detail screen next to the existing shiny
+  toggle, not the Pokédex grid or Team/Suggestions tiles — Showdown sprites are the same small
+  scale as `PokemonSprite`, not the large official artwork, and dozens of simultaneously-looping
+  GIFs in a list would be a real perf/battery cost for little gain at that size),
   `sprites.versions` (per-generation historical sprites — a "how this Pokémon looked across games"
   strip).
 - **`PokemonSpeciesDto`**: `capture_rate`, `base_happiness`, `growth_rate` (leveling curve),
@@ -914,6 +919,35 @@ Not yet scoped:
   `counteredBy` call on the detail screen** (BACKLOG.md F26), or stay a separate list-level
   predicate — likely the same function reused both places, but worth confirming there's no
   detail-vs-list-scope mismatch (e.g. alternate forms) before assuming.
+
+## F34 — Play a Pokémon's cry, with an offline prefetch tier for cry audio
+
+**To groom** — requested 2026-08-09. Priority **Medium**. Not yet planned or implemented.
+
+Request: a play button on the detail screen to hear a Pokémon's cry, plus the ability to prefetch
+the audio for offline use (alongside Settings' existing Essentials/Sprites/Full detail tiers) —
+picks up `PokemonDto.cries.latest`/`cries.legacy` directly from BACKLOG.md F32's survey (an unused
+field on a resource the app already fetches for every Pokémon, so no new per-Pokémon request is
+needed to know the cry URL exists).
+
+Not yet scoped:
+
+- **`latest` vs `legacy`, or both.** `cries.latest` is the current-gen cry, `cries.legacy` is the
+  Gen 5-era one for Pokémon that have had theirs redone since — needs deciding whether to expose a
+  choice or just always play `latest` (falling back to `legacy` if `latest` is somehow absent).
+- **Playback mechanism.** The app has no audio playback anywhere today — needs picking a player
+  (`android.media.MediaPlayer` is the simplest fit for "play one short one-shot sound", no need for
+  ExoPlayer's streaming/playlist machinery) and deciding lifecycle handling (release on screen
+  leave, don't leak across Pokémon swipes per F16).
+- **Entry point.** Likely a small speaker/play icon near the sprite on `PokedexDetailScreen.kt`,
+  similar in spirit to the existing shiny-toggle icon in the top bar — exact placement not decided.
+- **New `PrefetchTier`.** `PrefetchManager.kt`'s `enum class PrefetchTier` would gain a `CRIES`
+  entry alongside `ESSENTIALS`/`SPRITES`/`FULL_DETAIL`, wired into `PrefetchSettings` the same
+  on/off-toggle way. Needs a rough total-size estimate (~1300 short audio clips) for the Settings
+  copy, the way Sprites' row already says "50-150MB" — not measured yet.
+- **Caching.** Whether downloaded cries reuse the same disk-cache mechanism `PrefetchManager`
+  already uses for sprite images, or need their own — likely yes (same shape: URL keyed by
+  Pokémon id, immutable content), but not confirmed against the actual cache abstraction yet.
 
 ## Cancelled
 
