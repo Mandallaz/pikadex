@@ -10,7 +10,7 @@
 |---|---|---|---|
 | F15 — Team coverage impact preview | **High** | Plan ready | [#2](https://github.com/Mandallaz/pikadex/issues/2) |
 | F20 — Radical Red mode (rebalanced stats + trainer teams) | Medium | To groom | [#3](https://github.com/Mandallaz/pikadex/issues/3) |
-| F19 — Black/AMOLED mode | Medium | To groom | [#4](https://github.com/Mandallaz/pikadex/issues/4) |
+| F19 — Black/AMOLED mode | — | Done | [#4](https://github.com/Mandallaz/pikadex/issues/4) |
 | F17 — Filter dex by "is legendary" | — | Done | [#5](https://github.com/Mandallaz/pikadex/issues/5) |
 | F12 — Match team against a preset trainer | Low | Plan ready | [#6](https://github.com/Mandallaz/pikadex/issues/6) |
 | F16 — Swipe between Pokémon on the detail screen | — | Done | [#7](https://github.com/Mandallaz/pikadex/issues/7) |
@@ -137,13 +137,30 @@ presentation per the README's intro:
 
 ## F19 — Black/AMOLED mode
 
-**To groom** — raised but no implementation plan agreed yet.
+**Done 2026-08-09.** Of the two options this backlog entry left open (true-black AMOLED variant vs.
+a manual light/dark/system override independent of the OS setting), implemented autonomously as the
+former only — the simpler, narrower ask, and the one actually named "AMOLED mode". A manual
+dark-mode override (independent of the system setting) is still open; split out below if wanted.
 
-The app already has dark mode following the system setting (see README's "Throughout" section).
-This is understood as a distinct ask, not a duplicate: either a true-black (pure `#000000`
-background, not just Material's dark grey) variant for AMOLED screens, and/or a manual
-light/dark/system toggle independent of the OS setting — which of the two (or both) needs
-confirming with the user before this moves to "Plan ready".
+- `data/DisplaySettings.kt`: new `SharedPreferences`-backed singleton (`amoled_settings` prefs file,
+  same pattern as `PrefetchSettings`/`SuggestionSettings`), one `amoledEnabled: StateFlow<Boolean>`,
+  default `false`. `init()`'d from `PikaDexApplication.onCreate()` alongside the others.
+- `ui/theme/Theme.kt`: new `AmoledDarkColors` (`DarkColors.copy(background = Color.Black, surface =
+  Color.Black, surfaceVariant = Color.Black)` — accent colors unchanged, only the true-black
+  swap). Selection logic pulled into a pure `internal fun selectColorScheme(darkTheme, amoledBlack):
+  ColorScheme`, kept outside `PokeDexTheme`'s `@Composable` body so it's unit-testable without a
+  Compose runtime; the composable gained an `amoledBlack: Boolean = false` parameter (same pattern as
+  the existing `dynamicColor` parameter/comment).
+- `MainActivity.kt`: collects `DisplaySettings.amoledEnabled` as state and passes it into
+  `PokeDexTheme(amoledBlack = ...)`.
+- `SettingsViewModel`/`SettingsScreen`: new `amoledEnabled` field on `SettingsUiState`,
+  `setAmoledEnabled()` delegator, and a "Display" section with one `PrefetchTierRow`-style Switch row
+  ("AMOLED black" / "True black background in dark mode, to save battery on AMOLED screens.").
+- Test: `ui/theme/ThemeTest.kt` — light theme ignores the flag, dark-without-amoled keeps Material
+  grey, dark-with-amoled is pure black, and accent colors (`primary`/`secondary`/`tertiary`) stay
+  identical between the two dark variants.
+- README's Settings and Throughout sections, and `PRIVACY_POLICY.md`'s "Data stored on your device"
+  paragraph, updated to mention the new local-only preference.
 
 ## F17 — Filter dex by "is legendary"
 

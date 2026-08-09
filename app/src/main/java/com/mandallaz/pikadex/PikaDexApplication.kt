@@ -6,6 +6,7 @@ import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.mandallaz.pikadex.data.AppContainer
+import com.mandallaz.pikadex.data.DisplaySettings
 import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.PrefetchSettings
 import com.mandallaz.pikadex.data.SuggestionSettings
@@ -38,6 +39,7 @@ class PikaDexApplication : Application(), ImageLoaderFactory {
         TeamRepository.init(this)
         PrefetchSettings.init(this)
         SuggestionSettings.init(this)
+        DisplaySettings.init(this)
     }
 
     override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)

@@ -2,6 +2,7 @@ package com.mandallaz.pikadex.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -34,6 +35,24 @@ private val DarkColors = darkColorScheme(
     surface = Color(0xFF1E1E1E)
 )
 
+/** Same as [DarkColors] but background/surface dropped to pure black (BACKLOG.md F19) — Material's
+ *  dark grey (`#121212`/`#1E1E1E`) still lights up every pixel on an AMOLED panel; true black turns
+ *  those pixels off entirely, which is the whole point of an AMOLED mode. */
+private val AmoledDarkColors = DarkColors.copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceVariant = Color.Black
+)
+
+/** Pure selection logic, kept separate from [PokeDexTheme] so it's testable without a Compose
+ *  runtime: dynamic color (wallpaper-derived, API 31+) isn't covered here since it needs a
+ *  [android.content.Context] and is resolved directly in the composable below. */
+internal fun selectColorScheme(darkTheme: Boolean, amoledBlack: Boolean): ColorScheme = when {
+    darkTheme && amoledBlack -> AmoledDarkColors
+    darkTheme -> DarkColors
+    else -> LightColors
+}
+
 @Composable
 fun PokeDexTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -43,6 +62,8 @@ fun PokeDexTheme(
     // Left as a parameter (not deleted) in case a future settings toggle wants to offer it as an
     // opt-in.
     dynamicColor: Boolean = false,
+    // Settings-backed (DisplaySettings.amoledEnabled) — see F19 in BACKLOG.md.
+    amoledBlack: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -50,8 +71,7 @@ fun PokeDexTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColors
-        else -> LightColors
+        else -> selectColorScheme(darkTheme, amoledBlack)
     }
 
     MaterialTheme(

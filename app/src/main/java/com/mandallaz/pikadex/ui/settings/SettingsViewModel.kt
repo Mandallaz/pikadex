@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.mandallaz.pikadex.data.AppContainer
+import com.mandallaz.pikadex.data.DisplaySettings
 import com.mandallaz.pikadex.data.JsonDiskCache
 import com.mandallaz.pikadex.data.PrefetchManager
 import com.mandallaz.pikadex.data.PrefetchSettings
@@ -42,7 +43,9 @@ data class SettingsUiState(
     /** Every tier code Gen 9 actually uses, most-used first — empty until [SettingsViewModel]'s
      *  init block resolves it (best-effort; the picker just shows "Loading..." until then, same
      *  as the Pokédex list's own tier dialog). */
-    val suggestionTierOptions: List<String> = emptyList()
+    val suggestionTierOptions: List<String> = emptyList(),
+    /** True-black dark theme variant for AMOLED screens (BACKLOG.md F19). */
+    val amoledEnabled: Boolean = false
 ) {
     val hasAnyTierEnabled: Boolean
         get() = essentialsEnabled || spritesEnabled || fullDetailEnabled
@@ -66,6 +69,7 @@ class SettingsViewModel @JvmOverloads constructor(
         viewModelScope.launch { PrefetchSettings.spritesEnabled.collect { v -> _uiState.update { it.copy(spritesEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.fullDetailEnabled.collect { v -> _uiState.update { it.copy(fullDetailEnabled = v) } } }
         viewModelScope.launch { SuggestionSettings.maxTier.collect { v -> _uiState.update { it.copy(maxSuggestionTier = v) } } }
+        viewModelScope.launch { DisplaySettings.amoledEnabled.collect { v -> _uiState.update { it.copy(amoledEnabled = v) } } }
         loadSuggestionTierOptions()
         measureStorage()
     }
@@ -74,6 +78,7 @@ class SettingsViewModel @JvmOverloads constructor(
     fun setSpritesEnabled(enabled: Boolean) = PrefetchSettings.setSpritesEnabled(enabled)
     fun setFullDetailEnabled(enabled: Boolean) = PrefetchSettings.setFullDetailEnabled(enabled)
     fun setMaxSuggestionTier(tier: String?) = SuggestionSettings.setMaxTier(tier)
+    fun setAmoledEnabled(enabled: Boolean) = DisplaySettings.setAmoledEnabled(enabled)
 
     /** Best-effort, same as every other filter-option fetch in this app (e.g. the Pokédex list's
      *  own tier dialog) — a failure just leaves the picker showing "Loading...", not an error

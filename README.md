@@ -37,6 +37,7 @@ A reference screen for the 16 rock-paper-scissors type cycles, including the 4 "
 - Offline prefetch, tiered: Essentials (base stats, moves, type chart, Smogon tiers, ~1MB), Sprites (artwork and sprites for every entry, 50-150MB), and an opt-in Full detail tier (every Pokémon's complete data) — each with live progress and partial-failure reporting that never aborts the run
 - Storage accounting for the API and image caches, with a one-tap "Clear downloaded data"
 - Team Suggestions tier limit: cap suggested Pokémon to a Gen 9 Smogon tier and below (e.g. UU also allows RU, NU...), off by default
+- AMOLED black toggle: swaps dark mode's Material grey background/surface for pure black, off by default
 
 ### Throughout
 

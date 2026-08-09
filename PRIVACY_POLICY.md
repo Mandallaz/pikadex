@@ -1,6 +1,6 @@
 # Privacy Policy for PikaDex
 
-_Last updated: 2026-08-03_
+_Last updated: 2026-08-09_
 
 PikaDex is a Pokédex reference app. This policy explains what data the app handles.
 
@@ -24,8 +24,9 @@ logged or stored by this app.
 
 ## Data stored on your device
 
-Your favorites and your team roster are saved locally on your device only
-(Android SharedPreferences), so they persist between sessions.
+Your favorites, your team roster, and your app preferences (e.g. offline
+prefetch tiers, the AMOLED display toggle) are saved locally on your device
+only (Android SharedPreferences), so they persist between sessions.
 
 The app also keeps a local cache of the public game data and images it has
 already downloaded, so that it starts faster and needs less network on later

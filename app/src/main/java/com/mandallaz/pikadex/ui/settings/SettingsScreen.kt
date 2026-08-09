@@ -151,6 +151,20 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
             Text(
+                "Display",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            PrefetchTierRow(
+                title = "AMOLED black",
+                subtitle = "True black background in dark mode, to save battery on AMOLED screens.",
+                checked = uiState.amoledEnabled,
+                onCheckedChange = viewModel::setAmoledEnabled
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+
+            Text(
                 "Team suggestions",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
