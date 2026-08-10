@@ -137,15 +137,27 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String,
         // makes either form find it.
         val normalizedQuery = trimmed.replace(" ", "").replace("-", "")
         list = list.filter { resource ->
-            val rawMatches = resource.name.replace("-", "").contains(normalizedQuery)
-            // B10 — search must also follow the picked language, not just the raw/English name:
-            // in French, searching "ray" shouldn't be the only way to find Mudbray if its French
-            // name "Tiboudet" doesn't contain the query at all. Matching both (not replacing the
-            // raw-name check) rather than switching exclusively to the localized name — a user who
-            // knows a Pokémon's English name should still be able to find it.
-            val localizedMatches = resource.name.localizedDisplayName(state.speciesNames, language)
-                .lowercase().replace(" ", "").replace("-", "").contains(normalizedQuery)
-            rawMatches || localizedMatches || (numericQuery != null && resource.id == numericQuery)
+            // B10 — search must match what's actually on screen, in the picked language, not a
+            // union with the raw/English name: a first pass at this fix matched *both*, which
+            // still surfaced e.g. Mudbray for "ray" in German even though its German name
+            // "Pampuli" has nothing to do with "ray" — the English match alone doesn't belong once
+            // a language-specific name exists to search against instead. localizedDisplayName
+            // already falls back to the English-formatted name on its own when a species has no
+            // translation for the current language, which is the only case English should still be
+            // searchable in — not as a second, always-on match path.
+            //
+            // English itself keeps matching the raw API name (not toDisplayName()'s formatted
+            // output, which localizedDisplayName would route it through) — toDisplayName() adds
+            // punctuation raw names don't have (e.g. "mr-mime" -> "Mr. Mime"), and normalizedQuery
+            // only strips spaces/hyphens, not periods/apostrophes, so a typed "mrmime" would stop
+            // matching "Mr. Mime" if this went through the same path. Unchanged from before B10.
+            val nameMatches = if (language == SupportedLanguages.DEFAULT_CODE) {
+                resource.name.replace("-", "").contains(normalizedQuery)
+            } else {
+                resource.name.localizedDisplayName(state.speciesNames, language)
+                    .lowercase().replace(" ", "").replace("-", "").contains(normalizedQuery)
+            }
+            nameMatches || (numericQuery != null && resource.id == numericQuery)
         }
     }
     state.typeFilterNames?.let { set -> list = list.filter { it.name in set } }

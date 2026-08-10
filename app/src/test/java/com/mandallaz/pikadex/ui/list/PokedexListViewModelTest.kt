@@ -256,33 +256,53 @@ class PokedexListViewModelTest {
         assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
     }
 
-    // --- Search matches the localized name too (B10) --------------------------
+    // --- Search matches the localized name, not the raw English one (B10) -----
 
     private val mudbray = resource("mudbray", 749)
-    private val mudbraySpeciesNames = mapOf("mudbray" to mapOf("en" to "Mudbray", "fr" to "Tiboudet"))
+    private val mudbraySpeciesNames = mapOf(
+        "mudbray" to mapOf("en" to "Mudbray", "fr" to "Tiboudet", "de" to "Pampuli")
+    )
 
-    // The bug itself: searching "ray" in French mode used to find Mudbray only because its
-    // *English* name contains "ray" — its French name "Tiboudet" doesn't, so the match made no
-    // sense to a French-mode user. Both English and the localized name must be searchable at
-    // once (matching only the localized name would regress the opposite way for anyone who still
-    // knows a Pokémon's English name).
     @Test
     fun `search matches the localized name in the current language`() {
         val state = PokedexListUiState(allPokemon = listOf(mudbray), speciesNames = mudbraySpeciesNames)
         assertEquals(listOf("mudbray"), computeDisplayed(state, "tiboudet", language = "fr").map { it.name })
     }
 
+    // The bug itself (first B10 report): searching "ray" in French mode found Mudbray only
+    // because its *English* name contains "ray" — its French name "Tiboudet" doesn't.
+    //
+    // A first fix matched *both* the localized and the English name, which turned out to be the
+    // same bug from a different angle (second B10 report): "ray" in German still found Mudbray,
+    // whose German name "Pampuli" has nothing to do with "ray" either. Once a species has a
+    // language-specific name, English must not be a second always-on match path — only what's
+    // actually on screen should be searchable.
     @Test
-    fun `search still matches the English name even in a non-English language`() {
+    fun `search does not match the English name when a different localized name exists`() {
         val state = PokedexListUiState(allPokemon = listOf(mudbray), speciesNames = mudbraySpeciesNames)
+        assertEquals(emptyList<NamedApiResource>(), computeDisplayed(state, "ray", language = "fr"))
+        assertEquals(emptyList<NamedApiResource>(), computeDisplayed(state, "ray", language = "de"))
+    }
+
+    // A localized name absent from speciesNames (not loaded yet, or no translation for this
+    // species) must not crash the search — falls back to the English-formatted name via
+    // localizedDisplayName, and *that* fallback is the one case English is still searchable in a
+    // non-English language.
+    @Test
+    fun `search falls back to the English name when no localized name is available for this species`() {
+        val state = PokedexListUiState(allPokemon = listOf(mudbray), speciesNames = emptyMap())
+        assertEquals(listOf("mudbray"), computeDisplayed(state, "mudbray", language = "fr").map { it.name })
         assertEquals(listOf("mudbray"), computeDisplayed(state, "ray", language = "fr").map { it.name })
     }
 
-    // A localized name absent from speciesNames (not loaded yet, or no translation) must not
-    // crash the search — falls back to the English-formatted name via localizedDisplayName.
+    // English itself must still match the raw API name exactly as before B10 (not routed through
+    // toDisplayName()'s punctuation, which normalizedQuery doesn't strip) — e.g. "mrmime" must
+    // still find "mr-mime" the same way it did pre-B10, since toDisplayName() would format it as
+    // "Mr. Mime" and the "." isn't stripped by the query-side normalization.
     @Test
-    fun `search degrades gracefully when no localized name is available for the query language`() {
-        val state = PokedexListUiState(allPokemon = listOf(mudbray), speciesNames = emptyMap())
-        assertEquals(listOf("mudbray"), computeDisplayed(state, "mudbray", language = "fr").map { it.name })
+    fun `English search still matches the raw API name, not the formatted display name`() {
+        val mrMime = resource("mr-mime", 122)
+        val state = PokedexListUiState(allPokemon = listOf(mrMime), speciesNames = mudbraySpeciesNames)
+        assertEquals(listOf("mr-mime"), computeDisplayed(state, "mrmime", language = "en").map { it.name })
     }
 }
