@@ -81,6 +81,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -102,6 +103,7 @@ import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
+import com.mandallaz.pikadex.util.localizedOrEnglish
 import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.TeamImpactSummary
@@ -441,6 +443,9 @@ internal fun DetailContent(
 ) {
     val primaryType = pokemon.types.orEmpty().minByOrNull { it.slot }?.type?.name ?: "normal"
     val primaryColor = TypeColors.of(primaryType)
+    // F35 — game-data axis: genus/flavor text below read whichever language this resolves to,
+    // falling back to English wherever the chosen language's entry is missing.
+    val gameDataLanguage by LanguageSettings.currentLanguage.collectAsState()
 
     // Each category's moves are computed once per load, off the main thread, in the ViewModel
     // (see PokedexDetailUiState.groupedMoves) rather than here — this is the exact same
@@ -526,7 +531,7 @@ internal fun DetailContent(
                     text = pokemon.name.toDisplayName(),
                     style = MaterialTheme.typography.titleLarge
                 )
-                val genus = species.genera.orEmpty().firstOrNull { it.language.name == "en" }?.genus
+                val genus = species.genera.localizedOrEnglish(gameDataLanguage) { it.language.name }?.genus
                 if (genus != null) {
                     Text(text = genus, style = MaterialTheme.typography.bodyMedium)
                 }
@@ -557,7 +562,7 @@ internal fun DetailContent(
         }
 
         item {
-            val flavorText = species.flavorTextEntries.orEmpty().firstOrNull { it.language.name == "en" }?.flavorText
+            val flavorText = species.flavorTextEntries.localizedOrEnglish(gameDataLanguage) { it.language.name }?.flavorText
             if (flavorText != null) {
                 Text(
                     // PokeAPI's raw flavor text carries over an old in-game font quirk where "é"

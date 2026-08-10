@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -30,6 +31,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.ui.compare.CompareScreen
 import com.mandallaz.pikadex.ui.detail.PokedexDetailScreen
@@ -52,20 +54,22 @@ private val COMPACT_NAV_BAR_MAX_HEIGHT = 500.dp
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
 
-// A single always-visible, labelled bottom bar makes all three destinations equally discoverable
-// from anywhere and makes the current one obvious via the selected state.
-private val BOTTOM_TABS = listOf(
-    BottomTab(ROUTE_LIST, "Pokédex", Icons.Default.Home),
-    BottomTab(ROUTE_TYPE_TRIANGLES, "Triangles", Icons.Default.ChangeHistory),
-    BottomTab(ROUTE_TEAM, "Team", Icons.Default.Groups),
-    BottomTab(ROUTE_SETTINGS, "Settings", Icons.Default.Settings)
-)
-
 @Composable
 fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     val team by TeamRepository.team.collectAsState()
+
+    // Built inside the composable (not hoisted to a top-level val) so it re-resolves via
+    // stringResource() on a language change (F35) instead of being fixed at class-init time.
+    // A single always-visible, labelled bottom bar makes all four destinations equally
+    // discoverable from anywhere and makes the current one obvious via the selected state.
+    val bottomTabs = listOf(
+        BottomTab(ROUTE_LIST, stringResource(R.string.nav_pokedex), Icons.Default.Home),
+        BottomTab(ROUTE_TYPE_TRIANGLES, stringResource(R.string.nav_triangles), Icons.Default.ChangeHistory),
+        BottomTab(ROUTE_TEAM, stringResource(R.string.nav_team), Icons.Default.Groups),
+        BottomTab(ROUTE_SETTINGS, stringResource(R.string.nav_settings), Icons.Default.Settings)
+    )
 
     // Both taps of a fast double-tap (on a Pokémon card, an evolution stage, or Back) are dispatched
     // before the first one's navigation takes effect. A destination that has already begun
@@ -100,14 +104,14 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
             // Hidden on the pushed Detail screen — that's reached *from* the Pokédex tab, not a
             // destination of its own, so showing the bar there would offer a confusing 4th "tab"
             // that's really just a worse Back button.
-            if (BOTTOM_TABS.any { it.route == currentRoute }) {
+            if (bottomTabs.any { it.route == currentRoute }) {
                 // ShortNavigationBar is Material3's compact bar variant — the standard NavigationBar
                 // reserves a fixed 80dp container regardless of content, which on device left a
                 // disproportionate chunk of the screen for a 4-item tab strip (GitHub issue F30).
                 val isCompactHeight = LocalConfiguration.current.screenHeightDp.dp < COMPACT_NAV_BAR_MAX_HEIGHT
                 val iconPosition = if (isCompactHeight) NavigationItemIconPosition.Start else NavigationItemIconPosition.Top
                 ShortNavigationBar {
-                    BOTTOM_TABS.forEach { tab ->
+                    bottomTabs.forEach { tab ->
                         ShortNavigationBarItem(
                             selected = currentRoute == tab.route,
                             onClick = { switchTab(tab.route) },

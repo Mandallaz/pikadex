@@ -33,10 +33,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mandallaz.pikadex.R
+import com.mandallaz.pikadex.data.AppLanguage
 import com.mandallaz.pikadex.data.PrefetchState
+import com.mandallaz.pikadex.data.SupportedLanguages
 import com.mandallaz.pikadex.ui.components.OptionsDialog
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.util.SmogonTierLabels
@@ -50,8 +54,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     var showFullDetailWarning by remember { mutableStateOf(false) }
     var showTierDialog by remember { mutableStateOf(false) }
     var showTierExplanationDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
-    Scaffold(topBar = { PikaDexTopBar(title = { Text("Settings") }) }) { padding ->
+    Scaffold(topBar = { PikaDexTopBar(title = { Text(stringResource(R.string.settings_title)) }) }) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -59,47 +64,72 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
+            // F35 — the first choice on this screen, ahead of everything else, driving both the
+            // UI chrome (this screen included) and game data (species/move/ability text) at once.
             Text(
-                "Offline data",
+                stringResource(R.string.settings_language_section),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { showLanguageDialog = true }.padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    stringResource(R.string.settings_language_section),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    uiState.currentLanguage.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+
+            Text(
+                stringResource(R.string.settings_offline_data_section),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                "Download data ahead of time so the app works fully offline.",
+                stringResource(R.string.settings_offline_data_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
             PrefetchTierRow(
-                title = "Essentials",
-                subtitle = "Base stats, moves, type chart, Smogon tiers — about 1MB.",
+                title = stringResource(R.string.settings_tier_essentials_title),
+                subtitle = stringResource(R.string.settings_tier_essentials_subtitle),
                 checked = uiState.essentialsEnabled,
                 onCheckedChange = viewModel::setEssentialsEnabled
             )
             PrefetchTierRow(
-                title = "Sprites",
-                subtitle = "Artwork and sprites for every Pokémon — 50-150MB.",
+                title = stringResource(R.string.settings_tier_sprites_title),
+                subtitle = stringResource(R.string.settings_tier_sprites_subtitle),
                 checked = uiState.spritesEnabled,
                 onCheckedChange = viewModel::setSpritesEnabled
             )
             PrefetchTierRow(
-                title = "Shiny & animated sprites",
-                subtitle = "Shiny artwork/sprites and animated Showdown GIFs for every Pokémon, so the detail screen's shiny/animated toggles work offline too — roughly doubles the Sprites download.",
+                title = stringResource(R.string.settings_tier_sprites_extra_title),
+                subtitle = stringResource(R.string.settings_tier_sprites_extra_subtitle),
                 checked = uiState.spritesExtraEnabled,
                 onCheckedChange = viewModel::setSpritesExtraEnabled
             )
             PrefetchTierRow(
-                title = "Full detail",
-                subtitle = "Every Pokémon's complete data (species, evolution chain) for full offline browsing — a large download.",
+                title = stringResource(R.string.settings_tier_full_detail_title),
+                subtitle = stringResource(R.string.settings_tier_full_detail_subtitle),
                 checked = uiState.fullDetailEnabled,
                 onCheckedChange = { enabled ->
                     if (enabled) showFullDetailWarning = true else viewModel.setFullDetailEnabled(false)
                 }
             )
             PrefetchTierRow(
-                title = "Cries",
-                subtitle = "Every Pokémon's cry, so the play button on its detail page works offline — around 1300 short audio clips.",
+                title = stringResource(R.string.settings_tier_cries_title),
+                subtitle = stringResource(R.string.settings_tier_cries_subtitle),
                 checked = uiState.criesEnabled,
                 onCheckedChange = viewModel::setCriesEnabled
             )
@@ -113,23 +143,27 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                         )
                         TextButton(onClick = viewModel::cancelPrefetch, modifier = Modifier.padding(top = 4.dp)) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.settings_cancel))
                         }
                     }
                 }
                 is PrefetchState.Finished -> {
                     Text(
-                        if (state.failed > 0) "Done, ${state.failed} item(s) failed and can be retried." else "Prefetch complete.",
+                        if (state.failed > 0) {
+                            stringResource(R.string.settings_prefetch_finished_with_failures, state.failed)
+                        } else {
+                            stringResource(R.string.settings_prefetch_finished)
+                        },
                         modifier = Modifier.padding(top = 12.dp)
                     )
                     Button(onClick = viewModel::startPrefetch, enabled = uiState.hasAnyTierEnabled, modifier = Modifier.padding(top = 8.dp)) {
-                        Text("Prefetch now")
+                        Text(stringResource(R.string.settings_prefetch_now))
                     }
                 }
                 is PrefetchState.Failed -> {
                     Text(state.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp))
                     Button(onClick = viewModel::startPrefetch, enabled = uiState.hasAnyTierEnabled, modifier = Modifier.padding(top = 8.dp)) {
-                        Text("Retry")
+                        Text(stringResource(R.string.settings_retry))
                     }
                 }
                 PrefetchState.Idle -> {
@@ -137,14 +171,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         onClick = viewModel::startPrefetch,
                         enabled = uiState.hasAnyTierEnabled,
                         modifier = Modifier.padding(top = 12.dp)
-                    ) { Text("Prefetch now") }
+                    ) { Text(stringResource(R.string.settings_prefetch_now)) }
                 }
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
             Text(
-                "Storage",
+                stringResource(R.string.settings_storage_section),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -154,14 +188,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         CircularProgressIndicator(modifier = Modifier.padding(8.dp))
                     } else {
                         val usage = uiState.storageUsage
-                        Text("Total: ${formatBytes(usage?.totalBytes ?: 0L)}", fontWeight = FontWeight.Medium)
-                        Text("API data: ${formatBytes((usage?.httpCacheBytes ?: 0L) + (usage?.diskCacheBytes ?: 0L))}")
-                        Text("Images: ${formatBytes(usage?.imageCacheBytes ?: 0L)}")
-                        Text("Cries: ${formatBytes(usage?.criesCacheBytes ?: 0L)}")
+                        Text(
+                            stringResource(R.string.settings_storage_total, formatBytes(usage?.totalBytes ?: 0L)),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            stringResource(
+                                R.string.settings_storage_api_data,
+                                formatBytes((usage?.httpCacheBytes ?: 0L) + (usage?.diskCacheBytes ?: 0L))
+                            )
+                        )
+                        Text(stringResource(R.string.settings_storage_images, formatBytes(usage?.imageCacheBytes ?: 0L)))
+                        Text(stringResource(R.string.settings_storage_cries, formatBytes(usage?.criesCacheBytes ?: 0L)))
                     }
                     Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = viewModel::measureStorage) { Text("Refresh") }
-                        TextButton(onClick = viewModel::clearDownloadedData) { Text("Clear downloaded data") }
+                        TextButton(onClick = viewModel::measureStorage) { Text(stringResource(R.string.settings_storage_refresh)) }
+                        TextButton(onClick = viewModel::clearDownloadedData) { Text(stringResource(R.string.settings_storage_clear)) }
                     }
                 }
             }
@@ -169,13 +211,13 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
             Text(
-                "Display",
+                stringResource(R.string.settings_display_section),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             PrefetchTierRow(
-                title = "AMOLED black",
-                subtitle = "Forces dark mode with a true black background, to save battery on AMOLED screens.",
+                title = stringResource(R.string.settings_amoled_title),
+                subtitle = stringResource(R.string.settings_amoled_subtitle),
                 checked = uiState.amoledEnabled,
                 onCheckedChange = viewModel::setAmoledEnabled
             )
@@ -184,17 +226,19 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Team suggestions",
+                    stringResource(R.string.settings_suggestions_section),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 IconButton(onClick = { showTierExplanationDialog = true }) {
-                    Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = "What are competitive tiers?")
+                    Icon(
+                        Icons.AutoMirrored.Filled.HelpOutline,
+                        contentDescription = stringResource(R.string.settings_suggestions_help_content_description)
+                    )
                 }
             }
             Text(
-                "Cap the team builder's Suggestions card to a competitive tier and below (e.g. " +
-                    "UU also allows RU, NU...), based on Gen 9 Smogon tiers.",
+                stringResource(R.string.settings_suggestions_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
@@ -203,9 +247,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 modifier = Modifier.fillMaxWidth().clickable { showTierDialog = true }.padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Tier limit", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.settings_tier_limit_label), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 Text(
-                    uiState.maxSuggestionTier?.let { SmogonTierLabels.labelFor(it) } ?: "No limit",
+                    uiState.maxSuggestionTier?.let { SmogonTierLabels.labelFor(it) } ?: stringResource(R.string.settings_tier_limit_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -213,11 +257,26 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         }
     }
 
-    if (showTierDialog) {
+    if (showLanguageDialog) {
         OptionsDialog(
-            title = "Suggestion tier limit",
+            title = stringResource(R.string.settings_language_section),
+            options = SupportedLanguages.ALL,
+            labelFor = AppLanguage::label,
+            selected = uiState.currentLanguage,
+            onDismiss = { showLanguageDialog = false },
+            onSelect = { language ->
+                viewModel.setLanguage(language.code)
+                showLanguageDialog = false
+            }
+        )
+    }
+
+    if (showTierDialog) {
+        val noLimitLabel = stringResource(R.string.settings_tier_limit_none)
+        OptionsDialog(
+            title = stringResource(R.string.settings_tier_limit_dialog_title),
             options = listOf<String?>(null) + uiState.suggestionTierOptions,
-            labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: "No limit" },
+            labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: noLimitLabel },
             selected = uiState.maxSuggestionTier,
             onDismiss = { showTierDialog = false },
             onSelect = { tier ->
@@ -234,21 +293,16 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     if (showFullDetailWarning) {
         AlertDialog(
             onDismissRequest = { showFullDetailWarning = false },
-            title = { Text("Download full detail?") },
-            text = {
-                Text(
-                    "This fetches every Pokémon's complete data — species, evolution chain and more — " +
-                        "for around 1300 entries. It's a large download and will use significant data and storage."
-                )
-            },
+            title = { Text(stringResource(R.string.settings_full_detail_warning_title)) },
+            text = { Text(stringResource(R.string.settings_full_detail_warning_text)) },
             confirmButton = {
                 TextButton(onClick = {
                     showFullDetailWarning = false
                     viewModel.setFullDetailEnabled(true)
-                }) { Text("Enable") }
+                }) { Text(stringResource(R.string.settings_full_detail_warning_enable)) }
             },
             dismissButton = {
-                TextButton(onClick = { showFullDetailWarning = false }) { Text("Cancel") }
+                TextButton(onClick = { showFullDetailWarning = false }) { Text(stringResource(R.string.settings_cancel)) }
             }
         )
     }

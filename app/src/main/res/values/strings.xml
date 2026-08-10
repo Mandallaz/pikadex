@@ -1,3 +1,61 @@
 <resources>
-    <string name="app_name">PikaDex</string>
+    <string name="app_name" translatable="false">PikaDex</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">Pokédex</string>
+    <string name="nav_triangles">Triangles</string>
+    <string name="nav_team">Team</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+
+    <string name="settings_language_section">Language</string>
+
+    <string name="settings_offline_data_section">Offline data</string>
+    <string name="settings_offline_data_subtitle">Download data ahead of time so the app works fully offline.</string>
+
+    <string name="settings_tier_essentials_title">Essentials</string>
+    <string name="settings_tier_essentials_subtitle">Base stats, moves, type chart, Smogon tiers — about 1MB.</string>
+
+    <string name="settings_tier_sprites_title">Sprites</string>
+    <string name="settings_tier_sprites_subtitle">Artwork and sprites for every Pokémon — 50-150MB.</string>
+
+    <string name="settings_tier_sprites_extra_title">Shiny &amp; animated sprites</string>
+    <string name="settings_tier_sprites_extra_subtitle">Shiny artwork/sprites and animated Showdown GIFs for every Pokémon, so the detail screen\'s shiny/animated toggles work offline too — roughly doubles the Sprites download.</string>
+
+    <string name="settings_tier_full_detail_title">Full detail</string>
+    <string name="settings_tier_full_detail_subtitle">Every Pokémon\'s complete data (species, evolution chain) for full offline browsing — a large download.</string>
+
+    <string name="settings_tier_cries_title">Cries</string>
+    <string name="settings_tier_cries_subtitle">Every Pokémon\'s cry, so the play button on its detail page works offline — around 1300 short audio clips.</string>
+
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_prefetch_finished_with_failures">Done, %1$d item(s) failed and can be retried.</string>
+    <string name="settings_prefetch_finished">Prefetch complete.</string>
+    <string name="settings_prefetch_now">Prefetch now</string>
+    <string name="settings_retry">Retry</string>
+
+    <string name="settings_storage_section">Storage</string>
+    <string name="settings_storage_total">Total: %1$s</string>
+    <string name="settings_storage_api_data">API data: %1$s</string>
+    <string name="settings_storage_images">Images: %1$s</string>
+    <string name="settings_storage_cries">Cries: %1$s</string>
+    <string name="settings_storage_refresh">Refresh</string>
+    <string name="settings_storage_clear">Clear downloaded data</string>
+
+    <string name="settings_display_section">Display</string>
+    <string name="settings_amoled_title">AMOLED black</string>
+    <string name="settings_amoled_subtitle">Forces dark mode with a true black background, to save battery on AMOLED screens.</string>
+
+    <string name="settings_suggestions_section">Team suggestions</string>
+    <string name="settings_suggestions_help_content_description">What are competitive tiers?</string>
+    <string name="settings_suggestions_subtitle">Cap the team builder\'s Suggestions card to a competitive tier and below (e.g. UU also allows RU, NU…), based on Gen 9 Smogon tiers.</string>
+    <string name="settings_tier_limit_label">Tier limit</string>
+    <string name="settings_tier_limit_none">No limit</string>
+    <string name="settings_tier_limit_dialog_title">Suggestion tier limit</string>
+
+    <string name="settings_full_detail_warning_title">Download full detail?</string>
+    <string name="settings_full_detail_warning_text">This fetches every Pokémon\'s complete data — species, evolution chain and more — for around 1300 entries. It\'s a large download and will use significant data and storage.</string>
+    <string name="settings_full_detail_warning_enable">Enable</string>
 </resources>

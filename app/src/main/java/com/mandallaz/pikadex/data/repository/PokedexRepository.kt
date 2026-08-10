@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken
 import com.mandallaz.pikadex.data.AsyncCache
 import com.mandallaz.pikadex.data.AsyncValueCache
 import com.mandallaz.pikadex.data.JsonDiskCache
+import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.SmogonTierDataSource
@@ -15,6 +16,7 @@ import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import com.mandallaz.pikadex.util.MoveCategory
+import com.mandallaz.pikadex.util.localizedOrEnglish
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.TypeIds
 import java.util.concurrent.TimeUnit
@@ -132,11 +134,15 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         return detail.pokemon.orEmpty().map { it.pokemon.name }.toSet()
     }
 
-    /** Plain-English description of an ability (e.g. "Levitate" -> "Gives full immunity to Ground
-     *  type moves."), since PokeAPI's ability names alone are often unclear on their own. */
+    /** Description of an ability (e.g. "Levitate" -> "Gives full immunity to Ground type moves."),
+     *  since PokeAPI's ability names alone are often unclear on their own — in whichever language
+     *  [LanguageSettings] currently resolves to (F35's game-data axis), falling back to English.
+     *  Read once per call rather than reactively: this is fetched once per [getPokemonDetailBundle]
+     *  load, not re-derived on every recomposition — switching language mid-session re-localizes on
+     *  the next load, not retroactively. */
     override suspend fun getAbilityDescription(ability: String): String? {
         val detail = abilityDetailCache.get(ability) { api.getAbility(ability) }
-        return detail.effectEntries.orEmpty().firstOrNull { it.language.name == "en" }?.shortEffect
+        return detail.effectEntries.localizedOrEnglish(LanguageSettings.currentLanguage.value) { it.language.name }?.shortEffect
     }
 
     /** Just the type names for a pokemon, without pulling the full detail bundle (species, evolution chain). */

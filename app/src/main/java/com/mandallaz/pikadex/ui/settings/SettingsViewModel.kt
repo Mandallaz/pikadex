@@ -7,13 +7,16 @@ import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.CryCache
+import com.mandallaz.pikadex.data.AppLanguage
 import com.mandallaz.pikadex.data.DisplaySettings
 import com.mandallaz.pikadex.data.JsonDiskCache
+import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.PrefetchManager
 import com.mandallaz.pikadex.data.PrefetchSettings
 import com.mandallaz.pikadex.data.PrefetchState
 import com.mandallaz.pikadex.data.PrefetchTier
 import com.mandallaz.pikadex.data.SuggestionSettings
+import com.mandallaz.pikadex.data.SupportedLanguages
 import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonTierLabels
@@ -50,7 +53,10 @@ data class SettingsUiState(
      *  as the Pokédex list's own tier dialog). */
     val suggestionTierOptions: List<String> = emptyList(),
     /** True-black dark theme variant for AMOLED screens (issue #4). */
-    val amoledEnabled: Boolean = false
+    val amoledEnabled: Boolean = false,
+    /** F35 — drives both the UI chrome locale and which language game data (species/move/ability
+     *  text) is read in. Defaults to English regardless of device locale, per that ticket's spec. */
+    val currentLanguage: AppLanguage = SupportedLanguages.ALL.first { it.code == SupportedLanguages.DEFAULT_CODE }
 ) {
     val hasAnyTierEnabled: Boolean
         get() = essentialsEnabled || spritesEnabled || spritesExtraEnabled || fullDetailEnabled || criesEnabled
@@ -77,6 +83,13 @@ class SettingsViewModel @JvmOverloads constructor(
         viewModelScope.launch { PrefetchSettings.criesEnabled.collect { v -> _uiState.update { it.copy(criesEnabled = v) } } }
         viewModelScope.launch { SuggestionSettings.maxTier.collect { v -> _uiState.update { it.copy(maxSuggestionTier = v) } } }
         viewModelScope.launch { DisplaySettings.amoledEnabled.collect { v -> _uiState.update { it.copy(amoledEnabled = v) } } }
+        viewModelScope.launch {
+            LanguageSettings.currentLanguage.collect { code ->
+                val language = SupportedLanguages.ALL.firstOrNull { it.code == code }
+                    ?: SupportedLanguages.ALL.first { it.code == SupportedLanguages.DEFAULT_CODE }
+                _uiState.update { it.copy(currentLanguage = language) }
+            }
+        }
         loadSuggestionTierOptions()
         measureStorage()
     }
@@ -88,6 +101,7 @@ class SettingsViewModel @JvmOverloads constructor(
     fun setCriesEnabled(enabled: Boolean) = PrefetchSettings.setCriesEnabled(enabled)
     fun setMaxSuggestionTier(tier: String?) = SuggestionSettings.setMaxTier(tier)
     fun setAmoledEnabled(enabled: Boolean) = DisplaySettings.setAmoledEnabled(enabled)
+    fun setLanguage(code: String) = LanguageSettings.setLanguage(code)
 
     /** Best-effort, same as every other filter-option fetch in this app (e.g. the Pokédex list's
      *  own tier dialog) — a failure just leaves the picker showing "Loading...", not an error

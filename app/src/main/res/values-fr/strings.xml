@@ -1,0 +1,61 @@
+<resources>
+    <!-- app_name intentionally not overridden — a product/brand name stays as-is across locales. -->
+
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">Pokédex</string>
+    <string name="nav_triangles">Triangles</string>
+    <string name="nav_team">Équipe</string>
+    <string name="nav_settings">Réglages</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Réglages</string>
+
+    <string name="settings_language_section">Langue</string>
+
+    <string name="settings_offline_data_section">Données hors ligne</string>
+    <string name="settings_offline_data_subtitle">Téléchargez les données à l\'avance pour que l\'application fonctionne entièrement hors ligne.</string>
+
+    <string name="settings_tier_essentials_title">Essentiel</string>
+    <string name="settings_tier_essentials_subtitle">Statistiques de base, capacités, table des types, tiers Smogon — environ 1 Mo.</string>
+
+    <string name="settings_tier_sprites_title">Sprites</string>
+    <string name="settings_tier_sprites_subtitle">Illustrations et sprites de chaque Pokémon — 50 à 150 Mo.</string>
+
+    <string name="settings_tier_sprites_extra_title">Sprites chromatiques et animés</string>
+    <string name="settings_tier_sprites_extra_subtitle">Illustrations/sprites chromatiques et GIFs animés Showdown pour chaque Pokémon, afin que les options chromatique/animé de la fiche fonctionnent aussi hors ligne — double environ le téléchargement des sprites.</string>
+
+    <string name="settings_tier_full_detail_title">Détails complets</string>
+    <string name="settings_tier_full_detail_subtitle">Données complètes de chaque Pokémon (espèce, chaîne d\'évolution) pour une navigation entièrement hors ligne — un téléchargement volumineux.</string>
+
+    <string name="settings_tier_cries_title">Cris</string>
+    <string name="settings_tier_cries_subtitle">Le cri de chaque Pokémon, pour que le bouton de lecture de sa fiche fonctionne hors ligne — environ 1300 courts extraits audio.</string>
+
+    <string name="settings_cancel">Annuler</string>
+    <string name="settings_prefetch_finished_with_failures">Terminé, %1$d élément(s) ont échoué et peuvent être relancés.</string>
+    <string name="settings_prefetch_finished">Téléchargement terminé.</string>
+    <string name="settings_prefetch_now">Télécharger maintenant</string>
+    <string name="settings_retry">Réessayer</string>
+
+    <string name="settings_storage_section">Stockage</string>
+    <string name="settings_storage_total">Total : %1$s</string>
+    <string name="settings_storage_api_data">Données API : %1$s</string>
+    <string name="settings_storage_images">Images : %1$s</string>
+    <string name="settings_storage_cries">Cris : %1$s</string>
+    <string name="settings_storage_refresh">Actualiser</string>
+    <string name="settings_storage_clear">Effacer les données téléchargées</string>
+
+    <string name="settings_display_section">Affichage</string>
+    <string name="settings_amoled_title">Noir AMOLED</string>
+    <string name="settings_amoled_subtitle">Force le mode sombre avec un fond véritablement noir, pour économiser la batterie sur les écrans AMOLED.</string>
+
+    <string name="settings_suggestions_section">Suggestions d\'équipe</string>
+    <string name="settings_suggestions_help_content_description">Que sont les tiers compétitifs ?</string>
+    <string name="settings_suggestions_subtitle">Limite les suggestions du créateur d\'équipe à un tier compétitif et en dessous (par ex. UU autorise aussi RU, NU…), d\'après les tiers Smogon de la Gen 9.</string>
+    <string name="settings_tier_limit_label">Limite de tier</string>
+    <string name="settings_tier_limit_none">Aucune limite</string>
+    <string name="settings_tier_limit_dialog_title">Limite de tier des suggestions</string>
+
+    <string name="settings_full_detail_warning_title">Télécharger les détails complets ?</string>
+    <string name="settings_full_detail_warning_text">Télécharge les données complètes de chaque Pokémon — espèce, chaîne d\'évolution et plus — pour environ 1300 entrées. C\'est un téléchargement volumineux qui utilisera beaucoup de données et de stockage.</string>
+    <string name="settings_full_detail_warning_enable">Activer</string>
+</resources>
