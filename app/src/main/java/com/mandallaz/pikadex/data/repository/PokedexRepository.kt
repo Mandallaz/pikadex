@@ -76,13 +76,18 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
 
     // Bounded: one entry per pokemon, ~1300 of them and growing, so unbounded meant a full
     // browse of the dex kept every single detail response alive for the rest of the process.
+    // speciesCache and evolutionChainCache are populated on the exact same code path
+    // (getPokemonDetailBundle) and are of the same order (~1000 species, ~1000 chains), so they're
+    // bounded the same way; moveDetailCache/abilityDetailCache are populated by their own,
+    // separately-sized key spaces (~950 moves, ~350 abilities) but the same unbounded-growth
+    // concern applies.
     private val pokemonDetailCache = AsyncCache<String, PokemonDto>(maxSize = 200)
-    private val speciesCache = AsyncCache<Int, PokemonSpeciesDto>()
-    private val evolutionChainCache = AsyncCache<Int, EvolutionChainDto>()
+    private val speciesCache = AsyncCache<Int, PokemonSpeciesDto>(maxSize = 200)
+    private val evolutionChainCache = AsyncCache<Int, EvolutionChainDto>(maxSize = 200)
     private val typeDetailCache = AsyncCache<String, TypeDetailDto>()
     private val formCache = AsyncCache<String, String?>()
-    private val moveDetailCache = AsyncCache<String, MoveDetailDto>()
-    private val abilityDetailCache = AsyncCache<String, AbilityDetailDto>()
+    private val moveDetailCache = AsyncCache<String, MoveDetailDto>(maxSize = 200)
+    private val abilityDetailCache = AsyncCache<String, AbilityDetailDto>(maxSize = 200)
     private val smogonTierCache = AsyncCache<String, Map<String, String>>()
     private val allBasicsCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>()
     private val allMoveInfoCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.MoveInfo>>()

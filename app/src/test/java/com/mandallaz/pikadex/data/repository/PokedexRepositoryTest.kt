@@ -114,6 +114,34 @@ class PokedexRepositoryTest {
         assertEquals("pikachu", bundle.pokemon.name)
     }
 
+    /** issue #64 (B18) — speciesCache had no maxSize, unlike pokemonDetailCache right beside it,
+     *  so a long browse retained every species DTO fetched for the rest of the process. Fetching
+     *  one more distinct species than the 200-entry bound should evict the least-recently-used
+     *  entry, causing a repeat fetch of the first species on the next lookup. */
+    @Test
+    fun `species cache evicts the least recently used entry once its bound is exceeded`() = runBlocking {
+        val speciesFetchCount = mutableMapOf<String, Int>()
+        val api = object : UnexpectedApi() {
+            override suspend fun getPokemon(nameOrId: String): PokemonDto {
+                val id = nameOrId.removePrefix("species-").toInt()
+                return pokemon(nameOrId, id)
+            }
+            override suspend fun getPokemonSpecies(nameOrId: String): PokemonSpeciesDto {
+                speciesFetchCount.merge(nameOrId, 1, Int::plus)
+                val id = nameOrId.removePrefix("species-").toInt()
+                return species(nameOrId, id, varieties = null)
+            }
+        }
+        val repository = PokedexRepository(api)
+
+        // One more distinct species than the cache's 200-entry bound.
+        repeat(201) { i -> repository.getPokemonDetailBundle("species-$i") }
+        assertEquals(1, speciesFetchCount["species-0"])
+
+        repository.getPokemonDetailBundle("species-0")
+        assertEquals(2, speciesFetchCount["species-0"])
+    }
+
     @Test
     fun `a genuinely nonexistent name still fails rather than silently returning nothing`() = runBlocking {
         val api = object : UnexpectedApi() {
