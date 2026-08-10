@@ -62,7 +62,11 @@ data class TeamUiState(
      *  [SuggestionSettings] at the moment [suggestions] was computed (issue #11) — read by
      *  the Suggestions card so it can explain why the list is short/empty rather than leaving that
      *  unexplained, since the setting itself lives on a different screen. Null means no limit. */
-    val suggestionTierCeiling: String? = null
+    val suggestionTierCeiling: String? = null,
+    // B9 follow-up — same bulk fetch/shape as PokedexListViewModel's speciesNames; the Team screen
+    // shows species names too (roster chips, suggestion tiles) and was still falling back to the
+    // English-formatted raw name for every non-English language.
+    val speciesNames: Map<String, Map<String, String>> = emptyMap()
 ) {
     val isMatrixStale: Boolean
         get() = matrixComputedFor != members.map { it.name }.toSet()
@@ -107,6 +111,24 @@ class TeamViewModel @JvmOverloads constructor(
         // if the matrix isn't ready yet for this collector's first (immediate) emission.
         viewModelScope.launch {
             SuggestionSettings.maxTier.collect { loadSuggestions() }
+        }
+        loadSpeciesNamesIfNeeded()
+    }
+
+    /** B9 follow-up — see [PokedexListUiState.speciesNames]'s doc for the full rationale; same
+     *  best-effort, fetch-once-and-cache bulk fetch, duplicated here rather than shared because
+     *  each screen's ViewModel owns its own UiState. */
+    private fun loadSpeciesNamesIfNeeded() {
+        if (_uiState.value.speciesNames.isNotEmpty()) return
+        viewModelScope.launch {
+            try {
+                val names = repository.getAllSpeciesNames()
+                _uiState.update { it.copy(speciesNames = names) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Best-effort: falls back to the English-formatted raw name, same as before B9.
+            }
         }
     }
 

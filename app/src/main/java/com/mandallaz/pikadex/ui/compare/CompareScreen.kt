@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
@@ -47,7 +48,7 @@ import com.mandallaz.pikadex.ui.components.SearchableListDialog
 import com.mandallaz.pikadex.ui.components.StatBar
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.StatColors
-import com.mandallaz.pikadex.util.toDisplayName
+import com.mandallaz.pikadex.util.localizedDisplayName
 
 private val SIDE_BY_SIDE_MIN_WIDTH = 500.dp
 private val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
@@ -68,6 +69,7 @@ fun CompareScreen(
     viewModel: CompareViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val language by LanguageSettings.currentLanguage.collectAsState()
     var pickingSide by rememberSaveable { mutableStateOf<Side?>(null) }
 
     LaunchedEffect(leftName, rightName) { viewModel.load(leftName, rightName) }
@@ -113,6 +115,8 @@ fun CompareScreen(
                 else -> CompareContent(
                     left = left,
                     right = right,
+                    speciesNames = uiState.speciesNames,
+                    language = language,
                     onChangeLeft = { viewModel.loadCandidatesIfNeeded(); pickingSide = Side.LEFT },
                     onChangeRight = { viewModel.loadCandidatesIfNeeded(); pickingSide = Side.RIGHT }
                 )
@@ -124,6 +128,7 @@ fun CompareScreen(
         SearchableListDialog(
             title = "Compare with…",
             options = uiState.candidateNames.filterNot { it == leftName || it == rightName },
+            displayName = { it.localizedDisplayName(uiState.speciesNames, language) },
             onDismiss = { pickingSide = null },
             onSelect = { name ->
                 val picked = pickingSide
@@ -143,6 +148,8 @@ fun CompareScreen(
 private fun CompareContent(
     left: CompareSide,
     right: CompareSide,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String,
     onChangeLeft: () -> Unit,
     onChangeRight: () -> Unit
 ) {
@@ -157,8 +164,8 @@ private fun CompareContent(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    CompareHeader(left.pokemon, onChangeLeft, Modifier.weight(1f))
-                    CompareHeader(right.pokemon, onChangeRight, Modifier.weight(1f))
+                    CompareHeader(left.pokemon, speciesNames, language, onChangeLeft, Modifier.weight(1f))
+                    CompareHeader(right.pokemon, speciesNames, language, onChangeRight, Modifier.weight(1f))
                 }
             }
             item {
@@ -198,11 +205,17 @@ private fun CompareContent(
 }
 
 @Composable
-private fun CompareHeader(pokemon: PokemonDto, onChange: () -> Unit, modifier: Modifier = Modifier) {
+private fun CompareHeader(
+    pokemon: PokemonDto,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String,
+    onChange: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         PokemonArtwork(id = pokemon.id, contentDescription = pokemon.name, modifier = Modifier.size(120.dp))
         Text(
-            text = pokemon.name.toDisplayName(),
+            text = pokemon.name.localizedDisplayName(speciesNames, language),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center
         )

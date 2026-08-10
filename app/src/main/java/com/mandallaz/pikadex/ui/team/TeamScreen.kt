@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
@@ -66,6 +67,7 @@ import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.isCompactMatrixLayout
 import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
+import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.toDisplayName
 
 private val TYPE_COLUMN_WIDTH = 88.dp
@@ -111,6 +113,7 @@ fun TeamScreen(
     viewModel: TeamViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val language by LanguageSettings.currentLanguage.collectAsState()
     val teams by viewModel.teams.collectAsState()
     val activeTeamId by viewModel.activeTeamId.collectAsState()
     val activeTeamName = teams.firstOrNull { it.id == activeTeamId }?.name ?: "Team"
@@ -217,7 +220,12 @@ fun TeamScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     uiState.members.forEach { member ->
-                        TeamMemberChip(member, onRemove = { viewModel.removeFromTeam(member) })
+                        TeamMemberChip(
+                            member,
+                            uiState.speciesNames,
+                            language,
+                            onRemove = { viewModel.removeFromTeam(member) }
+                        )
                     }
                     // There used to be no way to add a member from this screen at all — only Back,
                     // browse the Pokédex, then return. A trailing "add" slot lets you keep building the
@@ -306,6 +314,8 @@ fun TeamScreen(
                         suggestions = uiState.suggestions,
                         spriteIds = uiState.suggestionSpriteIds,
                         tierCeiling = uiState.suggestionTierCeiling,
+                        speciesNames = uiState.speciesNames,
+                        language = language,
                         onAdd = viewModel::addSuggestion,
                         onPokemonClick = onPokemonClick
                     )
@@ -409,6 +419,8 @@ fun TeamScreen(
         PresetTeamDialog(
             currentTeamSize = uiState.members.size,
             spriteIds = uiState.presetSpriteIds,
+            speciesNames = uiState.speciesNames,
+            language = language,
             onDismiss = { showPresetPicker = false },
             onSelect = { preset ->
                 viewModel.loadPreset(preset)
@@ -442,7 +454,12 @@ fun TeamScreen(
 }
 
 @Composable
-private fun TeamMemberChip(member: NamedApiResource, onRemove: () -> Unit) {
+private fun TeamMemberChip(
+    member: NamedApiResource,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String,
+    onRemove: () -> Unit
+) {
     // The remove button used to be a 20dp IconButton — well under the 48dp minimum touch target
     // and overlapping the sprite. It's now a full 48dp target, offset to peek outside the chip's
     // top-right corner (a standard "close badge" placement) so it doesn't crowd the sprite/name,
@@ -455,7 +472,7 @@ private fun TeamMemberChip(member: NamedApiResource, onRemove: () -> Unit) {
                 contentDescription = member.name,
                 modifier = Modifier.size(56.dp)
             )
-            Text(member.name.toDisplayName(), style = MaterialTheme.typography.bodyMedium)
+            Text(member.name.localizedDisplayName(speciesNames, language), style = MaterialTheme.typography.bodyMedium)
         }
         IconButton(
             onClick = onRemove,
@@ -533,6 +550,8 @@ private fun SuggestionsCard(
     suggestions: List<TeamSuggestion>,
     spriteIds: Map<String, Int>,
     tierCeiling: String?,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String,
     onAdd: (String) -> Unit,
     onPokemonClick: (String) -> Unit
 ) {
@@ -584,6 +603,8 @@ private fun SuggestionsCard(
                     SuggestionTile(
                         suggestion = suggestion,
                         spriteId = spriteIds[suggestion.name] ?: 0,
+                        speciesNames = speciesNames,
+                        language = language,
                         onAdd = { onAdd(suggestion.name) },
                         onSpriteClick = { onPokemonClick(suggestion.name) }
                     )
@@ -597,6 +618,8 @@ private fun SuggestionsCard(
 private fun SuggestionTile(
     suggestion: TeamSuggestion,
     spriteId: Int,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String,
     onAdd: () -> Unit,
     // issue #17 — sprite-only tap target, not the whole tile: the "+" IconButton already
     // claims its own tap area, and the ask specifically named "the sprite", read narrowly.
@@ -609,7 +632,7 @@ private fun SuggestionTile(
             modifier = Modifier.size(48.dp).clickable(onClick = onSpriteClick)
         )
         Text(
-            suggestion.name.toDisplayName(),
+            suggestion.name.localizedDisplayName(speciesNames, language),
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

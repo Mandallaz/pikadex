@@ -27,7 +27,10 @@ data class CompareUiState(
     val errorMessage: String? = null,
     val left: CompareSide? = null,
     val right: CompareSide? = null,
-    val candidateNames: List<String> = emptyList()
+    val candidateNames: List<String> = emptyList(),
+    // B9 follow-up — see PokedexListUiState.speciesNames's doc; the Compare screen's headers show
+    // species names too and were still falling back to the English-formatted raw name.
+    val speciesNames: Map<String, Map<String, String>> = emptyMap()
 )
 
 class CompareViewModel @JvmOverloads constructor(
@@ -38,6 +41,25 @@ class CompareViewModel @JvmOverloads constructor(
     val uiState: StateFlow<CompareUiState> = _uiState.asStateFlow()
 
     private var loadedFor: Pair<String, String>? = null
+
+    init {
+        loadSpeciesNamesIfNeeded()
+    }
+
+    /** B9 follow-up — see [PokedexListUiState.speciesNames]'s doc for the full rationale. */
+    private fun loadSpeciesNamesIfNeeded() {
+        if (_uiState.value.speciesNames.isNotEmpty()) return
+        viewModelScope.launch {
+            try {
+                val names = repository.getAllSpeciesNames()
+                _uiState.update { it.copy(speciesNames = names) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Best-effort: falls back to the English-formatted raw name, same as before B9.
+            }
+        }
+    }
 
     fun load(leftName: String, rightName: String) {
         val key = leftName to rightName

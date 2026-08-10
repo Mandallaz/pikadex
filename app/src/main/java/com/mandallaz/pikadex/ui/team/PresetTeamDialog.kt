@@ -45,7 +45,7 @@ import com.mandallaz.pikadex.util.PresetRole
 import com.mandallaz.pikadex.util.PresetTeam
 import com.mandallaz.pikadex.util.PresetTeams
 import com.mandallaz.pikadex.util.Sprites
-import com.mandallaz.pikadex.util.toDisplayName
+import com.mandallaz.pikadex.util.localizedDisplayName
 
 /**
  * Full-screen picker for the built-in trainer rosters, grouped by game. Full-screen rather than a
@@ -61,6 +61,8 @@ import com.mandallaz.pikadex.util.toDisplayName
 fun PresetTeamDialog(
     currentTeamSize: Int,
     spriteIds: Map<String, Int>,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String,
     onDismiss: () -> Unit,
     onSelect: (PresetTeam) -> Unit,
     onSelectIntoNewTeam: (PresetTeam) -> Unit
@@ -102,6 +104,8 @@ fun PresetTeamDialog(
                             PresetTeamRow(
                                 team = team,
                                 spriteIds = spriteIds,
+                                speciesNames = speciesNames,
+                                language = language,
                                 onClick = {
                                     if (currentTeamSize == 0) onSelect(team) else pendingConfirmation = team
                                 }
@@ -144,7 +148,13 @@ fun PresetTeamDialog(
 }
 
 @Composable
-private fun PresetTeamRow(team: PresetTeam, spriteIds: Map<String, Int>, onClick: () -> Unit) {
+private fun PresetTeamRow(
+    team: PresetTeam,
+    spriteIds: Map<String, Int>,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String,
+    onClick: () -> Unit
+) {
     ListItem(
         headlineContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -167,7 +177,7 @@ private fun PresetTeamRow(team: PresetTeam, spriteIds: Map<String, Int>, onClick
             // lines and stop being scannable, and the sprite is what identifies a Pokémon at a
             // glance anyway. Falls back to names when the dex ids aren't resolved yet (offline).
             if (spriteIds.isEmpty()) {
-                Text(team.pokemon.joinToString(" · ") { it.toDisplayName() })
+                Text(team.pokemon.joinToString(" · ") { it.localizedDisplayName(speciesNames, language) })
             } else {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -177,7 +187,7 @@ private fun PresetTeamRow(team: PresetTeam, spriteIds: Map<String, Int>, onClick
                     team.pokemon.forEach { name ->
                         PokemonSprite(
                             id = spriteIds[name] ?: 0,
-                            contentDescription = name.toDisplayName(),
+                            contentDescription = name.localizedDisplayName(speciesNames, language),
                             modifier = Modifier.size(40.dp)
                         )
                     }

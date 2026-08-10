@@ -135,4 +135,22 @@ class TeamViewModelTest {
         assertFalse(state.isLoading)
         assertEquals(setOf("charmander"), state.matrixComputedFor)
     }
+
+    // B9 — the Team screen (roster chips, suggestion tiles) fell back to the raw English name
+    // forever, even once F35's language picker was set to French, since TeamViewModel never fetched
+    // the bulk species-name map PokedexListViewModel already had (issue #52). The fake must be
+    // primed and a fresh ViewModel constructed here (not the shared one from setUp()) — this
+    // ViewModel's viewModelScope runs on Dispatchers.Main.immediate, so its init-time fetch executes
+    // eagerly at construction rather than waiting for advanceUntilIdle().
+    @Test
+    fun `species names load into state for the Team screen to localize with`() = runTest(dispatcher) {
+        repository.allSpeciesNames = mapOf("squirtle" to mapOf("fr" to "Carapuce"))
+        val freshViewModel = TeamViewModel(repository)
+
+        TeamRepository.replaceAll(listOf(squirtle))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(mapOf("fr" to "Carapuce"), freshViewModel.uiState.value.speciesNames["squirtle"])
+        freshViewModel.clearForTest()
+    }
 }

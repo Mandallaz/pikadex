@@ -47,6 +47,11 @@ fun SearchableListDialog(
     title: String,
     options: List<String>,
     clearLabel: String? = null,
+    // B9 follow-up — defaults to the existing English-only formatting for the move/ability callers,
+    // which have no language-specific data at all today. The species pickers (Compare's own and the
+    // detail screen's "Compare with…") pass their localizedDisplayName lookup instead, so this list
+    // follows the picked language the same way every other species name in the app now does.
+    displayName: (String) -> String = { it.toDisplayName() },
     onDismiss: () -> Unit,
     onSelect: (String?) -> Unit
 ) {
@@ -125,7 +130,7 @@ fun SearchableListDialog(
                         }
                         items(filtered) { option ->
                             ListItem(
-                                headlineContent = { Text(option.toDisplayName()) },
+                                headlineContent = { Text(displayName(option)) },
                                 modifier = Modifier.fillMaxWidth().clickable { onSelect(option) }
                             )
                         }

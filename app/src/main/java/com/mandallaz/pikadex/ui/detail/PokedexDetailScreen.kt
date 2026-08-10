@@ -144,6 +144,9 @@ fun PokedexDetailScreen(
     viewModel: PokedexDetailViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    // Only the "Compare with…" picker (below) needs this at this outer scope — DetailContent
+    // collects its own copy for the rest of the screen's species/game-data localization.
+    val language by LanguageSettings.currentLanguage.collectAsState()
     val team by viewModel.team.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
     val isCryPlaying by viewModel.isCryPlaying.collectAsState()
@@ -386,6 +389,7 @@ fun PokedexDetailScreen(
         SearchableListDialog(
             title = stringResource(R.string.detail_compare_with),
             options = uiState.compareCandidates.filterNot { it == currentPokemon.name },
+            displayName = { it.localizedDisplayName(uiState.speciesNames, language) },
             onDismiss = { showCompareDialog = false },
             onSelect = { name ->
                 if (name != null) onCompare(currentPokemon.name, name)
