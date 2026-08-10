@@ -304,4 +304,10 @@
     <string name="searchable_dialog_search_placeholder">搜索...</string>
     <string name="searchable_dialog_loading">加载中...</string>
     <string name="searchable_dialog_no_matches">没有与“%1$s”匹配的结果。</string>
+
+    <!-- PokemonCard (shared component, F35 continued) -->
+    <string name="pokemon_card_remove_from_team_cd">从队伍中移除</string>
+    <string name="pokemon_card_add_to_team_cd">加入队伍</string>
+    <string name="pokemon_card_remove_from_favorites_cd">取消收藏</string>
+    <string name="pokemon_card_add_to_favorites_cd">添加到收藏</string>
 </resources>

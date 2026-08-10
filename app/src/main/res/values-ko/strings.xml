@@ -304,4 +304,10 @@
     <string name="searchable_dialog_search_placeholder">검색...</string>
     <string name="searchable_dialog_loading">불러오는 중...</string>
     <string name="searchable_dialog_no_matches">\"%1$s\"에 대한 검색 결과가 없습니다.</string>
+
+    <!-- PokemonCard (shared component, F35 continued) -->
+    <string name="pokemon_card_remove_from_team_cd">파티에서 제거</string>
+    <string name="pokemon_card_add_to_team_cd">파티에 추가</string>
+    <string name="pokemon_card_remove_from_favorites_cd">즐겨찾기에서 제거</string>
+    <string name="pokemon_card_add_to_favorites_cd">즐겨찾기에 추가</string>
 </resources>

@@ -21,10 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.util.Sprites
 
 /**
@@ -108,7 +110,11 @@ fun PokemonCard(
         ) {
             Icon(
                 imageVector = if (isInTeam) Icons.Filled.Groups else Icons.Filled.GroupAdd,
-                contentDescription = if (isInTeam) "Remove from team" else "Add to team",
+                contentDescription = if (isInTeam) {
+                    stringResource(R.string.pokemon_card_remove_from_team_cd)
+                } else {
+                    stringResource(R.string.pokemon_card_add_to_team_cd)
+                },
                 // A hardcoded Color.Gray for "not in team" used to also apply when the button was
                 // disabled (team full), so disabled looked pixel-identical to enabled — tapping a
                 // full team's add button did nothing with zero visual explanation why. Use M3's
@@ -126,7 +132,11 @@ fun PokemonCard(
         ) {
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                contentDescription = if (isFavorite) {
+                    stringResource(R.string.pokemon_card_remove_from_favorites_cd)
+                } else {
+                    stringResource(R.string.pokemon_card_add_to_favorites_cd)
+                },
                 tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

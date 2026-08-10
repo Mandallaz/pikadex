@@ -304,4 +304,10 @@
     <string name="searchable_dialog_search_placeholder">Buscar...</string>
     <string name="searchable_dialog_loading">Cargando...</string>
     <string name="searchable_dialog_no_matches">Sin resultados para «%1$s».</string>
+
+    <!-- PokemonCard (shared component, F35 continued) -->
+    <string name="pokemon_card_remove_from_team_cd">Quitar del equipo</string>
+    <string name="pokemon_card_add_to_team_cd">Añadir al equipo</string>
+    <string name="pokemon_card_remove_from_favorites_cd">Quitar de favoritos</string>
+    <string name="pokemon_card_add_to_favorites_cd">Añadir a favoritos</string>
 </resources>
