@@ -261,7 +261,7 @@ fun TeamScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+                        Text(it.resolve(), color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
                         // Without this the matrix only ever recomputed when the team itself changed, so
                         // a failed fetch left every cell blank until the user added or removed a member.
                         Button(onClick = viewModel::retry, modifier = Modifier.padding(start = 8.dp)) { Text(stringResource(R.string.team_retry)) }

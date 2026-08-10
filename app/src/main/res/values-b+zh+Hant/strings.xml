@@ -33,6 +33,7 @@
     <string name="settings_prefetch_finished">下載完成。</string>
     <string name="settings_prefetch_now">立即下載</string>
     <string name="settings_retry">重試</string>
+    <string name="settings_prefetch_error_network">預先載入時發生網路錯誤。請檢查你的網路連線。</string>
 
     <string name="settings_storage_section">儲存空間</string>
     <string name="settings_storage_total">總計：%1$s</string>
@@ -178,6 +179,10 @@
     <string name="detail_recoil">反作用力為造成傷害的%1$d%%</string>
     <string name="detail_heals">恢復最大HP的%1$d%%</string>
     <string name="detail_flinch_chance">%1$d%%機率畏縮</string>
+    <string name="detail_error_load_pokemon">無法載入此寶可夢。請檢查你的網路連線。</string>
+    <string name="detail_error_team_impact">預覽隊伍影響時發生網路錯誤。</string>
+    <string name="detail_error_load_pokemon_list">載入寶可夢清單時發生網路錯誤。</string>
+    <string name="detail_no_notable_matchups">沒有明顯的弱點或抗性。</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">切換隊伍</string>
@@ -209,6 +214,9 @@
     <string name="team_suggestion_resists_hits">抗性：%1$s · 命中：%2$s</string>
     <string name="team_suggestion_not_as">以下形態不適用：%1$s</string>
     <string name="team_suggestion_add_cd">將%1$s新增至隊伍</string>
+    <string name="team_error_compute_matrix">計算隊伍屬性相性時發生網路錯誤。請檢查你的網路連線。</string>
+    <string name="team_error_load_preset">無法載入%1$s的隊伍。</string>
+    <string name="team_error_load_preset_network">無法載入%1$s的隊伍。請檢查你的網路連線。</string>
 
     <!-- Compare screen (F35 continued) -->
     <string name="compare_title">比較</string>
@@ -219,6 +227,8 @@
     <string name="compare_with_title">與…比較</string>
     <string name="compare_base_stats">基礎屬性值</string>
     <string name="compare_change">更改</string>
+    <string name="compare_error_load">無法載入此次比較。請檢查你的網路連線。</string>
+    <string name="compare_error_load_pokemon_list">載入寶可夢清單時發生網路錯誤。</string>
 
     <!-- Preset team dialog (F35 continued) -->
     <string name="preset_trainer_teams_title">訓練家隊伍</string>
@@ -294,6 +304,15 @@
     <string name="list_reset_filters">重設篩選</string>
     <string name="list_attribution">資料由 PokeAPI 提供</string>
     <string name="list_team_full_snackbar">你的隊伍已滿（%1$d/%2$d）。請先移除一隻。</string>
+    <string name="list_error_load_pokedex">無法載入圖鑑。請檢查你的網路連線。</string>
+    <string name="list_error_filter_type">依屬性篩選時發生網路錯誤。</string>
+    <string name="list_error_load_moves">載入招式時發生網路錯誤。</string>
+    <string name="list_error_filter_move">依招式篩選時發生網路錯誤。</string>
+    <string name="list_error_load_abilities">載入特性時發生網路錯誤。</string>
+    <string name="list_error_filter_ability">依特性篩選時發生網路錯誤。</string>
+    <string name="list_error_load_tiers">載入分級時發生網路錯誤。</string>
+    <string name="list_error_filter_tier">依分級篩選時發生網路錯誤。</string>
+    <string name="list_error_load_base_stats">無法載入基礎數值——無法依數值排序。</string>
 
     <!-- OptionsDialog (shared component, F35 continued) -->
     <string name="options_dialog_loading">載入中...</string>

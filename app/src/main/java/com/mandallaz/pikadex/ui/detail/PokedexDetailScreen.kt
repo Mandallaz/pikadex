@@ -90,6 +90,7 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.ShowdownSprites
+import com.mandallaz.pikadex.ui.UiText
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
 import com.mandallaz.pikadex.ui.components.PokemonSprite
@@ -293,11 +294,9 @@ fun PokedexDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        // uiState.errorMessage itself is a ViewModel-level network-error string
-                        // (e.g. "Couldn't load this Pokémon..."), same English-only boundary as
-                        // every other ViewModel's error messages across the app today — only the
-                        // "not found" fallback below is UI chrome.
-                        text = uiState.errorMessage ?: stringResource(R.string.detail_not_found),
+                        // uiState.errorMessage is a UiText (B13) — resolves through the app's picked
+                        // language, same as the "not found" fallback below.
+                        text = uiState.errorMessage?.resolve() ?: stringResource(R.string.detail_not_found),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
@@ -459,7 +458,7 @@ internal fun DetailContent(
     onPlayCry: () -> Unit,
     showTeamImpactCard: Boolean,
     isTeamImpactLoading: Boolean,
-    teamImpactError: String?,
+    teamImpactError: UiText?,
     teamImpact: TeamImpactSummary?,
     onPokemonClick: (String) -> Unit,
     onViewTypeTriangles: () -> Unit,
@@ -930,7 +929,7 @@ private fun PokemonSpriteTile(
 @Composable
 private fun TeamImpactCard(
     isLoading: Boolean,
-    error: String?,
+    error: UiText?,
     impact: TeamImpactSummary?
 ) {
     // A loaded result with all 7 categories empty means this Pokémon genuinely wouldn't change
@@ -966,7 +965,7 @@ private fun TeamImpactCard(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) { CircularProgressIndicator() }
-                error != null -> Text(error, color = MaterialTheme.colorScheme.error)
+                error != null -> Text(error.resolve(), color = MaterialTheme.colorScheme.error)
                 impact != null && !hasNoImpact -> TeamImpactSummaryText(impact)
             }
         }

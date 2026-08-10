@@ -2,6 +2,7 @@ package com.mandallaz.pikadex.ui.team
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.SuggestionSettings
 import com.mandallaz.pikadex.data.TeamRepository
@@ -20,6 +21,7 @@ import com.mandallaz.pikadex.util.filterByTierCeiling
 import com.mandallaz.pikadex.util.findConflictingForms
 import com.mandallaz.pikadex.util.rankSuggestions
 import com.mandallaz.pikadex.util.sharedWeaknesses
+import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -33,7 +35,7 @@ import kotlinx.coroutines.launch
 data class TeamUiState(
     val members: List<NamedApiResource> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     // matrix[typeName][memberName] = defensive multiplier against that attacking type
     val matrix: Map<String, Map<String, Double>> = emptyMap(),
     /** offensiveMatrix[defendingType][memberName] = the best multiplier that member can *deal* to
@@ -195,7 +197,7 @@ class TeamViewModel @JvmOverloads constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Network error while computing team matchups. Check your connection.",
+                        errorMessage = UiText(R.string.team_error_compute_matrix),
                         suggestions = emptyList(),
                         suggestionSpriteIds = emptyMap()
                     )
@@ -323,7 +325,9 @@ class TeamViewModel @JvmOverloads constructor(
                 val byName = repository.getMasterList().associateBy { it.name }
                 val resolved = preset.pokemon.mapNotNull { byName[it] }
                 if (resolved.isEmpty()) {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = "Couldn't load ${preset.trainer}'s team.") }
+                    _uiState.update {
+                        it.copy(isLoading = false, errorMessage = UiText(R.string.team_error_load_preset, listOf(preset.trainer)))
+                    }
                     return@launch
                 }
                 // The team flow this collects from drives computeMatrix, so no explicit recompute —
@@ -340,7 +344,9 @@ class TeamViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Couldn't load ${preset.trainer}'s team. Check your connection.") }
+                _uiState.update {
+                    it.copy(isLoading = false, errorMessage = UiText(R.string.team_error_load_preset_network, listOf(preset.trainer)))
+                }
             }
         }
     }

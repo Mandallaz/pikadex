@@ -136,12 +136,15 @@ fun PokedexListScreen(
     // Resolved here, in the composable body, not inside the snackbar's coroutineScope.launch{}
     // lambda below — stringResource() is a @Composable function and that lambda isn't one.
     val teamFullMessage = stringResource(R.string.list_team_full_snackbar, TeamRepository.MAX_SIZE, TeamRepository.MAX_SIZE)
+    // stringResource() is @Composable and LaunchedEffect's lambda below isn't — resolved here, in
+    // the composable body, same reasoning as teamFullMessage above.
+    val resolvedErrorMessage = uiState.errorMessage?.resolve()
 
     // Filter/network errors used to be written into state and never shown anywhere — picking a
     // type filter that failed to load flashed a spinner and then silently left the list unchanged,
     // with no indication anything had gone wrong.
     LaunchedEffect(uiState.errorMessage) {
-        val message = uiState.errorMessage
+        val message = resolvedErrorMessage
         if (message != null) {
             // A dialog or the filter sheet covers the whole screen, so a Snackbar underneath would
             // never be seen — picking Move/Ability/Tier with no network used to leave that full-screen
@@ -324,7 +327,7 @@ fun PokedexListScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = uiState.errorMessage ?: "",
+                                text = uiState.errorMessage?.resolve() ?: "",
                                 style = MaterialTheme.typography.bodyLarge,
                                 textAlign = TextAlign.Center
                             )

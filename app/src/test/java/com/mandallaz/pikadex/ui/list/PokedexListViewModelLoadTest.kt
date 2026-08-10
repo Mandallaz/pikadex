@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.ui.list
 
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.util.clearForTest
@@ -70,6 +71,19 @@ class PokedexListViewModelLoadTest {
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
         assertNotNull(state.errorMessage)
+    }
+
+    // B13 — errorMessage used to be a raw English String built inside the ViewModel, which never
+    // went through stringResource() and so stayed English regardless of the app's picked language.
+    // Asserting the exact resource id (not just non-null) is what actually catches a regression
+    // back to a hardcoded literal, since a plain String would no longer compile against this field.
+    @Test
+    fun `initial load failure carries the localizable error resource, not a hardcoded string`() = runTest(dispatcher) {
+        repository.failWith = RuntimeException("boom")
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(R.string.list_error_load_pokedex, viewModel.uiState.value.errorMessage?.resId)
     }
 
     // The bug this guards against: a cold start with no connection used to be a dead end with no

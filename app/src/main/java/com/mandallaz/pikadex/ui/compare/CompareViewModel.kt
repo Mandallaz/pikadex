@@ -2,9 +2,11 @@ package com.mandallaz.pikadex.ui.compare
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
+import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +26,7 @@ data class CompareSide(
 
 data class CompareUiState(
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val left: CompareSide? = null,
     val right: CompareSide? = null,
     val candidateNames: List<String> = emptyList(),
@@ -85,7 +87,7 @@ class CompareViewModel @JvmOverloads constructor(
             } catch (e: Exception) {
                 loadedFor = null // let the user retry (e.g. after regaining network)
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "Couldn't load this comparison. Check your connection.")
+                    it.copy(isLoading = false, errorMessage = UiText(R.string.compare_error_load))
                 }
             }
         }
@@ -111,7 +113,7 @@ class CompareViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Network error while loading the Pokémon list.") }
+                _uiState.update { it.copy(errorMessage = UiText(R.string.compare_error_load_pokemon_list)) }
             }
         }
     }

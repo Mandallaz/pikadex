@@ -105,7 +105,7 @@ fun CompareScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = uiState.errorMessage ?: stringResource(R.string.compare_load_error),
+                        text = uiState.errorMessage?.resolve() ?: stringResource(R.string.compare_load_error),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )

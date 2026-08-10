@@ -8,7 +8,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.bucketizeMatchups
 
@@ -18,7 +20,7 @@ import com.mandallaz.pikadex.util.bucketizeMatchups
 fun TypeMatchupGroups(multipliers: Map<String, Double>, modifier: Modifier = Modifier) {
     val buckets = bucketizeMatchups(multipliers)
     if (buckets.isEmpty()) {
-        Text("No notable weaknesses or resistances.", style = MaterialTheme.typography.bodyMedium, modifier = modifier)
+        Text(stringResource(R.string.detail_no_notable_matchups), style = MaterialTheme.typography.bodyMedium, modifier = modifier)
         return
     }
     Column(modifier = modifier) {

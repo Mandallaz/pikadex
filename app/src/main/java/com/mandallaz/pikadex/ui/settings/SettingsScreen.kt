@@ -161,7 +161,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     }
                 }
                 is PrefetchState.Failed -> {
-                    Text(state.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp))
+                    Text(stringResource(state.messageRes), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp))
                     Button(onClick = viewModel::startPrefetch, enabled = uiState.hasAnyTierEnabled, modifier = Modifier.padding(top = 8.dp)) {
                         Text(stringResource(R.string.settings_retry))
                     }

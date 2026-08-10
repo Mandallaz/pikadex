@@ -33,6 +33,7 @@
     <string name="settings_prefetch_finished">Download abgeschlossen.</string>
     <string name="settings_prefetch_now">Jetzt herunterladen</string>
     <string name="settings_retry">Erneut versuchen</string>
+    <string name="settings_prefetch_error_network">Netzwerkfehler beim Vorabladen. Überprüfe deine Verbindung.</string>
 
     <string name="settings_storage_section">Speicher</string>
     <string name="settings_storage_total">Gesamt: %1$s</string>
@@ -178,6 +179,10 @@
     <string name="detail_recoil">Rückstoß %1$d %% des Schadens</string>
     <string name="detail_heals">Heilt %1$d %% der max. KP</string>
     <string name="detail_flinch_chance">%1$d %% Zurückschrecken</string>
+    <string name="detail_error_load_pokemon">Dieses Pokémon konnte nicht geladen werden. Überprüfe deine Verbindung.</string>
+    <string name="detail_error_team_impact">Netzwerkfehler bei der Vorschau der Team-Auswirkung.</string>
+    <string name="detail_error_load_pokemon_list">Netzwerkfehler beim Laden der Pokémon-Liste.</string>
+    <string name="detail_no_notable_matchups">Keine nennenswerten Schwächen oder Resistenzen.</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">Team wechseln</string>
@@ -209,6 +214,9 @@
     <string name="team_suggestion_resists_hits">Widersteht %1$s · Trifft %2$s</string>
     <string name="team_suggestion_not_as">Nicht als %1$s</string>
     <string name="team_suggestion_add_cd">%1$s zum Team hinzufügen</string>
+    <string name="team_error_compute_matrix">Netzwerkfehler bei der Berechnung der Team-Matchups. Überprüfe deine Verbindung.</string>
+    <string name="team_error_load_preset">Das Team von %1$s konnte nicht geladen werden.</string>
+    <string name="team_error_load_preset_network">Das Team von %1$s konnte nicht geladen werden. Überprüfe deine Verbindung.</string>
 
     <!-- Compare screen (F35 continued) -->
     <string name="compare_title">Vergleichen</string>
@@ -219,6 +227,8 @@
     <string name="compare_with_title">Vergleichen mit …</string>
     <string name="compare_base_stats">Basiswerte</string>
     <string name="compare_change">Ändern</string>
+    <string name="compare_error_load">Dieser Vergleich konnte nicht geladen werden. Überprüfe deine Verbindung.</string>
+    <string name="compare_error_load_pokemon_list">Netzwerkfehler beim Laden der Pokémon-Liste.</string>
 
     <!-- Preset team dialog (F35 continued) -->
     <string name="preset_trainer_teams_title">Trainer-Teams</string>
@@ -294,6 +304,15 @@
     <string name="list_reset_filters">Filter zurücksetzen</string>
     <string name="list_attribution">Daten bereitgestellt von PokeAPI</string>
     <string name="list_team_full_snackbar">Dein Team ist voll (%1$d/%2$d). Entferne zuerst eines.</string>
+    <string name="list_error_load_pokedex">Der Pokédex konnte nicht geladen werden. Überprüfe deine Verbindung.</string>
+    <string name="list_error_filter_type">Netzwerkfehler beim Filtern nach Typ.</string>
+    <string name="list_error_load_moves">Netzwerkfehler beim Laden der Attacken.</string>
+    <string name="list_error_filter_move">Netzwerkfehler beim Filtern nach Attacke.</string>
+    <string name="list_error_load_abilities">Netzwerkfehler beim Laden der Fähigkeiten.</string>
+    <string name="list_error_filter_ability">Netzwerkfehler beim Filtern nach Fähigkeit.</string>
+    <string name="list_error_load_tiers">Netzwerkfehler beim Laden der Tiers.</string>
+    <string name="list_error_filter_tier">Netzwerkfehler beim Filtern nach Tier.</string>
+    <string name="list_error_load_base_stats">Basiswerte konnten nicht geladen werden — Sortierung nach Statistik ist nicht verfügbar.</string>
 
     <!-- OptionsDialog (shared component, F35 continued) -->
     <string name="options_dialog_loading">Wird geladen...</string>

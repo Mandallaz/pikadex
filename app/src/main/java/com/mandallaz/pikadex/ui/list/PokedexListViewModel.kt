@@ -2,6 +2,7 @@ package com.mandallaz.pikadex.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.LanguageSettings
@@ -18,6 +19,7 @@ import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.toDisplayName
+import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -40,7 +42,7 @@ import java.text.Collator
 
 data class PokedexListUiState(
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val searchQuery: String = "",
     val allPokemon: List<NamedApiResource> = emptyList(),
     val typeOptions: List<NamedApiResource> = emptyList(),
@@ -331,7 +333,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "Couldn't load the Pokédex. Check your connection.")
+                    it.copy(isLoading = false, errorMessage = UiText(R.string.list_error_load_pokedex))
                 }
             }
         }
@@ -386,7 +388,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 // sheet shut with a bogus network error. Rethrowing keeps cancellation as cancellation.
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by type.") }
+                _uiState.update { it.copy(isFilterLoading = false, errorMessage = UiText(R.string.list_error_filter_type)) }
             }
         }
     }
@@ -400,7 +402,7 @@ class PokedexListViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Network error while loading moves.") }
+                _uiState.update { it.copy(errorMessage = UiText(R.string.list_error_load_moves)) }
             }
         }
     }
@@ -417,7 +419,7 @@ class PokedexListViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
-                _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by move.") }
+                _uiState.update { it.copy(isFilterLoading = false, errorMessage = UiText(R.string.list_error_filter_move)) }
             }
         }
     }
@@ -431,7 +433,7 @@ class PokedexListViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Network error while loading abilities.") }
+                _uiState.update { it.copy(errorMessage = UiText(R.string.list_error_load_abilities)) }
             }
         }
     }
@@ -448,7 +450,7 @@ class PokedexListViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
-                _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by ability.") }
+                _uiState.update { it.copy(isFilterLoading = false, errorMessage = UiText(R.string.list_error_filter_ability)) }
             }
         }
     }
@@ -481,7 +483,7 @@ class PokedexListViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
-                _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while loading tiers.") }
+                _uiState.update { it.copy(isFilterLoading = false, errorMessage = UiText(R.string.list_error_load_tiers)) }
             }
         }
     }
@@ -520,7 +522,7 @@ class PokedexListViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
-                _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by tier.") }
+                _uiState.update { it.copy(isFilterLoading = false, errorMessage = UiText(R.string.list_error_filter_tier)) }
             }
         }
     }
@@ -574,7 +576,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                     it.copy(
                         isStatsLoading = false,
                         sortStat = null,
-                        errorMessage = "Couldn't load base stats — sorting by stat is unavailable."
+                        errorMessage = UiText(R.string.list_error_load_base_stats)
                     )
                 }
             }

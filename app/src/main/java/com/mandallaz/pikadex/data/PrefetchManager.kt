@@ -1,9 +1,11 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
+import androidx.annotation.StringRes
 import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.util.Cries
 import com.mandallaz.pikadex.util.Smogon
@@ -43,7 +45,7 @@ sealed interface PrefetchState {
     data object Idle : PrefetchState
     data class Running(val done: Int, val total: Int, val phase: String) : PrefetchState
     data class Finished(val failed: Int) : PrefetchState
-    data class Failed(val message: String) : PrefetchState
+    data class Failed(@param:StringRes val messageRes: Int) : PrefetchState
 }
 
 private const val PREFETCH_CONCURRENCY = 6
@@ -97,7 +99,7 @@ object PrefetchManager {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { PrefetchState.Failed("Network error during prefetch. Check your connection.") }
+                _state.update { PrefetchState.Failed(R.string.settings_prefetch_error_network) }
             }
         }
     }

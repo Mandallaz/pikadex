@@ -3,6 +3,7 @@ package com.mandallaz.pikadex.ui.detail
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.CryCache
 import com.mandallaz.pikadex.data.FavoritesRepository
@@ -32,6 +33,7 @@ import com.mandallaz.pikadex.util.sharedWeaknesses
 import com.mandallaz.pikadex.util.teamImmunities
 import com.mandallaz.pikadex.util.teamQuadWeaknesses
 import com.mandallaz.pikadex.util.teamResistances
+import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,7 +50,7 @@ import java.io.File
 
 data class PokedexDetailUiState(
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val pokemon: PokemonDto? = null,
     val species: PokemonSpeciesDto? = null,
     val evolutionChain: EvolutionChainDto? = null,
@@ -90,7 +92,7 @@ data class PokedexDetailUiState(
      *  doesn't flash stale data. */
     val teamImpact: TeamImpactSummary? = null,
     val isTeamImpactLoading: Boolean = false,
-    val teamImpactError: String? = null,
+    val teamImpactError: UiText? = null,
     // B9 — rawName -> (languageCode -> localized species name), bulk-fetched alongside moveInfo/
     // percentiles below; best-effort like those, so a failure just leaves the title/evolution
     // chain names in their English-formatted fallback rather than failing the whole page.
@@ -259,7 +261,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
             } catch (e: Exception) {
                 loadedFor = null // let the user retry (e.g. after regaining network) instead of being stuck
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "Couldn't load this Pokémon. Check your connection.")
+                    it.copy(isLoading = false, errorMessage = UiText(R.string.detail_error_load_pokemon))
                 }
             }
         }
@@ -325,7 +327,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                 throw e
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isTeamImpactLoading = false, teamImpactError = "Network error while previewing team impact.")
+                    it.copy(isTeamImpactLoading = false, teamImpactError = UiText(R.string.detail_error_team_impact))
                 }
             }
         }
@@ -348,7 +350,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Network error while loading the Pokémon list.") }
+                _uiState.update { it.copy(errorMessage = UiText(R.string.detail_error_load_pokemon_list)) }
             }
         }
     }

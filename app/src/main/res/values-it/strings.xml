@@ -33,6 +33,7 @@
     <string name="settings_prefetch_finished">Download completato.</string>
     <string name="settings_prefetch_now">Scarica ora</string>
     <string name="settings_retry">Riprova</string>
+    <string name="settings_prefetch_error_network">Errore di rete durante il precaricamento. Controlla la tua connessione.</string>
 
     <string name="settings_storage_section">Archiviazione</string>
     <string name="settings_storage_total">Totale: %1$s</string>
@@ -178,6 +179,10 @@
     <string name="detail_recoil">Contraccolpo %1$d%% del danno</string>
     <string name="detail_heals">Cura il %1$d%% dei PS max</string>
     <string name="detail_flinch_chance">%1$d%% Tentennamento</string>
+    <string name="detail_error_load_pokemon">Impossibile caricare questo Pokémon. Controlla la tua connessione.</string>
+    <string name="detail_error_team_impact">Errore di rete durante l\'anteprima dell\'impatto sulla squadra.</string>
+    <string name="detail_error_load_pokemon_list">Errore di rete durante il caricamento dell\'elenco dei Pokémon.</string>
+    <string name="detail_no_notable_matchups">Nessuna debolezza o resistenza degna di nota.</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">Cambia squadra</string>
@@ -209,6 +214,9 @@
     <string name="team_suggestion_resists_hits">Resiste a %1$s · Colpisce %2$s</string>
     <string name="team_suggestion_not_as">Non come %1$s</string>
     <string name="team_suggestion_add_cd">Aggiungi %1$s alla squadra</string>
+    <string name="team_error_compute_matrix">Errore di rete durante il calcolo dei matchup della squadra. Controlla la tua connessione.</string>
+    <string name="team_error_load_preset">Impossibile caricare la squadra di %1$s.</string>
+    <string name="team_error_load_preset_network">Impossibile caricare la squadra di %1$s. Controlla la tua connessione.</string>
 
     <!-- Compare screen (F35 continued) -->
     <string name="compare_title">Confronta</string>
@@ -219,6 +227,8 @@
     <string name="compare_with_title">Confronta con…</string>
     <string name="compare_base_stats">Statistiche base</string>
     <string name="compare_change">Cambia</string>
+    <string name="compare_error_load">Impossibile caricare questo confronto. Controlla la tua connessione.</string>
+    <string name="compare_error_load_pokemon_list">Errore di rete durante il caricamento dell\'elenco dei Pokémon.</string>
 
     <!-- Preset team dialog (F35 continued) -->
     <string name="preset_trainer_teams_title">Squadre degli allenatori</string>
@@ -294,6 +304,15 @@
     <string name="list_reset_filters">Reimposta filtri</string>
     <string name="list_attribution">Dati forniti da PokeAPI</string>
     <string name="list_team_full_snackbar">La tua squadra è al completo (%1$d/%2$d). Rimuovine uno prima.</string>
+    <string name="list_error_load_pokedex">Impossibile caricare il Pokédex. Controlla la tua connessione.</string>
+    <string name="list_error_filter_type">Errore di rete durante il filtraggio per tipo.</string>
+    <string name="list_error_load_moves">Errore di rete durante il caricamento delle mosse.</string>
+    <string name="list_error_filter_move">Errore di rete durante il filtraggio per mossa.</string>
+    <string name="list_error_load_abilities">Errore di rete durante il caricamento delle abilità.</string>
+    <string name="list_error_filter_ability">Errore di rete durante il filtraggio per abilità.</string>
+    <string name="list_error_load_tiers">Errore di rete durante il caricamento dei tier.</string>
+    <string name="list_error_filter_tier">Errore di rete durante il filtraggio per tier.</string>
+    <string name="list_error_load_base_stats">Impossibile caricare le statistiche base — l\'ordinamento per statistica non è disponibile.</string>
 
     <!-- OptionsDialog (shared component, F35 continued) -->
     <string name="options_dialog_loading">Caricamento...</string>
