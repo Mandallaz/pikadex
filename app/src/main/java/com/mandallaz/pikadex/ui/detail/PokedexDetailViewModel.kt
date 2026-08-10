@@ -13,7 +13,7 @@ import com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
-import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.util.Cries
 import com.mandallaz.pikadex.util.CryPlayer
 import com.mandallaz.pikadex.util.LearnedMove
@@ -104,7 +104,7 @@ private inline fun <T> orNullUnlessCancelled(block: () -> T): T? = try {
 }
 
 class PokedexDetailViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepository = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PokedexDetailUiState())

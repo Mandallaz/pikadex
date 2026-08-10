@@ -7,7 +7,7 @@ import com.mandallaz.pikadex.data.SuggestionSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.TeamSlot
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
-import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.util.PresetTeam
 import com.mandallaz.pikadex.util.PresetTeams
 import com.mandallaz.pikadex.util.Smogon
@@ -84,7 +84,7 @@ data class TeamUiState(
 }
 
 class TeamViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepository = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TeamUiState())

@@ -26,6 +26,34 @@ data class PokemonDetailBundle(
     val evolutionChain: EvolutionChainDto?
 )
 
+/** [PokedexRepository]'s public surface, extracted (F50) as the one seam ViewModel unit tests
+ *  actually need — every ViewModel already took its repository via constructor injection, but
+ *  typed against the concrete class there was nothing to substitute a test double for. The
+ *  singleton `object`s elsewhere in `data/` (TeamRepository, FavoritesRepository,
+ *  PokedexListContext, PrefetchManager, the `*Settings` objects) turned out not to need the same
+ *  treatment: each already no-ops safely to a sane default when used without its `init(Context)`
+ *  ever being called, which is exactly what a JVM unit test that never touches Android does. */
+interface PokedexRepositoryApi {
+    suspend fun getMasterList(): List<NamedApiResource>
+    suspend fun getTypes(): List<NamedApiResource>
+    suspend fun getMoveNames(): List<String>
+    suspend fun getAbilityNames(): List<String>
+    suspend fun getFormVersionGroup(nameOrId: String): String?
+    suspend fun getTypeDetail(type: String): TypeDetailDto
+    suspend fun getPokemonNamesForType(type: String): Set<String>
+    suspend fun getPokemonNamesForMove(move: String): Set<String>
+    suspend fun getPokemonNamesForAbility(ability: String): Set<String>
+    suspend fun getAbilityDescription(ability: String): String?
+    suspend fun getPokemonTypes(nameOrId: String): List<String>
+    suspend fun getPokemonLevelUpMoveNames(nameOrId: String): List<String>
+    suspend fun getSmogonTiers(genCode: String): Map<String, String>
+    suspend fun getAllBasics(): Map<String, PokeApiGraphQLDataSource.PokemonBasics>
+    suspend fun getAllBaseStats(): Map<String, Map<String, Int>>
+    suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo>
+    suspend fun getStatPercentile(statKey: String, value: Int): Double
+    suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle
+}
+
 /**
  * Access layer for PokeAPI data. Keeps the global lists (pokemon/moves/abilities/types) in memory
  * since they never change during the process lifetime, avoiding re-downloading ~1300 entries on
@@ -34,7 +62,7 @@ data class PokemonDetailBundle(
  * `getOrPut { suspendCall() }` lets concurrent callers race past the cache check before either
  * one's fetch completes.
  */
-class PokedexRepository(private val api: PokeApiService) {
+class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi {
 
     private val masterListCache = AsyncValueCache<List<NamedApiResource>>()
     private val moveNamesCache = AsyncValueCache<List<String>>()
@@ -55,10 +83,10 @@ class PokedexRepository(private val api: PokeApiService) {
     private val allMoveInfoCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.MoveInfo>>()
     private val sortedStatArraysCache = AsyncValueCache<Map<String, IntArray>>()
 
-    suspend fun getMasterList(): List<NamedApiResource> =
+    override suspend fun getMasterList(): List<NamedApiResource> =
         masterListCache.get { api.getPokemonList(limit = 100000).results }
 
-    suspend fun getTypes(): List<NamedApiResource> = typesCache.get {
+    override suspend fun getTypes(): List<NamedApiResource> = typesCache.get {
         val order = TypeIds.standardTypeNames
         api.getTypeList().results
             .filterNot { it.name == "unknown" || it.name == "stellar" || it.name == "shadow" }
@@ -71,48 +99,48 @@ class PokedexRepository(private val api: PokeApiService) {
 
     // Sorted alphabetically — PokeAPI returns these in id order (Pound, Karate Chop, Double
     // Slap...), which is effectively random for a picker the user has to scan through.
-    suspend fun getMoveNames(): List<String> =
+    override suspend fun getMoveNames(): List<String> =
         moveNamesCache.get { api.getMoveList(limit = 100000).results.map { it.name }.sorted() }
 
-    suspend fun getAbilityNames(): List<String> =
+    override suspend fun getAbilityNames(): List<String> =
         abilityNamesCache.get { api.getAbilityList(limit = 100000).results.map { it.name }.sorted() }
 
     /** Which games a form was introduced in ("x-y", "mega-dimension"...), or null for a Pokémon
      *  that has no distinct form entry. Used to decide whether Smogon actually covers a form. */
-    suspend fun getFormVersionGroup(nameOrId: String): String? =
+    override suspend fun getFormVersionGroup(nameOrId: String): String? =
         formCache.get(nameOrId) { api.getPokemonForm(nameOrId).versionGroup?.name }
 
     /** Full type detail (including damage_relations), cached per type name. */
-    suspend fun getTypeDetail(type: String): TypeDetailDto =
+    override suspend fun getTypeDetail(type: String): TypeDetailDto =
         typeDetailCache.get(type) { api.getType(type) }
 
     /** Names of pokemon that have this type (the /type endpoint already does the reverse lookup). */
-    suspend fun getPokemonNamesForType(type: String): Set<String> {
+    override suspend fun getPokemonNamesForType(type: String): Set<String> {
         val detail = getTypeDetail(type)
         return detail.pokemon.orEmpty().map { it.pokemon.name }.toSet()
     }
 
     /** Names of pokemon that can learn this move. */
-    suspend fun getPokemonNamesForMove(move: String): Set<String> {
+    override suspend fun getPokemonNamesForMove(move: String): Set<String> {
         val detail = moveDetailCache.get(move) { api.getMove(move) }
         return detail.learnedByPokemon.orEmpty().map { it.name }.toSet()
     }
 
     /** Names of pokemon that can have this ability. */
-    suspend fun getPokemonNamesForAbility(ability: String): Set<String> {
+    override suspend fun getPokemonNamesForAbility(ability: String): Set<String> {
         val detail = abilityDetailCache.get(ability) { api.getAbility(ability) }
         return detail.pokemon.orEmpty().map { it.pokemon.name }.toSet()
     }
 
     /** Plain-English description of an ability (e.g. "Levitate" -> "Gives full immunity to Ground
      *  type moves."), since PokeAPI's ability names alone are often unclear on their own. */
-    suspend fun getAbilityDescription(ability: String): String? {
+    override suspend fun getAbilityDescription(ability: String): String? {
         val detail = abilityDetailCache.get(ability) { api.getAbility(ability) }
         return detail.effectEntries.orEmpty().firstOrNull { it.language.name == "en" }?.shortEffect
     }
 
     /** Just the type names for a pokemon, without pulling the full detail bundle (species, evolution chain). */
-    suspend fun getPokemonTypes(nameOrId: String): List<String> {
+    override suspend fun getPokemonTypes(nameOrId: String): List<String> {
         val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
         return pokemon.types.orEmpty().map { it.type.name }
     }
@@ -126,26 +154,26 @@ class PokedexRepository(private val api: PokeApiService) {
      * uniform wall of ×2 and reported "no coverage gaps" for any team whatsoever. What a pokemon
      * learns on its own is the discriminating signal.
      */
-    suspend fun getPokemonLevelUpMoveNames(nameOrId: String): List<String> {
+    override suspend fun getPokemonLevelUpMoveNames(nameOrId: String): List<String> {
         val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
         return pokemon.movesForCategory(MoveCategory.LEVEL_UP).map { it.moveName }
     }
 
     /** pokemonKey (Showdown format, no hyphens) -> tier code, for a Smogon generation (e.g. "ss"). */
-    suspend fun getSmogonTiers(genCode: String): Map<String, String> =
+    override suspend fun getSmogonTiers(genCode: String): Map<String, String> =
         smogonTierCache.get(genCode) { SmogonTierDataSource.fetchTiers(genCode) }
 
     /** pokemonName -> [PokeApiGraphQLDataSource.PokemonBasics] (stats, types, legendary/mythical),
      *  fetched once in bulk via GraphQL. Also persisted to disk (GraphQL is POST, so the shared
      *  HTTP cache can't cover it) — this data only changes when a new generation ships, so there's
      *  no reason to re-fetch ~1300 entries every cold start. */
-    suspend fun getAllBasics(): Map<String, PokeApiGraphQLDataSource.PokemonBasics> = allBasicsCache.get {
+    override suspend fun getAllBasics(): Map<String, PokeApiGraphQLDataSource.PokemonBasics> = allBasicsCache.get {
         diskCached(BASICS_CACHE_KEY, BASICS_TYPE) { PokeApiGraphQLDataSource.fetchAllBasics() }
     }
 
     /** Thin derived view of [getAllBasics] kept for callers that only care about stats (sorting) —
      *  they don't need to know types/rarity exist at all. */
-    suspend fun getAllBaseStats(): Map<String, Map<String, Int>> = getAllBasics().mapValues { it.value.stats }
+    override suspend fun getAllBaseStats(): Map<String, Map<String, Int>> = getAllBasics().mapValues { it.value.stats }
 
     /** Serves [key] from the disk cache if it's still fresh, otherwise runs [fetch] and persists the
      *  result. [fetch] throwing propagates without writing anything, so a failed request can never
@@ -157,7 +185,7 @@ class PokedexRepository(private val api: PokeApiService) {
     /** moveName -> (type, damage class, power, accuracy), fetched once in bulk via GraphQL and
      *  reused for every pokemon's move lists (Level Up / TM-HM / Breeding / Tutor). Persisted to
      *  disk for the same reason as [getAllBaseStats]. */
-    suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo> = allMoveInfoCache.get {
+    override suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo> = allMoveInfoCache.get {
         diskCached(MOVE_INFO_CACHE_KEY, MOVE_INFO_TYPE) { PokeApiGraphQLDataSource.fetchAllMoveInfo() }
     }
 
@@ -178,7 +206,7 @@ class PokedexRepository(private val api: PokeApiService) {
     /** Fraction of every other pokemon's same stat that [value] is greater-or-equal to (0.0..1.0)
      *  — ties split evenly so a value shared by many pokemon doesn't get pushed to either extreme.
      *  [statKey] is one of [BASE_STAT_KEYS] or the synthetic "total". */
-    suspend fun getStatPercentile(statKey: String, value: Int): Double {
+    override suspend fun getStatPercentile(statKey: String, value: Int): Double {
         val sorted = getSortedStatArrays()[statKey] ?: return 0.5
         if (sorted.isEmpty()) return 0.5
         val below = sorted.lowerBound(value)
@@ -198,7 +226,7 @@ class PokedexRepository(private val api: PokeApiService) {
         return lo
     }
 
-    suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
+    override suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
         val pokemon = pokemonDetailCache.get(nameOrId) { fetchPokemonResolvingDefaultVariety(nameOrId) }
         // Alternate forms (mega/gmax/regional/gender/cosmetic...) have a pokemon.id in the 10000+
         // range that does NOT match any pokemon-species id — the species must be looked up via the

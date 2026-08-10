@@ -4,7 +4,7 @@ import android.content.Context
 import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.util.Cries
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.Sprites
@@ -74,7 +74,7 @@ object PrefetchManager {
      *  The previous job is joined (not just cancelled) before this one starts its own work: a plain
      *  `cancel()` lets the old coroutine's in-flight `_state.update { Running(...) }` land after this
      *  job has already published its own state, which briefly shows the old tier's stale progress. */
-    fun start(context: Context, repository: PokedexRepository, tiers: List<PrefetchTier>) {
+    fun start(context: Context, repository: PokedexRepositoryApi, tiers: List<PrefetchTier>) {
         val previousJob = job
         if (tiers.isEmpty()) {
             previousJob?.cancel()
@@ -110,7 +110,7 @@ object PrefetchManager {
     private suspend fun buildUnits(
         tier: PrefetchTier,
         context: Context,
-        repository: PokedexRepository
+        repository: PokedexRepositoryApi
     ): List<suspend () -> Unit> = when (tier) {
         PrefetchTier.ESSENTIALS -> buildList {
             add { repository.getAllBasics() }

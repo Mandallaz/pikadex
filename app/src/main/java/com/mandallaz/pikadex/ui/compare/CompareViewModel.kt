@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
-import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +31,7 @@ data class CompareUiState(
 )
 
 class CompareViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepository = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CompareUiState())

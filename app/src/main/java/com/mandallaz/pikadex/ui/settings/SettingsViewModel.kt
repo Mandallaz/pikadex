@@ -14,7 +14,7 @@ import com.mandallaz.pikadex.data.PrefetchSettings
 import com.mandallaz.pikadex.data.PrefetchState
 import com.mandallaz.pikadex.data.PrefetchTier
 import com.mandallaz.pikadex.data.SuggestionSettings
-import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import kotlinx.coroutines.CancellationException
@@ -61,7 +61,7 @@ data class SettingsUiState(
  *  one screen in this app where that's worth the coupling. */
 class SettingsViewModel @JvmOverloads constructor(
     application: Application,
-    private val repository: PokedexRepository = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())

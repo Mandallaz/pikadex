@@ -1,7 +1,7 @@
 package com.mandallaz.pikadex.util
 
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
-import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
@@ -31,7 +31,7 @@ private const val STATUS_DAMAGE_CLASS = "status"
  *  wrap this in its own `supervisorScope`/try-catch for cancellation and error handling, same as
  *  `TeamViewModel.computeMatrix()` does. */
 suspend fun computeTeamMatrices(
-    repository: PokedexRepository,
+    repository: PokedexRepositoryApi,
     members: List<NamedApiResource>
 ): TeamMatrixResult = supervisorScope {
     // One bulk, already-cached lookup for the whole app rather than one call per

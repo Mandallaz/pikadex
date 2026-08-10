@@ -7,7 +7,7 @@ import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.PokedexListContext
 import com.mandallaz.pikadex.data.remote.SmogonTierDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
-import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
@@ -227,7 +227,7 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
 private val NAME_COLLATOR: Collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
 
 class PokedexListViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepository = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PokedexListUiState())
