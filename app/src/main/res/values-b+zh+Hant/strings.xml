@@ -242,4 +242,66 @@
     <string name="teamslots_cancel">取消</string>
     <string name="teamslots_rename_title">重新命名隊伍</string>
     <string name="teamslots_save">儲存</string>
+
+    <!-- Type Triangles screen (F35 continued) -->
+    <string name="triangles_title">屬性三角關係</string>
+    <string name="triangles_back_cd">返回</string>
+    <string name="triangles_intro">這裡的每種屬性都對循環中的下一種屬性效果拔群 — 這是一種在整個屬性相剋表中反覆出現的相生相剋關係。</string>
+    <string name="triangles_perfect_title">完美三角</string>
+    <string name="triangles_perfect_subtitle">每種屬性也抵抗循環中前一種屬性 — 攻防完全對稱。</string>
+    <string name="triangles_imperfect_title">不完美三角</string>
+    <string name="triangles_imperfect_subtitle">攻擊循環依然成立，但防禦關係只是等效傷害，或是完全免疫，而非抵抗。</string>
+    <string name="triangles_best_counter">最佳剋制</string>
+
+    <!-- Pokédex list/filters screen (F35 continued) -->
+    <string name="list_search_placeholder">名稱或編號...</string>
+    <string name="list_clear_search_cd">清除搜尋</string>
+    <string name="list_filters_label">篩選</string>
+    <string name="list_filters_label_count">篩選 (%1$d)</string>
+    <string name="list_sort_label">排序</string>
+    <string name="list_sort_label_with_stat">排序：%1$s</string>
+    <string name="list_sort_ascending_cd">遞增排序 — 點按切換為遞減</string>
+    <string name="list_sort_descending_cd">遞減排序 — 點按切換為遞增</string>
+    <string name="list_reset">重設</string>
+    <string name="list_result_count">%1$d 隻寶可夢</string>
+    <string name="list_retry">重試</string>
+    <string name="list_choose_move_title">選擇招式</string>
+    <string name="list_any_move">任意招式</string>
+    <string name="list_choose_ability_title">選擇特性</string>
+    <string name="list_any_ability">任意特性</string>
+    <string name="list_choose_generation_title">選擇世代</string>
+    <string name="list_any_format">任意賽制</string>
+    <string name="list_choose_tier_title">選擇分級（%1$s）</string>
+    <string name="list_any_tier">任意分級</string>
+    <string name="list_sort_by_title">排序依據</string>
+    <string name="list_no_sorting">不排序</string>
+    <string name="list_rarity_title">稀有度</string>
+    <string name="list_any_rarity">任意稀有度</string>
+    <string name="list_type_section">屬性</string>
+    <string name="list_type_all_selected_hint">符合所有已選屬性</string>
+    <string name="list_selected_cd">已選擇</string>
+    <string name="list_other_filters_section">其他篩選</string>
+    <string name="list_favorites_label">收藏</string>
+    <string name="list_move_label">招式</string>
+    <string name="list_ability_label">特性</string>
+    <string name="list_format_label">賽制</string>
+    <string name="list_tier_label">分級</string>
+    <string name="list_perfect_counter_label">完美剋制</string>
+    <string name="list_minimum_stats_section">最低種族值</string>
+    <string name="list_loading_base_stats">正在載入種族值…</string>
+    <string name="list_any_value">不限</string>
+    <string name="list_no_results">沒有寶可夢符合你的搜尋和篩選條件。</string>
+    <string name="list_reset_filters">重設篩選</string>
+    <string name="list_attribution">資料由 PokeAPI 提供</string>
+    <string name="list_team_full_snackbar">你的隊伍已滿（%1$d/%2$d）。請先移除一隻。</string>
+
+    <!-- OptionsDialog (shared component, F35 continued) -->
+    <string name="options_dialog_loading">載入中...</string>
+    <string name="options_dialog_selected_cd">已選擇</string>
+
+    <!-- SearchableListDialog (shared component, F35 continued) -->
+    <string name="searchable_dialog_close_cd">關閉</string>
+    <string name="searchable_dialog_search_placeholder">搜尋...</string>
+    <string name="searchable_dialog_loading">載入中...</string>
+    <string name="searchable_dialog_no_matches">沒有與「%1$s」相符的結果。</string>
 </resources>

@@ -242,4 +242,66 @@
     <string name="teamslots_cancel">취소</string>
     <string name="teamslots_rename_title">팀 이름 변경</string>
     <string name="teamslots_save">저장</string>
+
+    <!-- Type Triangles screen (F35 continued) -->
+    <string name="triangles_title">타입 삼각관계</string>
+    <string name="triangles_back_cd">뒤로</string>
+    <string name="triangles_intro">여기 있는 각 타입은 순환에서 다음 타입에 매우 효과적입니다 — 타입 상성표 전체에서 반복되는 가위바위보 관계입니다.</string>
+    <string name="triangles_perfect_title">완전한 삼각관계</string>
+    <string name="triangles_perfect_subtitle">각 타입은 순환에서 이전 타입에도 내성이 있습니다 — 공격과 방어가 완전히 대칭적입니다.</string>
+    <string name="triangles_imperfect_title">불완전한 삼각관계</string>
+    <string name="triangles_imperfect_subtitle">공격 순환은 그대로 유지되지만, 방어 관계는 내성 대신 등배 공격이거나 완전 무효일 뿐입니다.</string>
+    <string name="triangles_best_counter">최고의 카운터</string>
+
+    <!-- Pokédex list/filters screen (F35 continued) -->
+    <string name="list_search_placeholder">이름 또는 번호...</string>
+    <string name="list_clear_search_cd">검색 지우기</string>
+    <string name="list_filters_label">필터</string>
+    <string name="list_filters_label_count">필터 (%1$d)</string>
+    <string name="list_sort_label">정렬</string>
+    <string name="list_sort_label_with_stat">정렬: %1$s</string>
+    <string name="list_sort_ascending_cd">오름차순 정렬 — 탭하여 내림차순으로 정렬</string>
+    <string name="list_sort_descending_cd">내림차순 정렬 — 탭하여 오름차순으로 정렬</string>
+    <string name="list_reset">초기화</string>
+    <string name="list_result_count">포켓몬 %1$d마리</string>
+    <string name="list_retry">다시 시도</string>
+    <string name="list_choose_move_title">기술 선택</string>
+    <string name="list_any_move">모든 기술</string>
+    <string name="list_choose_ability_title">특성 선택</string>
+    <string name="list_any_ability">모든 특성</string>
+    <string name="list_choose_generation_title">세대 선택</string>
+    <string name="list_any_format">모든 포맷</string>
+    <string name="list_choose_tier_title">티어 선택 (%1$s)</string>
+    <string name="list_any_tier">모든 티어</string>
+    <string name="list_sort_by_title">정렬 기준</string>
+    <string name="list_no_sorting">정렬 없음</string>
+    <string name="list_rarity_title">희귀도</string>
+    <string name="list_any_rarity">모든 희귀도</string>
+    <string name="list_type_section">타입</string>
+    <string name="list_type_all_selected_hint">선택한 모든 타입과 일치</string>
+    <string name="list_selected_cd">선택됨</string>
+    <string name="list_other_filters_section">기타 필터</string>
+    <string name="list_favorites_label">즐겨찾기</string>
+    <string name="list_move_label">기술</string>
+    <string name="list_ability_label">특성</string>
+    <string name="list_format_label">포맷</string>
+    <string name="list_tier_label">티어</string>
+    <string name="list_perfect_counter_label">완벽한 카운터</string>
+    <string name="list_minimum_stats_section">최소 종족값</string>
+    <string name="list_loading_base_stats">종족값 불러오는 중…</string>
+    <string name="list_any_value">지정 안 함</string>
+    <string name="list_no_results">검색과 필터에 일치하는 포켓몬이 없습니다.</string>
+    <string name="list_reset_filters">필터 초기화</string>
+    <string name="list_attribution">PokeAPI 제공 데이터</string>
+    <string name="list_team_full_snackbar">팀이 가득 찼습니다 (%1$d/%2$d). 먼저 하나를 제거하세요.</string>
+
+    <!-- OptionsDialog (shared component, F35 continued) -->
+    <string name="options_dialog_loading">불러오는 중...</string>
+    <string name="options_dialog_selected_cd">선택됨</string>
+
+    <!-- SearchableListDialog (shared component, F35 continued) -->
+    <string name="searchable_dialog_close_cd">닫기</string>
+    <string name="searchable_dialog_search_placeholder">검색...</string>
+    <string name="searchable_dialog_loading">불러오는 중...</string>
+    <string name="searchable_dialog_no_matches">\"%1$s\"에 대한 검색 결과가 없습니다.</string>
 </resources>

@@ -31,10 +31,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.mandallaz.pikadex.R
+import com.mandallaz.pikadex.ui.LocalizedContext
 import com.mandallaz.pikadex.util.toDisplayName
 
 /** Full-screen dialog with a search field, used to pick a move or ability among several hundred
@@ -79,60 +82,64 @@ fun SearchableListDialog(
         // scrim bands showing above/below the content instead of a true full screen.
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                contentWindowInsets = WindowInsets.systemBars,
-                topBar = {
-                    TopAppBar(
-                        title = { Text(title) },
-                        actions = {
-                            IconButton(onClick = onDismiss) {
-                                Icon(Icons.Default.Close, contentDescription = "Close")
+        // Dialog opens its own Window, whose LocalContext isn't the locale-overridden one MainActivity
+        // provides — see LocalizedContext's own doc (same fix as SmogonTierExplanationDialog/B8).
+        LocalizedContext {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    contentWindowInsets = WindowInsets.systemBars,
+                    topBar = {
+                        TopAppBar(
+                            title = { Text(title) },
+                            actions = {
+                                IconButton(onClick = onDismiss) {
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.searchable_dialog_close_cd))
+                                }
                             }
-                        }
-                    )
-                }
-            ) { padding ->
-                Column(modifier = Modifier.padding(padding).fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        placeholder = { Text("Search...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        singleLine = true
-                    )
-                    if (options.isEmpty()) {
-                        Text(
-                            "Loading...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    } else if (filtered.isEmpty()) {
-                        Text(
-                            "No matches for “$query”.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(16.dp)
                         )
                     }
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        if (clearLabel != null) {
-                            item {
-                                ListItem(
-                                    headlineContent = { Text(clearLabel, fontWeight = FontWeight.Medium) },
-                                    leadingContent = { Icon(Icons.Default.Clear, contentDescription = null) },
-                                    modifier = Modifier.fillMaxWidth().clickable { onSelect(null) }
-                                )
-                                HorizontalDivider()
-                            }
-                        }
-                        items(filtered) { option ->
-                            ListItem(
-                                headlineContent = { Text(displayName(option)) },
-                                modifier = Modifier.fillMaxWidth().clickable { onSelect(option) }
+                ) { padding ->
+                    Column(modifier = Modifier.padding(padding).fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            placeholder = { Text(stringResource(R.string.searchable_dialog_search_placeholder)) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            singleLine = true
+                        )
+                        if (options.isEmpty()) {
+                            Text(
+                                stringResource(R.string.searchable_dialog_loading),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(16.dp)
                             )
+                        } else if (filtered.isEmpty()) {
+                            Text(
+                                stringResource(R.string.searchable_dialog_no_matches, query),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            if (clearLabel != null) {
+                                item {
+                                    ListItem(
+                                        headlineContent = { Text(clearLabel, fontWeight = FontWeight.Medium) },
+                                        leadingContent = { Icon(Icons.Default.Clear, contentDescription = null) },
+                                        modifier = Modifier.fillMaxWidth().clickable { onSelect(null) }
+                                    )
+                                    HorizontalDivider()
+                                }
+                            }
+                            items(filtered) { option ->
+                                ListItem(
+                                    headlineContent = { Text(displayName(option)) },
+                                    modifier = Modifier.fillMaxWidth().clickable { onSelect(option) }
+                                )
+                            }
                         }
                     }
                 }

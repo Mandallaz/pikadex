@@ -245,4 +245,66 @@
     <string name="teamslots_cancel">Cancel</string>
     <string name="teamslots_rename_title">Rename team</string>
     <string name="teamslots_save">Save</string>
+
+    <!-- Type Triangles screen (F35 continued) -->
+    <string name="triangles_title">Type Triangles</string>
+    <string name="triangles_back_cd">Back</string>
+    <string name="triangles_intro">Each type here is super effective against the next one in the cycle — a rock-paper-scissors relationship that repeats throughout the type chart.</string>
+    <string name="triangles_perfect_title">Perfect triangles</string>
+    <string name="triangles_perfect_subtitle">Each type also resists the one before it in the loop — the offense and defense are fully symmetric.</string>
+    <string name="triangles_imperfect_title">Imperfect triangles</string>
+    <string name="triangles_imperfect_subtitle">The offensive loop still holds, but a defensive link is only a neutral hit — or a full immunity — instead of a resistance.</string>
+    <string name="triangles_best_counter">Best counter</string>
+
+    <!-- Pokédex list/filters screen (F35 continued) -->
+    <string name="list_search_placeholder">Name or number...</string>
+    <string name="list_clear_search_cd">Clear search</string>
+    <string name="list_filters_label">Filters</string>
+    <string name="list_filters_label_count">Filters (%1$d)</string>
+    <string name="list_sort_label">Sort</string>
+    <string name="list_sort_label_with_stat">Sort: %1$s</string>
+    <string name="list_sort_ascending_cd">Sorted ascending — tap to sort descending</string>
+    <string name="list_sort_descending_cd">Sorted descending — tap to sort ascending</string>
+    <string name="list_reset">Reset</string>
+    <string name="list_result_count">%1$d Pokémon</string>
+    <string name="list_retry">Retry</string>
+    <string name="list_choose_move_title">Choose a move</string>
+    <string name="list_any_move">Any move</string>
+    <string name="list_choose_ability_title">Choose an ability</string>
+    <string name="list_any_ability">Any ability</string>
+    <string name="list_choose_generation_title">Choose a generation</string>
+    <string name="list_any_format">Any format</string>
+    <string name="list_choose_tier_title">Choose a tier (%1$s)</string>
+    <string name="list_any_tier">Any tier</string>
+    <string name="list_sort_by_title">Sort by</string>
+    <string name="list_no_sorting">No sorting</string>
+    <string name="list_rarity_title">Rarity</string>
+    <string name="list_any_rarity">Any rarity</string>
+    <string name="list_type_section">Type</string>
+    <string name="list_type_all_selected_hint">Matching all selected types</string>
+    <string name="list_selected_cd">Selected</string>
+    <string name="list_other_filters_section">Other filters</string>
+    <string name="list_favorites_label">Favorites</string>
+    <string name="list_move_label">Move</string>
+    <string name="list_ability_label">Ability</string>
+    <string name="list_format_label">Format</string>
+    <string name="list_tier_label">Tier</string>
+    <string name="list_perfect_counter_label">Perfect Counter</string>
+    <string name="list_minimum_stats_section">Minimum Stats</string>
+    <string name="list_loading_base_stats">Loading base stats…</string>
+    <string name="list_any_value">Any</string>
+    <string name="list_no_results">No Pokémon match your search and filters.</string>
+    <string name="list_reset_filters">Reset filters</string>
+    <string name="list_attribution">Data provided by PokeAPI</string>
+    <string name="list_team_full_snackbar">Your team is full (%1$d/%2$d). Remove one first.</string>
+
+    <!-- OptionsDialog (shared component, F35 continued) -->
+    <string name="options_dialog_loading">Loading...</string>
+    <string name="options_dialog_selected_cd">Selected</string>
+
+    <!-- SearchableListDialog (shared component, F35 continued) -->
+    <string name="searchable_dialog_close_cd">Close</string>
+    <string name="searchable_dialog_search_placeholder">Search...</string>
+    <string name="searchable_dialog_loading">Loading...</string>
+    <string name="searchable_dialog_no_matches">No matches for “%1$s”.</string>
 </resources>

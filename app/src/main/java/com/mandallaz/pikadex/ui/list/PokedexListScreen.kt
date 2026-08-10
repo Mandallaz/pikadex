@@ -62,15 +62,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
+import com.mandallaz.pikadex.ui.LocalizedContext
 import com.mandallaz.pikadex.ui.components.OptionsDialog
 import com.mandallaz.pikadex.ui.components.PokemonCard
 import com.mandallaz.pikadex.ui.components.SearchableListDialog
@@ -130,6 +133,9 @@ fun PokedexListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
+    // Resolved here, in the composable body, not inside the snackbar's coroutineScope.launch{}
+    // lambda below — stringResource() is a @Composable function and that lambda isn't one.
+    val teamFullMessage = stringResource(R.string.list_team_full_snackbar, TeamRepository.MAX_SIZE, TeamRepository.MAX_SIZE)
 
     // Filter/network errors used to be written into state and never shown anywhere — picking a
     // type filter that failed to load flashed a spinner and then silently left the list unchanged,
@@ -196,12 +202,12 @@ fun PokedexListScreen(
                     value = uiState.searchQuery,
                     onValueChange = viewModel::onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Name or number...") },
+                    placeholder = { Text(stringResource(R.string.list_search_placeholder)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
                         {
                             IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.list_clear_search_cd))
                             }
                         }
                     } else {
@@ -233,7 +239,15 @@ fun PokedexListScreen(
                             viewModel.loadBaseStatsIfNeeded()
                             showFilterSheet = true
                         },
-                        label = { Text(if (filterCount > 0) "Filters ($filterCount)" else "Filters") },
+                        label = {
+                            Text(
+                                if (filterCount > 0) {
+                                    stringResource(R.string.list_filters_label_count, filterCount)
+                                } else {
+                                    stringResource(R.string.list_filters_label)
+                                }
+                            )
+                        },
                         leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp)) }
                     )
                     // FilterChip, not AssistChip: an active sort is exactly the same kind of "a filter
@@ -248,16 +262,21 @@ fun PokedexListScreen(
                         },
                         // "Sort: " prefix once a stat is picked — a bare "Attack" next to "Filters (2)"
                         // read as if it were itself a filter value, not what it's actually sorting by.
-                        label = { Text(uiState.sortStat?.let { "Sort: ${it.label}" } ?: "Sort") }
+                        label = {
+                            Text(
+                                uiState.sortStat?.let { stringResource(R.string.list_sort_label_with_stat, it.label) }
+                                    ?: stringResource(R.string.list_sort_label)
+                            )
+                        }
                     )
                     if (uiState.sortStat != null) {
                         IconButton(onClick = viewModel::toggleSortDirection) {
                             Icon(
                                 imageVector = if (uiState.sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
                                 contentDescription = if (uiState.sortAscending) {
-                                    "Sorted ascending — tap to sort descending"
+                                    stringResource(R.string.list_sort_ascending_cd)
                                 } else {
-                                    "Sorted descending — tap to sort ascending"
+                                    stringResource(R.string.list_sort_descending_cd)
                                 }
                             )
                         }
@@ -265,7 +284,7 @@ fun PokedexListScreen(
                     if (uiState.hasActiveFilters) {
                         AssistChip(
                             onClick = viewModel::clearFilters,
-                            label = { Text("Reset") },
+                            label = { Text(stringResource(R.string.list_reset)) },
                             leadingIcon = { Icon(Icons.Default.Clear, contentDescription = null) }
                         )
                     }
@@ -275,7 +294,7 @@ fun PokedexListScreen(
             val resultCount: @Composable () -> Unit = {
                 if (!uiState.isLoading && uiState.allPokemon.isNotEmpty()) {
                     Text(
-                        "${displayedPokemon.size} Pokémon",
+                        stringResource(R.string.list_result_count, displayedPokemon.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -313,7 +332,7 @@ fun PokedexListScreen(
                             // A failed cold start used to be a genuine dead end — load() only ever ran
                             // once from init{}, so there was no way back into the app short of
                             // force-killing it, even after connectivity came back.
-                            Button(onClick = viewModel::retryInitialLoad) { Text("Retry") }
+                            Button(onClick = viewModel::retryInitialLoad) { Text(stringResource(R.string.list_retry)) }
                         }
                         displayedPokemon.isEmpty() -> EmptyResultsState(
                             hasActiveFilters = uiState.hasActiveFilters,
@@ -379,7 +398,7 @@ fun PokedexListScreen(
                                                 // The button used to just render disabled with zero
                                                 // explanation of why tapping it did nothing.
                                                 coroutineScope.launch {
-                                                    snackbarHostState.showSnackbar("Your team is full (${TeamRepository.MAX_SIZE}/${TeamRepository.MAX_SIZE}). Remove one first.")
+                                                    snackbarHostState.showSnackbar(teamFullMessage)
                                                 }
                                             }
                                         },
@@ -406,35 +425,40 @@ fun PokedexListScreen(
     if (showFilterSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
         ModalBottomSheet(onDismissRequest = { showFilterSheet = false }, sheetState = sheetState) {
-            FilterSheetContent(
-                uiState = uiState,
-                onToggleFavoritesOnly = viewModel::onToggleFavoritesOnly,
-                onTypeToggled = viewModel::onTypeToggled,
-                onOpenMove = {
-                    viewModel.loadMoveOptionsIfNeeded()
-                    activeDialog = ActiveDialog.MOVE
-                },
-                onOpenAbility = {
-                    viewModel.loadAbilityOptionsIfNeeded()
-                    activeDialog = ActiveDialog.ABILITY
-                },
-                onOpenFormat = { activeDialog = ActiveDialog.FORMAT_GEN },
-                onOpenTier = {
-                    viewModel.loadTierOptionsIfNeeded()
-                    activeDialog = ActiveDialog.FORMAT_TIER
-                },
-                onOpenRarity = { activeDialog = ActiveDialog.RARITY },
-                onToggleCounterFilter = viewModel::onCounterFilterToggled,
-                onStatMinimumChanged = viewModel::onStatMinimumChanged
-            )
+            // ModalBottomSheet renders through its own Popup/Window, whose LocalContext isn't the
+            // locale-overridden one MainActivity provides — see LocalizedContext's own doc (same fix
+            // as SmogonTierExplanationDialog/B8's Dialog case).
+            LocalizedContext {
+                FilterSheetContent(
+                    uiState = uiState,
+                    onToggleFavoritesOnly = viewModel::onToggleFavoritesOnly,
+                    onTypeToggled = viewModel::onTypeToggled,
+                    onOpenMove = {
+                        viewModel.loadMoveOptionsIfNeeded()
+                        activeDialog = ActiveDialog.MOVE
+                    },
+                    onOpenAbility = {
+                        viewModel.loadAbilityOptionsIfNeeded()
+                        activeDialog = ActiveDialog.ABILITY
+                    },
+                    onOpenFormat = { activeDialog = ActiveDialog.FORMAT_GEN },
+                    onOpenTier = {
+                        viewModel.loadTierOptionsIfNeeded()
+                        activeDialog = ActiveDialog.FORMAT_TIER
+                    },
+                    onOpenRarity = { activeDialog = ActiveDialog.RARITY },
+                    onToggleCounterFilter = viewModel::onCounterFilterToggled,
+                    onStatMinimumChanged = viewModel::onStatMinimumChanged
+                )
+            }
         }
     }
 
     when (activeDialog) {
         ActiveDialog.MOVE -> SearchableListDialog(
-            title = "Choose a move",
+            title = stringResource(R.string.list_choose_move_title),
             options = uiState.moveOptions,
-            clearLabel = "Any move",
+            clearLabel = stringResource(R.string.list_any_move),
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { move ->
                 viewModel.onMoveSelected(move)
@@ -443,9 +467,9 @@ fun PokedexListScreen(
         )
 
         ActiveDialog.ABILITY -> SearchableListDialog(
-            title = "Choose an ability",
+            title = stringResource(R.string.list_choose_ability_title),
             options = uiState.abilityOptions,
-            clearLabel = "Any ability",
+            clearLabel = stringResource(R.string.list_any_ability),
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { ability ->
                 viewModel.onAbilitySelected(ability)
@@ -453,53 +477,65 @@ fun PokedexListScreen(
             }
         )
 
-        ActiveDialog.FORMAT_GEN -> OptionsDialog(
-            title = "Choose a generation",
-            options = listOf<SmogonGen?>(null) + Smogon.ALL_GENERATIONS,
-            labelFor = { it?.label ?: "Any format" },
-            selected = uiState.selectedFormatGen,
-            onDismiss = { activeDialog = ActiveDialog.NONE },
-            onSelect = { gen ->
-                viewModel.onFormatGenSelected(gen)
-                activeDialog = ActiveDialog.NONE
-            }
-        )
+        ActiveDialog.FORMAT_GEN -> {
+            val anyFormat = stringResource(R.string.list_any_format)
+            OptionsDialog(
+                title = stringResource(R.string.list_choose_generation_title),
+                options = listOf<SmogonGen?>(null) + Smogon.ALL_GENERATIONS,
+                labelFor = { it?.label ?: anyFormat },
+                selected = uiState.selectedFormatGen,
+                onDismiss = { activeDialog = ActiveDialog.NONE },
+                onSelect = { gen ->
+                    viewModel.onFormatGenSelected(gen)
+                    activeDialog = ActiveDialog.NONE
+                }
+            )
+        }
 
-        ActiveDialog.FORMAT_TIER -> OptionsDialog(
-            title = "Choose a tier (${uiState.effectiveFormatGen.label})",
-            options = listOf<String?>(null) + uiState.formatTierOptions,
-            labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: "Any tier" },
-            selected = uiState.selectedFormatTier,
-            onDismiss = { activeDialog = ActiveDialog.NONE },
-            onSelect = { tier ->
-                viewModel.onFormatTierSelected(tier)
-                activeDialog = ActiveDialog.NONE
-            }
-        )
+        ActiveDialog.FORMAT_TIER -> {
+            val anyTier = stringResource(R.string.list_any_tier)
+            OptionsDialog(
+                title = stringResource(R.string.list_choose_tier_title, uiState.effectiveFormatGen.label),
+                options = listOf<String?>(null) + uiState.formatTierOptions,
+                labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: anyTier },
+                selected = uiState.selectedFormatTier,
+                onDismiss = { activeDialog = ActiveDialog.NONE },
+                onSelect = { tier ->
+                    viewModel.onFormatTierSelected(tier)
+                    activeDialog = ActiveDialog.NONE
+                }
+            )
+        }
 
-        ActiveDialog.SORT -> OptionsDialog(
-            title = "Sort by",
-            options = listOf<SortStat?>(null) + SortStat.entries,
-            labelFor = { it?.label ?: "No sorting" },
-            selected = uiState.sortStat,
-            onDismiss = { activeDialog = ActiveDialog.NONE },
-            onSelect = { stat ->
-                viewModel.onSortStatSelected(stat)
-                activeDialog = ActiveDialog.NONE
-            }
-        )
+        ActiveDialog.SORT -> {
+            val noSorting = stringResource(R.string.list_no_sorting)
+            OptionsDialog(
+                title = stringResource(R.string.list_sort_by_title),
+                options = listOf<SortStat?>(null) + SortStat.entries,
+                labelFor = { it?.label ?: noSorting },
+                selected = uiState.sortStat,
+                onDismiss = { activeDialog = ActiveDialog.NONE },
+                onSelect = { stat ->
+                    viewModel.onSortStatSelected(stat)
+                    activeDialog = ActiveDialog.NONE
+                }
+            )
+        }
 
-        ActiveDialog.RARITY -> OptionsDialog(
-            title = "Rarity",
-            options = listOf<RarityFilter?>(null) + RarityFilter.entries,
-            labelFor = { it?.label ?: "Any rarity" },
-            selected = uiState.rarityFilter,
-            onDismiss = { activeDialog = ActiveDialog.NONE },
-            onSelect = { rarity ->
-                viewModel.onRarityFilterSelected(rarity)
-                activeDialog = ActiveDialog.NONE
-            }
-        )
+        ActiveDialog.RARITY -> {
+            val anyRarity = stringResource(R.string.list_any_rarity)
+            OptionsDialog(
+                title = stringResource(R.string.list_rarity_title),
+                options = listOf<RarityFilter?>(null) + RarityFilter.entries,
+                labelFor = { it?.label ?: anyRarity },
+                selected = uiState.rarityFilter,
+                onDismiss = { activeDialog = ActiveDialog.NONE },
+                onSelect = { rarity ->
+                    viewModel.onRarityFilterSelected(rarity)
+                    activeDialog = ActiveDialog.NONE
+                }
+            )
+        }
 
         ActiveDialog.NONE -> Unit
     }
@@ -532,17 +568,17 @@ private fun FilterSheetContent(
             .padding(bottom = 24.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text("Filters", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.list_filters_label), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
         Text(
-            "Type",
+            stringResource(R.string.list_type_section),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 16.dp)
         )
         if (uiState.selectedTypes.size > 1) {
             Text(
-                "Matching all selected types",
+                stringResource(R.string.list_type_all_selected_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -559,7 +595,7 @@ private fun FilterSheetContent(
                     onClick = { onTypeToggled(type.name) },
                     label = { TypeBadge(type.name, type.id ?: 0, height = 20.dp) },
                     leadingIcon = if (isSelected) {
-                        { Icon(Icons.Default.Check, contentDescription = "Selected", modifier = Modifier.size(18.dp)) }
+                        { Icon(Icons.Default.Check, contentDescription = stringResource(R.string.list_selected_cd), modifier = Modifier.size(18.dp)) }
                     } else {
                         null
                     }
@@ -568,61 +604,61 @@ private fun FilterSheetContent(
         }
 
         Text(
-            "Other filters",
+            stringResource(R.string.list_other_filters_section),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SelectableChip(
-                label = "Favorites",
+                label = stringResource(R.string.list_favorites_label),
                 selected = uiState.showFavoritesOnly,
                 onClick = onToggleFavoritesOnly,
                 unselectedIcon = { Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
             SelectableChip(
-                label = uiState.selectedMove?.toDisplayName() ?: "Move",
+                label = uiState.selectedMove?.toDisplayName() ?: stringResource(R.string.list_move_label),
                 selected = uiState.selectedMove != null,
                 onClick = onOpenMove
             )
             SelectableChip(
-                label = uiState.selectedAbility?.toDisplayName() ?: "Ability",
+                label = uiState.selectedAbility?.toDisplayName() ?: stringResource(R.string.list_ability_label),
                 selected = uiState.selectedAbility != null,
                 onClick = onOpenAbility
             )
             SelectableChip(
-                label = uiState.selectedFormatGen?.label ?: "Format",
+                label = uiState.selectedFormatGen?.label ?: stringResource(R.string.list_format_label),
                 selected = uiState.selectedFormatGen != null,
                 onClick = onOpenFormat
             )
             SelectableChip(
-                label = uiState.selectedFormatTier?.let { SmogonTierLabels.labelFor(it) } ?: "Tier",
+                label = uiState.selectedFormatTier?.let { SmogonTierLabels.labelFor(it) } ?: stringResource(R.string.list_tier_label),
                 selected = uiState.selectedFormatTier != null,
                 onClick = onOpenTier
             )
             SelectableChip(
-                label = uiState.rarityFilter?.label ?: "Rarity",
+                label = uiState.rarityFilter?.label ?: stringResource(R.string.list_rarity_title),
                 selected = uiState.rarityFilter != null,
                 onClick = onOpenRarity
             )
             // Binary toggle (F33), not a dialog-backed chip like the others above — "counters any
             // triangle" is a single on/off predicate, same shape as Favorites.
             SelectableChip(
-                label = "Perfect Counter",
+                label = stringResource(R.string.list_perfect_counter_label),
                 selected = uiState.counterFilterActive,
                 onClick = onToggleCounterFilter
             )
         }
 
         Text(
-            "Minimum Stats",
+            stringResource(R.string.list_minimum_stats_section),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 20.dp, bottom = 4.dp)
         )
         if (uiState.isStatsLoading && uiState.baseStats.isEmpty()) {
             Text(
-                "Loading base stats…",
+                stringResource(R.string.list_loading_base_stats),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -642,7 +678,7 @@ private fun FilterSheetContent(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        if (minimum > 0) "$minimum" else "Any",
+                        if (minimum > 0) "$minimum" else stringResource(R.string.list_any_value),
                         modifier = Modifier.widthIn(min = 36.dp),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -663,7 +699,7 @@ private fun FilterSheetContent(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    if (totalMinimum > 0) "$totalMinimum" else "Any",
+                    if (totalMinimum > 0) "$totalMinimum" else stringResource(R.string.list_any_value),
                     modifier = Modifier.widthIn(min = 36.dp),
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -686,7 +722,7 @@ private fun SelectableChip(
         onClick = onClick,
         label = { Text(label) },
         leadingIcon = when {
-            selected -> { { Icon(Icons.Default.Check, contentDescription = "Selected", modifier = Modifier.size(18.dp)) } }
+            selected -> { { Icon(Icons.Default.Check, contentDescription = stringResource(R.string.list_selected_cd), modifier = Modifier.size(18.dp)) } }
             unselectedIcon != null -> unselectedIcon
             else -> null
         }
@@ -700,13 +736,13 @@ private fun EmptyResultsState(hasActiveFilters: Boolean, onResetFilters: () -> U
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "No Pokémon match your search and filters.",
+            stringResource(R.string.list_no_results),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
         if (hasActiveFilters) {
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onResetFilters) { Text("Reset filters") }
+            Button(onClick = onResetFilters) { Text(stringResource(R.string.list_reset_filters)) }
         }
     }
 }
@@ -724,7 +760,7 @@ private fun AttributionFooter() {
         horizontalArrangement = Arrangement.Center
     ) {
         Text(
-            "Data provided by PokeAPI",
+            stringResource(R.string.list_attribution),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Medium

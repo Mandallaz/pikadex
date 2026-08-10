@@ -22,8 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.ui.components.TypeTriangleDiagram
@@ -40,11 +42,11 @@ fun TypeTrianglesScreen(onBack: (() -> Unit)? = null) {
     Scaffold(
         topBar = {
             PikaDexTopBar(
-                title = { Text("Type Triangles") },
+                title = { Text(stringResource(R.string.triangles_title)) },
                 navigationIcon = onBack?.let { back ->
                     {
                         IconButton(onClick = back) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.triangles_back_cd))
                         }
                     }
                 }
@@ -55,25 +57,22 @@ fun TypeTrianglesScreen(onBack: (() -> Unit)? = null) {
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
             item {
                 Text(
-                    "Each type here is super effective against the next one in the cycle — " +
-                        "a rock-paper-scissors relationship that repeats throughout the type chart.",
+                    stringResource(R.string.triangles_intro),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(16.dp)
                 )
             }
             item {
                 SectionHeader(
-                    title = "Perfect triangles",
-                    subtitle = "Each type also resists the one before it in the loop — the " +
-                        "offense and defense are fully symmetric."
+                    title = stringResource(R.string.triangles_perfect_title),
+                    subtitle = stringResource(R.string.triangles_perfect_subtitle)
                 )
             }
             items(perfect) { triangle -> TriangleCard(triangle) }
             item {
                 SectionHeader(
-                    title = "Imperfect triangles",
-                    subtitle = "The offensive loop still holds, but a defensive link is only a " +
-                        "neutral hit — or a full immunity — instead of a resistance."
+                    title = stringResource(R.string.triangles_imperfect_title),
+                    subtitle = stringResource(R.string.triangles_imperfect_subtitle)
                 )
             }
             items(imperfect) { triangle -> TriangleCard(triangle) }
@@ -110,7 +109,7 @@ private fun TriangleCard(triangle: TypeTriangle) {
             )
             HorizontalDivider(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
             Text(
-                "Best counter",
+                stringResource(R.string.triangles_best_counter),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold
             )

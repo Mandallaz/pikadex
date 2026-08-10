@@ -242,4 +242,66 @@
     <string name="teamslots_cancel">キャンセル</string>
     <string name="teamslots_rename_title">チーム名を変更</string>
     <string name="teamslots_save">保存</string>
+
+    <!-- Type Triangles screen (F35 continued) -->
+    <string name="triangles_title">タイプ三すくみ</string>
+    <string name="triangles_back_cd">戻る</string>
+    <string name="triangles_intro">ここに表示される各タイプは、サイクル内の次のタイプに対して効果抜群です — タイプ相性表全体で繰り返される三すくみの関係です。</string>
+    <string name="triangles_perfect_title">完全な三すくみ</string>
+    <string name="triangles_perfect_subtitle">各タイプはループ内の1つ前のタイプにも耐性を持ちます — 攻撃と防御が完全に対称です。</string>
+    <string name="triangles_imperfect_title">不完全な三すくみ</string>
+    <string name="triangles_imperfect_subtitle">攻撃のループは成り立ちますが、防御側のつながりは耐性ではなく等倍、または完全な無効になります。</string>
+    <string name="triangles_best_counter">最高のカウンター</string>
+
+    <!-- Pokédex list/filters screen (F35 continued) -->
+    <string name="list_search_placeholder">名前または番号...</string>
+    <string name="list_clear_search_cd">検索をクリア</string>
+    <string name="list_filters_label">フィルター</string>
+    <string name="list_filters_label_count">フィルター (%1$d)</string>
+    <string name="list_sort_label">並び替え</string>
+    <string name="list_sort_label_with_stat">並び替え: %1$s</string>
+    <string name="list_sort_ascending_cd">昇順 — タップで降順に切り替え</string>
+    <string name="list_sort_descending_cd">降順 — タップで昇順に切り替え</string>
+    <string name="list_reset">リセット</string>
+    <string name="list_result_count">%1$d 匹のポケモン</string>
+    <string name="list_retry">再試行</string>
+    <string name="list_choose_move_title">技を選択</string>
+    <string name="list_any_move">すべての技</string>
+    <string name="list_choose_ability_title">特性を選択</string>
+    <string name="list_any_ability">すべての特性</string>
+    <string name="list_choose_generation_title">世代を選択</string>
+    <string name="list_any_format">すべてのフォーマット</string>
+    <string name="list_choose_tier_title">ティアを選択 (%1$s)</string>
+    <string name="list_any_tier">すべてのティア</string>
+    <string name="list_sort_by_title">並び替え基準</string>
+    <string name="list_no_sorting">並び替えなし</string>
+    <string name="list_rarity_title">レア度</string>
+    <string name="list_any_rarity">すべてのレア度</string>
+    <string name="list_type_section">タイプ</string>
+    <string name="list_type_all_selected_hint">選択したすべてのタイプに一致</string>
+    <string name="list_selected_cd">選択中</string>
+    <string name="list_other_filters_section">その他のフィルター</string>
+    <string name="list_favorites_label">お気に入り</string>
+    <string name="list_move_label">技</string>
+    <string name="list_ability_label">特性</string>
+    <string name="list_format_label">フォーマット</string>
+    <string name="list_tier_label">ティア</string>
+    <string name="list_perfect_counter_label">完全カウンター</string>
+    <string name="list_minimum_stats_section">最低種族値</string>
+    <string name="list_loading_base_stats">種族値を読み込み中…</string>
+    <string name="list_any_value">指定なし</string>
+    <string name="list_no_results">検索とフィルターに一致するポケモンがいません。</string>
+    <string name="list_reset_filters">フィルターをリセット</string>
+    <string name="list_attribution">データ提供: PokeAPI</string>
+    <string name="list_team_full_snackbar">チームがいっぱいです（%1$d/%2$d）。先に1匹外してください。</string>
+
+    <!-- OptionsDialog (shared component, F35 continued) -->
+    <string name="options_dialog_loading">読み込み中...</string>
+    <string name="options_dialog_selected_cd">選択中</string>
+
+    <!-- SearchableListDialog (shared component, F35 continued) -->
+    <string name="searchable_dialog_close_cd">閉じる</string>
+    <string name="searchable_dialog_search_placeholder">検索...</string>
+    <string name="searchable_dialog_loading">読み込み中...</string>
+    <string name="searchable_dialog_no_matches">「%1$s」に一致する結果はありません。</string>
 </resources>

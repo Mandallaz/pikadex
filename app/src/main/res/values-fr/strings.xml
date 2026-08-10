@@ -244,4 +244,66 @@
     <string name="teamslots_cancel">Annuler</string>
     <string name="teamslots_rename_title">Renommer l\'équipe</string>
     <string name="teamslots_save">Enregistrer</string>
+
+    <!-- Type Triangles screen (F35 continued) -->
+    <string name="triangles_title">Triangles de types</string>
+    <string name="triangles_back_cd">Retour</string>
+    <string name="triangles_intro">Chaque type ici est super efficace contre le suivant dans le cycle — une relation pierre-feuille-ciseaux qui se répète dans toute la table des types.</string>
+    <string name="triangles_perfect_title">Triangles parfaits</string>
+    <string name="triangles_perfect_subtitle">Chaque type résiste aussi à celui qui le précède dans la boucle — l\'attaque et la défense sont parfaitement symétriques.</string>
+    <string name="triangles_imperfect_title">Triangles imparfaits</string>
+    <string name="triangles_imperfect_subtitle">La boucle offensive tient toujours, mais un lien défensif n\'est qu\'un coup neutre — ou une immunité totale — au lieu d\'une résistance.</string>
+    <string name="triangles_best_counter">Meilleur contre</string>
+
+    <!-- Pokédex list/filters screen (F35 continued) -->
+    <string name="list_search_placeholder">Nom ou numéro...</string>
+    <string name="list_clear_search_cd">Effacer la recherche</string>
+    <string name="list_filters_label">Filtres</string>
+    <string name="list_filters_label_count">Filtres (%1$d)</string>
+    <string name="list_sort_label">Trier</string>
+    <string name="list_sort_label_with_stat">Trier : %1$s</string>
+    <string name="list_sort_ascending_cd">Tri croissant — appuyez pour trier par ordre décroissant</string>
+    <string name="list_sort_descending_cd">Tri décroissant — appuyez pour trier par ordre croissant</string>
+    <string name="list_reset">Réinitialiser</string>
+    <string name="list_result_count">%1$d Pokémon</string>
+    <string name="list_retry">Réessayer</string>
+    <string name="list_choose_move_title">Choisir une capacité</string>
+    <string name="list_any_move">Toute capacité</string>
+    <string name="list_choose_ability_title">Choisir un talent</string>
+    <string name="list_any_ability">Tout talent</string>
+    <string name="list_choose_generation_title">Choisir une génération</string>
+    <string name="list_any_format">Tout format</string>
+    <string name="list_choose_tier_title">Choisir un tier (%1$s)</string>
+    <string name="list_any_tier">Tout tier</string>
+    <string name="list_sort_by_title">Trier par</string>
+    <string name="list_no_sorting">Aucun tri</string>
+    <string name="list_rarity_title">Rareté</string>
+    <string name="list_any_rarity">Toute rareté</string>
+    <string name="list_type_section">Type</string>
+    <string name="list_type_all_selected_hint">Correspond à tous les types sélectionnés</string>
+    <string name="list_selected_cd">Sélectionné</string>
+    <string name="list_other_filters_section">Autres filtres</string>
+    <string name="list_favorites_label">Favoris</string>
+    <string name="list_move_label">Capacité</string>
+    <string name="list_ability_label">Talent</string>
+    <string name="list_format_label">Format</string>
+    <string name="list_tier_label">Tier</string>
+    <string name="list_perfect_counter_label">Contre parfait</string>
+    <string name="list_minimum_stats_section">Statistiques minimales</string>
+    <string name="list_loading_base_stats">Chargement des statistiques de base…</string>
+    <string name="list_any_value">Aucun</string>
+    <string name="list_no_results">Aucun Pokémon ne correspond à votre recherche et vos filtres.</string>
+    <string name="list_reset_filters">Réinitialiser les filtres</string>
+    <string name="list_attribution">Données fournies par PokeAPI</string>
+    <string name="list_team_full_snackbar">Votre équipe est complète (%1$d/%2$d). Retirez-en un d\'abord.</string>
+
+    <!-- OptionsDialog (shared component, F35 continued) -->
+    <string name="options_dialog_loading">Chargement...</string>
+    <string name="options_dialog_selected_cd">Sélectionné</string>
+
+    <!-- SearchableListDialog (shared component, F35 continued) -->
+    <string name="searchable_dialog_close_cd">Fermer</string>
+    <string name="searchable_dialog_search_placeholder">Rechercher...</string>
+    <string name="searchable_dialog_loading">Chargement...</string>
+    <string name="searchable_dialog_no_matches">Aucun résultat pour « %1$s ».</string>
 </resources>

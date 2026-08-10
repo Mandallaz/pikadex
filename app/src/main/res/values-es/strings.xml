@@ -242,4 +242,66 @@
     <string name="teamslots_cancel">Cancelar</string>
     <string name="teamslots_rename_title">Renombrar equipo</string>
     <string name="teamslots_save">Guardar</string>
+
+    <!-- Type Triangles screen (F35 continued) -->
+    <string name="triangles_title">Triángulos de tipo</string>
+    <string name="triangles_back_cd">Atrás</string>
+    <string name="triangles_intro">Cada tipo aquí es supereficaz contra el siguiente en el ciclo — una relación piedra-papel-tijera que se repite en toda la tabla de tipos.</string>
+    <string name="triangles_perfect_title">Triángulos perfectos</string>
+    <string name="triangles_perfect_subtitle">Cada tipo también resiste al anterior en el bucle — el ataque y la defensa son totalmente simétricos.</string>
+    <string name="triangles_imperfect_title">Triángulos imperfectos</string>
+    <string name="triangles_imperfect_subtitle">El bucle ofensivo se mantiene, pero un vínculo defensivo es solo un golpe neutral — o una inmunidad total — en vez de una resistencia.</string>
+    <string name="triangles_best_counter">Mejor contraataque</string>
+
+    <!-- Pokédex list/filters screen (F35 continued) -->
+    <string name="list_search_placeholder">Nombre o número...</string>
+    <string name="list_clear_search_cd">Borrar búsqueda</string>
+    <string name="list_filters_label">Filtros</string>
+    <string name="list_filters_label_count">Filtros (%1$d)</string>
+    <string name="list_sort_label">Ordenar</string>
+    <string name="list_sort_label_with_stat">Ordenar: %1$s</string>
+    <string name="list_sort_ascending_cd">Orden ascendente — toca para ordenar de forma descendente</string>
+    <string name="list_sort_descending_cd">Orden descendente — toca para ordenar de forma ascendente</string>
+    <string name="list_reset">Restablecer</string>
+    <string name="list_result_count">%1$d Pokémon</string>
+    <string name="list_retry">Reintentar</string>
+    <string name="list_choose_move_title">Elegir un movimiento</string>
+    <string name="list_any_move">Cualquier movimiento</string>
+    <string name="list_choose_ability_title">Elegir una habilidad</string>
+    <string name="list_any_ability">Cualquier habilidad</string>
+    <string name="list_choose_generation_title">Elegir una generación</string>
+    <string name="list_any_format">Cualquier formato</string>
+    <string name="list_choose_tier_title">Elegir un tier (%1$s)</string>
+    <string name="list_any_tier">Cualquier tier</string>
+    <string name="list_sort_by_title">Ordenar por</string>
+    <string name="list_no_sorting">Sin orden</string>
+    <string name="list_rarity_title">Rareza</string>
+    <string name="list_any_rarity">Cualquier rareza</string>
+    <string name="list_type_section">Tipo</string>
+    <string name="list_type_all_selected_hint">Coincide con todos los tipos seleccionados</string>
+    <string name="list_selected_cd">Seleccionado</string>
+    <string name="list_other_filters_section">Otros filtros</string>
+    <string name="list_favorites_label">Favoritos</string>
+    <string name="list_move_label">Movimiento</string>
+    <string name="list_ability_label">Habilidad</string>
+    <string name="list_format_label">Formato</string>
+    <string name="list_tier_label">Tier</string>
+    <string name="list_perfect_counter_label">Contraataque perfecto</string>
+    <string name="list_minimum_stats_section">Estadísticas mínimas</string>
+    <string name="list_loading_base_stats">Cargando estadísticas base…</string>
+    <string name="list_any_value">Cualquiera</string>
+    <string name="list_no_results">Ningún Pokémon coincide con tu búsqueda y filtros.</string>
+    <string name="list_reset_filters">Restablecer filtros</string>
+    <string name="list_attribution">Datos proporcionados por PokeAPI</string>
+    <string name="list_team_full_snackbar">Tu equipo está completo (%1$d/%2$d). Quita uno primero.</string>
+
+    <!-- OptionsDialog (shared component, F35 continued) -->
+    <string name="options_dialog_loading">Cargando...</string>
+    <string name="options_dialog_selected_cd">Seleccionado</string>
+
+    <!-- SearchableListDialog (shared component, F35 continued) -->
+    <string name="searchable_dialog_close_cd">Cerrar</string>
+    <string name="searchable_dialog_search_placeholder">Buscar...</string>
+    <string name="searchable_dialog_loading">Cargando...</string>
+    <string name="searchable_dialog_no_matches">Sin resultados para «%1$s».</string>
 </resources>
