@@ -1,0 +1,93 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">Pokédex</string>
+    <string name="nav_triangles">Triângulos</string>
+    <string name="nav_team">Equipe</string>
+    <string name="nav_settings">Configurações</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Configurações</string>
+
+    <string name="settings_language_section">Idioma</string>
+
+    <string name="settings_offline_data_section">Dados offline</string>
+    <string name="settings_offline_data_subtitle">Baixe os dados com antecedência para que o app funcione totalmente offline.</string>
+
+    <string name="settings_tier_essentials_title">Essenciais</string>
+    <string name="settings_tier_essentials_subtitle">Status base, movimentos, tabela de tipos, tiers da Smogon — cerca de 1 MB.</string>
+
+    <string name="settings_tier_sprites_title">Sprites</string>
+    <string name="settings_tier_sprites_subtitle">Artes e sprites de cada Pokémon — 50-150 MB.</string>
+
+    <string name="settings_tier_sprites_extra_title">Sprites shiny e animados</string>
+    <string name="settings_tier_sprites_extra_subtitle">Artes/sprites shiny e GIFs animados do Showdown para cada Pokémon, para que as opções shiny/animado da ficha também funcionem offline — dobra aproximadamente o download de sprites.</string>
+
+    <string name="settings_tier_full_detail_title">Detalhes completos</string>
+    <string name="settings_tier_full_detail_subtitle">Dados completos de cada Pokémon (espécie, linha evolutiva) para navegação totalmente offline — um download grande.</string>
+
+    <string name="settings_tier_cries_title">Vocalizações</string>
+    <string name="settings_tier_cries_subtitle">A vocalização de cada Pokémon, para que o botão de reprodução na ficha funcione offline — cerca de 1300 clipes de áudio curtos.</string>
+
+    <string name="settings_cancel">Cancelar</string>
+    <string name="settings_prefetch_finished_with_failures">Concluído, %1$d item(ns) falharam e podem ser tentados novamente.</string>
+    <string name="settings_prefetch_finished">Download concluído.</string>
+    <string name="settings_prefetch_now">Baixar agora</string>
+    <string name="settings_retry">Tentar novamente</string>
+
+    <string name="settings_storage_section">Armazenamento</string>
+    <string name="settings_storage_total">Total: %1$s</string>
+    <string name="settings_storage_api_data">Dados da API: %1$s</string>
+    <string name="settings_storage_images">Imagens: %1$s</string>
+    <string name="settings_storage_cries">Vocalizações: %1$s</string>
+    <string name="settings_storage_refresh">Atualizar</string>
+    <string name="settings_storage_clear">Limpar dados baixados</string>
+
+    <string name="settings_display_section">Tela</string>
+    <string name="settings_amoled_title">Preto AMOLED</string>
+    <string name="settings_amoled_subtitle">Força o modo escuro com um fundo verdadeiramente preto, para economizar bateria em telas AMOLED.</string>
+
+    <string name="settings_suggestions_section">Sugestões de equipe</string>
+    <string name="settings_suggestions_help_content_description">O que são tiers competitivos?</string>
+    <string name="settings_suggestions_subtitle">Limita o cartão de sugestões do criador de equipes a um tier competitivo e abaixo (ex.: UU também permite RU, NU…), com base nos tiers da Smogon da Gen 9.</string>
+    <string name="settings_tier_limit_label">Limite de tier</string>
+    <string name="settings_tier_limit_none">Sem limite</string>
+    <string name="settings_tier_limit_dialog_title">Limite de tier das sugestões</string>
+
+    <string name="settings_full_detail_warning_title">Baixar detalhes completos?</string>
+    <string name="settings_full_detail_warning_text">Baixa os dados completos de cada Pokémon — espécie, linha evolutiva e mais — para cerca de 1300 entradas. É um download grande e usará bastante dados e armazenamento.</string>
+    <string name="settings_full_detail_warning_enable">Ativar</string>
+
+    <!-- Smogon tier explanation dialog -->
+    <string name="smogon_tier_dialog_title">Tiers competitivos padrão</string>
+    <string name="smogon_tier_dialog_close">Fechar</string>
+
+    <string name="smogon_tier_intro_1">O sistema de tiers da Smogon é o padrão mundial para batalhas Pokémon competitivas individuais. Seu objetivo principal é criar um ambiente equilibrado onde o maior número possível de Pokémon possa ser jogado de forma competitiva.</string>
+    <string name="smogon_tier_intro_2">Com exceção de Ubers e Anything Goes, a maioria dos tiers é baseada no uso: quanto mais um Pokémon é usado em um tier superior, mais alto ele sobe na hierarquia.</string>
+
+    <string name="smogon_tier_core_concept_heading">Conceito principal</string>
+    <string name="smogon_tier_core_concept_body">A Smogon organiza os Pokémon em tiers de jogabilidade para que os Pokémon menos poderosos não precisem competir contra lendários excessivamente poderosos.</string>
+
+    <string name="smogon_tier_format_scope_heading">Escopo do formato</string>
+    <string name="smogon_tier_format_scope_body">Esses tiers se aplicam especificamente aos formatos individuais competitivos hospedados no Pokémon Showdown.</string>
+
+    <string name="smogon_tier_primary_tiers_heading">Tiers principais (do mais alto ao mais baixo)</string>
+    <string name="smogon_tier_primary_tiers_body">1. AG (Anything Goes) — praticamente sem restrições além do limite de 6 Pokémon por equipe. Lar de exemplares poderosos demais até para Ubers (ex.: Mega Rayquaza, Calyrex-Shadow) e de mecânicas banidas em outros lugares.\n\n2. Uber — historicamente a lista de banidos de OU. O campo de batalha dos grandes lendários e ameaças excessivamente centralizadoras (Kyogre, Koraidon, Miraidon, Zacian…).\n\n3. OU (OverUsed) — o tier de referência. O formato principal da Smogon, usado na maioria dos torneios oficiais. Os melhores não lendários e lendários equilibrados (Landorus-Therian, Kingambit, Iron Valiant…).\n\n4. UU (UnderUsed) — Pokémon abaixo do limite de uso de OU (~4,52%), mas ainda opções competitivas sólidas: atacantes de nicho poderosos ou Pokémon superados pelas tendências atuais de OU.\n\n5. RU (RarelyUsed) — abaixo de UU, para Pokémon que não têm a versatilidade ou o poder necessários para UU.\n\n6. NU (NeverUsed) — abaixo de RU, Pokémon frequentemente negligenciados em divisões superiores.\n\n7. PU — o tier oficial baseado em uso mais baixo (nomeado a partir de "P.U.", um mau cheiro), ainda um metagame altamente competitivo e complexo.\n\n8. ZU (Zero Used) — um tier não oficial abaixo de PU, dando aos Pokémon restantes seu próprio metagame competitivo.</string>
+
+    <string name="smogon_tier_usage_threshold_heading">Limite de uso</string>
+    <string name="smogon_tier_usage_threshold_body" tools:ignore="StringFormatInvalid">O limite para permanecer em um tier é de aproximadamente 4,52%, ou seja, um Pokémon deve aparecer em pelo menos 1 a cada 22 equipes na ladder daquele tier.</string>
+
+    <string name="smogon_tier_mobility_heading">Mobilidade entre tiers</string>
+    <string name="smogon_tier_mobility_body">Um Pokémon de um tier inferior (ex.: NU) sempre pode ser usado em um tier superior (ex.: OU), mas Pokémon de tiers superiores não podem descer para tiers inferiores.</string>
+
+    <string name="smogon_tier_banlists_heading">Listas de banimento intermediárias e mudanças de tier</string>
+    <string name="smogon_tier_banlists_body">Entre os tiers principais existem categorias intermediárias chamadas BL (ex.: UUBL, RUBL, NUBL, PUBL). Um Pokémon é colocado em UUBL se foi banido de UU por ser forte demais, mas não tem uso suficiente para ser classificado oficialmente como OU — não pode ser usado em UU, mas é permitido em OU.</string>
+
+    <string name="smogon_tier_how_tiers_change_heading">Como os tiers mudam</string>
+    <string name="smogon_tier_how_tiers_change_body">1. Atualizações trimestrais de uso — a cada três meses, a Smogon analisa estatísticas de batalha do Pokémon Showdown. Pokémon que ultrapassam o limite de uso sobem, os pouco usados descem.\n\n2. Suspect tests e quickbans — se um Pokémon, movimento ou habilidade desequilibra um tier, o conselho realiza uma votação da comunidade (Suspect Test) ou o bane diretamente para o tier superior.</string>
+
+    <string name="smogon_tier_bl_status_heading">Status BL</string>
+    <string name="smogon_tier_bl_status_body">Categorias borderline são apenas listas de banimento para tiers inferiores, não metagames jogáveis com sua própria ladder.</string>
+
+    <string name="smogon_tier_community_voting_heading">Votação da comunidade</string>
+    <string name="smogon_tier_community_voting_body">Os Suspect Tests exigem que os jogadores atinjam uma pontuação de habilidade alta (GXE) em uma conta de ladder nova para obter direito a voto.</string>
+</resources>

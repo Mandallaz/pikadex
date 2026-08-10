@@ -1,0 +1,93 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">圖鑑</string>
+    <string name="nav_triangles">三角關係</string>
+    <string name="nav_team">隊伍</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">設定</string>
+
+    <string name="settings_language_section">語言</string>
+
+    <string name="settings_offline_data_section">離線資料</string>
+    <string name="settings_offline_data_subtitle">提前下載資料，讓應用程式完全離線可用。</string>
+
+    <string name="settings_tier_essentials_title">基礎資料</string>
+    <string name="settings_tier_essentials_subtitle">種族值、招式、屬性相剋表、Smogon分級 — 約1MB。</string>
+
+    <string name="settings_tier_sprites_title">精靈圖</string>
+    <string name="settings_tier_sprites_subtitle">每隻寶可夢的插圖和精靈圖 — 50-150MB。</string>
+
+    <string name="settings_tier_sprites_extra_title">異色和動態精靈圖</string>
+    <string name="settings_tier_sprites_extra_subtitle">每隻寶可夢的異色插圖/精靈圖，以及Showdown的動態GIF，使詳情頁的異色/動態切換也能離線使用 — 會使精靈圖下載量大約翻倍。</string>
+
+    <string name="settings_tier_full_detail_title">完整詳情</string>
+    <string name="settings_tier_full_detail_subtitle">每隻寶可夢的完整資料（種族、進化鏈），用於完全離線瀏覽 — 下載量較大。</string>
+
+    <string name="settings_tier_cries_title">鳴叫聲</string>
+    <string name="settings_tier_cries_subtitle">每隻寶可夢的鳴叫聲，使詳情頁的播放按鈕也能離線使用 — 約1300段簡短音訊。</string>
+
+    <string name="settings_cancel">取消</string>
+    <string name="settings_prefetch_finished_with_failures">已完成，%1$d 項失敗，可以重試。</string>
+    <string name="settings_prefetch_finished">下載完成。</string>
+    <string name="settings_prefetch_now">立即下載</string>
+    <string name="settings_retry">重試</string>
+
+    <string name="settings_storage_section">儲存空間</string>
+    <string name="settings_storage_total">總計：%1$s</string>
+    <string name="settings_storage_api_data">API資料：%1$s</string>
+    <string name="settings_storage_images">圖片：%1$s</string>
+    <string name="settings_storage_cries">鳴叫聲：%1$s</string>
+    <string name="settings_storage_refresh">重新整理</string>
+    <string name="settings_storage_clear">清除已下載資料</string>
+
+    <string name="settings_display_section">顯示</string>
+    <string name="settings_amoled_title">AMOLED純黑</string>
+    <string name="settings_amoled_subtitle">強制使用純黑背景的深色模式，為AMOLED螢幕節省電量。</string>
+
+    <string name="settings_suggestions_section">隊伍推薦</string>
+    <string name="settings_suggestions_help_content_description">什麼是對戰分級？</string>
+    <string name="settings_suggestions_subtitle">將隊伍建構器的推薦卡片限制在指定的對戰分級及以下（例如選擇UU也會包含RU、NU等），基於第9世代的Smogon分級。</string>
+    <string name="settings_tier_limit_label">分級上限</string>
+    <string name="settings_tier_limit_none">無限制</string>
+    <string name="settings_tier_limit_dialog_title">推薦的分級上限</string>
+
+    <string name="settings_full_detail_warning_title">要下載完整詳情嗎？</string>
+    <string name="settings_full_detail_warning_text">將下載約1300筆項目每隻寶可夢的完整資料 — 種族、進化鏈等。這是一次較大的下載，會消耗大量流量和儲存空間。</string>
+    <string name="settings_full_detail_warning_enable">啟用</string>
+
+    <!-- Smogon tier explanation dialog -->
+    <string name="smogon_tier_dialog_title">標準對戰分級</string>
+    <string name="smogon_tier_dialog_close">關閉</string>
+
+    <string name="smogon_tier_intro_1">Smogon的分級系統是競技單打寶可夢對戰的全球標準。其主要目標是創造一個平衡的環境，讓盡可能多的寶可夢都能參與競技對戰。</string>
+    <string name="smogon_tier_intro_2">除Ubers和Anything Goes外，大多數分級都基於使用率：一隻寶可夢在更高分級中的使用率越高，牠在層級中的排名就越高。</string>
+
+    <string name="smogon_tier_core_concept_heading">核心概念</string>
+    <string name="smogon_tier_core_concept_body">Smogon將寶可夢劃分為不同的可玩性分級，使實力較弱的寶可夢不必與過於強大的傳說寶可夢對抗。</string>
+
+    <string name="smogon_tier_format_scope_heading">適用範圍</string>
+    <string name="smogon_tier_format_scope_body">這些分級專門適用於Pokémon Showdown上的競技單打賽制。</string>
+
+    <string name="smogon_tier_primary_tiers_heading">主要分級（從高到低）</string>
+    <string name="smogon_tier_primary_tiers_body">1. AG（Anything Goes）— 除6隻寶可夢的隊伍上限外幾乎沒有限制。是即便在Ubers中也過於強大的個體（例如超級烈空坐、Calyrex-Shadow）以及其他地方被禁用機制的所在地。\n\n2. Uber — 歷史上是OU的禁用列表。是重要傳說寶可夢和過度支配環境的威脅（蓋歐卡、故勒頓、密勒頓、蒼響等）的戰場。\n\n3. OU（OverUsed）— 基準分級。Smogon的旗艦賽制，用於大多數官方比賽。頂級非傳說寶可夢和平衡的傳說寶可夢（Landorus-Therian、仆刀將軍、鐵武者等）。\n\n4. UU（UnderUsed）— 使用率低於OU門檻（約4.52%）但仍是強力對戰選擇的寶可夢：強力的冷門攻擊手，或被目前OU環境淘汰的寶可夢。\n\n5. RU（RarelyUsed）— 低於UU，適用於缺乏UU所需多樣性或實力的寶可夢。\n\n6. NU（NeverUsed）— 低於RU，在更高分級中常被忽視的寶可夢。\n\n7. PU — 基於使用率的最低官方分級（名稱源自「P.U.」，即難聞的氣味），但依然是競爭激烈、複雜的對戰環境。\n\n8. ZU（Zero Used）— 低於PU的非官方分級，為剩餘的寶可夢提供屬於自己的對戰環境。</string>
+
+    <string name="smogon_tier_usage_threshold_heading">使用率門檻</string>
+    <string name="smogon_tier_usage_threshold_body" tools:ignore="StringFormatInvalid">留在某一分級的門檻約為4.52%，即一隻寶可夢必須在該分級天梯中至少每22支隊伍出現1次。</string>
+
+    <string name="smogon_tier_mobility_heading">分級間的流動</string>
+    <string name="smogon_tier_mobility_body">較低分級（如NU）的寶可夢始終可以在較高分級（如OU）中使用，但較高分級的寶可夢不能降至較低分級。</string>
+
+    <string name="smogon_tier_banlists_heading">中間禁用列表與分級變動</string>
+    <string name="smogon_tier_banlists_body">主要分級之間存在稱為BL的中間類別（例如UUBL、RUBL、NUBL、PUBL）。如果一隻寶可夢因過於強力而被UU禁用，但使用率又不足以被正式歸類為OU，則會被歸入UUBL — 牠不能在UU中使用，但在OU中是合法的。</string>
+
+    <string name="smogon_tier_how_tiers_change_heading">分級如何變化</string>
+    <string name="smogon_tier_how_tiers_change_body">1. 季度使用率更新 — 每三個月，Smogon會分析Pokémon Showdown的對戰統計資料。超過使用率門檻的寶可夢會晉升，使用率低的會降級。\n\n2. Suspect測試和快速禁用 — 如果某隻寶可夢、招式或特性使某個分級失衡，理事會會進行社群投票（Suspect測試），或直接將其快速禁用至更高分級。</string>
+
+    <string name="smogon_tier_bl_status_heading">BL的定位</string>
+    <string name="smogon_tier_bl_status_body">邊緣（Borderline）類別只是針對較低分級的禁用列表，並不是擁有自己天梯的可玩對戰環境。</string>
+
+    <string name="smogon_tier_community_voting_heading">社群投票</string>
+    <string name="smogon_tier_community_voting_body">Suspect測試要求玩家在全新的天梯帳號上達到較高的實力評分（GXE），才能獲得投票資格。</string>
+</resources>

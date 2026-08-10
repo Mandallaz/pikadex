@@ -1,0 +1,93 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">图鉴</string>
+    <string name="nav_triangles">三角关系</string>
+    <string name="nav_team">队伍</string>
+    <string name="nav_settings">设置</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">设置</string>
+
+    <string name="settings_language_section">语言</string>
+
+    <string name="settings_offline_data_section">离线数据</string>
+    <string name="settings_offline_data_subtitle">提前下载数据，让应用完全离线可用。</string>
+
+    <string name="settings_tier_essentials_title">基础数据</string>
+    <string name="settings_tier_essentials_subtitle">种族值、招式、属性相克表、Smogon分级 — 约1MB。</string>
+
+    <string name="settings_tier_sprites_title">精灵图</string>
+    <string name="settings_tier_sprites_subtitle">每只宝可梦的插图和精灵图 — 50-150MB。</string>
+
+    <string name="settings_tier_sprites_extra_title">异色和动态精灵图</string>
+    <string name="settings_tier_sprites_extra_subtitle">每只宝可梦的异色插图/精灵图，以及Showdown的动态GIF，使详情页的异色/动态切换也能离线使用 — 会使精灵图下载量大约翻倍。</string>
+
+    <string name="settings_tier_full_detail_title">完整详情</string>
+    <string name="settings_tier_full_detail_subtitle">每只宝可梦的完整数据（种族、进化链），用于完全离线浏览 — 下载量较大。</string>
+
+    <string name="settings_tier_cries_title">鸣叫声</string>
+    <string name="settings_tier_cries_subtitle">每只宝可梦的鸣叫声，使详情页的播放按钮也能离线使用 — 约1300段简短音频。</string>
+
+    <string name="settings_cancel">取消</string>
+    <string name="settings_prefetch_finished_with_failures">已完成，%1$d 项失败，可以重试。</string>
+    <string name="settings_prefetch_finished">下载完成。</string>
+    <string name="settings_prefetch_now">立即下载</string>
+    <string name="settings_retry">重试</string>
+
+    <string name="settings_storage_section">存储空间</string>
+    <string name="settings_storage_total">总计：%1$s</string>
+    <string name="settings_storage_api_data">API数据：%1$s</string>
+    <string name="settings_storage_images">图片：%1$s</string>
+    <string name="settings_storage_cries">鸣叫声：%1$s</string>
+    <string name="settings_storage_refresh">刷新</string>
+    <string name="settings_storage_clear">清除已下载数据</string>
+
+    <string name="settings_display_section">显示</string>
+    <string name="settings_amoled_title">AMOLED纯黑</string>
+    <string name="settings_amoled_subtitle">强制使用纯黑背景的深色模式，为AMOLED屏幕节省电量。</string>
+
+    <string name="settings_suggestions_section">队伍推荐</string>
+    <string name="settings_suggestions_help_content_description">什么是对战分级？</string>
+    <string name="settings_suggestions_subtitle">将队伍构建器的推荐卡片限制在指定的对战分级及以下（例如选择UU也会包含RU、NU等），基于第9世代的Smogon分级。</string>
+    <string name="settings_tier_limit_label">分级上限</string>
+    <string name="settings_tier_limit_none">无限制</string>
+    <string name="settings_tier_limit_dialog_title">推荐的分级上限</string>
+
+    <string name="settings_full_detail_warning_title">要下载完整详情吗？</string>
+    <string name="settings_full_detail_warning_text">将下载约1300条目每只宝可梦的完整数据 — 种族、进化链等。这是一次较大的下载，会消耗大量流量和存储空间。</string>
+    <string name="settings_full_detail_warning_enable">启用</string>
+
+    <!-- Smogon tier explanation dialog -->
+    <string name="smogon_tier_dialog_title">标准对战分级</string>
+    <string name="smogon_tier_dialog_close">关闭</string>
+
+    <string name="smogon_tier_intro_1">Smogon的分级系统是竞技单打宝可梦对战的全球标准。其主要目标是创造一个平衡的环境，让尽可能多的宝可梦都能参与竞技对战。</string>
+    <string name="smogon_tier_intro_2">除Ubers和Anything Goes外，大多数分级都基于使用率：一只宝可梦在更高分级中的使用率越高，它在层级中的排名就越高。</string>
+
+    <string name="smogon_tier_core_concept_heading">核心概念</string>
+    <string name="smogon_tier_core_concept_body">Smogon将宝可梦划分为不同的可玩性分级，使实力较弱的宝可梦不必与过于强大的传说宝可梦对抗。</string>
+
+    <string name="smogon_tier_format_scope_heading">适用范围</string>
+    <string name="smogon_tier_format_scope_body">这些分级专门适用于Pokémon Showdown上的竞技单打赛制。</string>
+
+    <string name="smogon_tier_primary_tiers_heading">主要分级（从高到低）</string>
+    <string name="smogon_tier_primary_tiers_body">1. AG（Anything Goes）— 除6只宝可梦的队伍上限外几乎没有限制。是即便在Ubers中也过于强大的个体（例如超级烈空坐、Calyrex-Shadow）以及其他地方被禁用机制的所在地。\n\n2. Uber — 历史上是OU的禁用列表。是重要传说宝可梦和过度支配环境的威胁（盖欧卡、故勒顿、密勒顿、苍响等）的战场。\n\n3. OU（OverUsed）— 基准分级。Smogon的旗舰赛制，用于大多数官方比赛。顶级非传说宝可梦和平衡的传说宝可梦（Landorus-Therian、仆刀将军、铁武者等）。\n\n4. UU（UnderUsed）— 使用率低于OU门槛（约4.52%）但仍是强力对战选择的宝可梦：强力的冷门攻击手，或被当前OU环境淘汰的宝可梦。\n\n5. RU（RarelyUsed）— 低于UU，适用于缺乏UU所需多样性或实力的宝可梦。\n\n6. NU（NeverUsed）— 低于RU，在更高分级中常被忽视的宝可梦。\n\n7. PU — 基于使用率的最低官方分级（名称源自"P.U."，即难闻的气味），但依然是竞争激烈、复杂的对战环境。\n\n8. ZU（Zero Used）— 低于PU的非官方分级，为剩余的宝可梦提供属于自己的对战环境。</string>
+
+    <string name="smogon_tier_usage_threshold_heading">使用率门槛</string>
+    <string name="smogon_tier_usage_threshold_body" tools:ignore="StringFormatInvalid">留在某一分级的门槛约为4.52%，即一只宝可梦必须在该分级天梯中至少每22支队伍出现1次。</string>
+
+    <string name="smogon_tier_mobility_heading">分级间的流动</string>
+    <string name="smogon_tier_mobility_body">较低分级（如NU）的宝可梦始终可以在较高分级（如OU）中使用，但较高分级的宝可梦不能降至较低分级。</string>
+
+    <string name="smogon_tier_banlists_heading">中间禁用列表与分级变动</string>
+    <string name="smogon_tier_banlists_body">主要分级之间存在称为BL的中间类别（例如UUBL、RUBL、NUBL、PUBL）。如果一只宝可梦因过于强力而被UU禁用，但使用率又不足以被正式归类为OU，则会被归入UUBL — 它不能在UU中使用，但在OU中是合法的。</string>
+
+    <string name="smogon_tier_how_tiers_change_heading">分级如何变化</string>
+    <string name="smogon_tier_how_tiers_change_body">1. 季度使用率更新 — 每三个月，Smogon会分析Pokémon Showdown的对战统计数据。超过使用率门槛的宝可梦会晋升，使用率低的会降级。\n\n2. Suspect测试和快速禁用 — 如果某只宝可梦、招式或特性使某个分级失衡，理事会会进行社区投票（Suspect测试），或直接将其快速禁用至更高分级。</string>
+
+    <string name="smogon_tier_bl_status_heading">BL的定位</string>
+    <string name="smogon_tier_bl_status_body">边缘（Borderline）类别只是针对较低分级的禁用列表，并不是拥有自己天梯的可玩对战环境。</string>
+
+    <string name="smogon_tier_community_voting_heading">社区投票</string>
+    <string name="smogon_tier_community_voting_body">Suspect测试要求玩家在全新的天梯账号上达到较高的实力评分（GXE），才能获得投票资格。</string>
+</resources>

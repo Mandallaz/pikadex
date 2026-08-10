@@ -1,0 +1,93 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">Pokédex</string>
+    <string name="nav_triangles">Dreiecke</string>
+    <string name="nav_team">Team</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Einstellungen</string>
+
+    <string name="settings_language_section">Sprache</string>
+
+    <string name="settings_offline_data_section">Offline-Daten</string>
+    <string name="settings_offline_data_subtitle">Lade Daten im Voraus herunter, damit die App vollständig offline funktioniert.</string>
+
+    <string name="settings_tier_essentials_title">Grundlagen</string>
+    <string name="settings_tier_essentials_subtitle">Basiswerte, Attacken, Typentabelle, Smogon-Tiers — etwa 1 MB.</string>
+
+    <string name="settings_tier_sprites_title">Sprites</string>
+    <string name="settings_tier_sprites_subtitle">Artwork und Sprites für jedes Pokémon — 50–150 MB.</string>
+
+    <string name="settings_tier_sprites_extra_title">Schillernde &amp; animierte Sprites</string>
+    <string name="settings_tier_sprites_extra_subtitle">Schillernde Artworks/Sprites und animierte Showdown-GIFs für jedes Pokémon, damit die schillernden/animierten Umschalter auf der Detailseite auch offline funktionieren — verdoppelt in etwa den Sprites-Download.</string>
+
+    <string name="settings_tier_full_detail_title">Alle Details</string>
+    <string name="settings_tier_full_detail_subtitle">Vollständige Daten jedes Pokémon (Spezies, Entwicklungskette) für vollständiges Offline-Browsing — ein großer Download.</string>
+
+    <string name="settings_tier_cries_title">Rufe</string>
+    <string name="settings_tier_cries_subtitle">Der Ruf jedes Pokémon, damit die Wiedergabetaste auf seiner Detailseite offline funktioniert — rund 1300 kurze Audioclips.</string>
+
+    <string name="settings_cancel">Abbrechen</string>
+    <string name="settings_prefetch_finished_with_failures">Fertig, %1$d Element(e) sind fehlgeschlagen und können erneut versucht werden.</string>
+    <string name="settings_prefetch_finished">Download abgeschlossen.</string>
+    <string name="settings_prefetch_now">Jetzt herunterladen</string>
+    <string name="settings_retry">Erneut versuchen</string>
+
+    <string name="settings_storage_section">Speicher</string>
+    <string name="settings_storage_total">Gesamt: %1$s</string>
+    <string name="settings_storage_api_data">API-Daten: %1$s</string>
+    <string name="settings_storage_images">Bilder: %1$s</string>
+    <string name="settings_storage_cries">Rufe: %1$s</string>
+    <string name="settings_storage_refresh">Aktualisieren</string>
+    <string name="settings_storage_clear">Heruntergeladene Daten löschen</string>
+
+    <string name="settings_display_section">Anzeige</string>
+    <string name="settings_amoled_title">AMOLED-Schwarz</string>
+    <string name="settings_amoled_subtitle">Erzwingt den Dunkelmodus mit echtem Schwarz, um bei AMOLED-Bildschirmen Akku zu sparen.</string>
+
+    <string name="settings_suggestions_section">Team-Vorschläge</string>
+    <string name="settings_suggestions_help_content_description">Was sind Wettkampf-Tiers?</string>
+    <string name="settings_suggestions_subtitle">Begrenzt die Vorschlagsliste des Team-Builders auf einen Wettkampf-Tier und darunter (z. B. erlaubt UU auch RU, NU…), basierend auf den Smogon-Tiers der Gen 9.</string>
+    <string name="settings_tier_limit_label">Tier-Grenze</string>
+    <string name="settings_tier_limit_none">Keine Grenze</string>
+    <string name="settings_tier_limit_dialog_title">Tier-Grenze für Vorschläge</string>
+
+    <string name="settings_full_detail_warning_title">Alle Details herunterladen?</string>
+    <string name="settings_full_detail_warning_text">Lädt die vollständigen Daten jedes Pokémon herunter — Spezies, Entwicklungskette und mehr — für rund 1300 Einträge. Das ist ein großer Download und verbraucht erheblich Datenvolumen und Speicherplatz.</string>
+    <string name="settings_full_detail_warning_enable">Aktivieren</string>
+
+    <!-- Smogon tier explanation dialog -->
+    <string name="smogon_tier_dialog_title">Standard-Wettkampf-Tiers</string>
+    <string name="smogon_tier_dialog_close">Schließen</string>
+
+    <string name="smogon_tier_intro_1">Smogons Tier-System ist der weltweite Standard für kompetitive Einzelkämpfe mit Pokémon. Sein Hauptziel ist es, ein ausgewogenes Umfeld zu schaffen, in dem möglichst viele Pokémon wettkampftauglich sind.</string>
+    <string name="smogon_tier_intro_2">Mit Ausnahme von Ubers und Anything Goes basieren die meisten Tiers auf der Nutzungshäufigkeit: Je mehr ein Pokémon in einem höheren Tier eingesetzt wird, desto höher steigt es in der Hierarchie.</string>
+
+    <string name="smogon_tier_core_concept_heading">Grundkonzept</string>
+    <string name="smogon_tier_core_concept_body">Smogon ordnet Pokémon in Spielbarkeits-Tiers ein, damit schwächere Pokémon nicht gegen übermächtige Legendäre antreten müssen.</string>
+
+    <string name="smogon_tier_format_scope_heading">Formatumfang</string>
+    <string name="smogon_tier_format_scope_body">Diese Tiers gelten speziell für kompetitive Einzelformate auf Pokémon Showdown.</string>
+
+    <string name="smogon_tier_primary_tiers_heading">Haupt-Tiers (vom höchsten zum niedrigsten)</string>
+    <string name="smogon_tier_primary_tiers_body">1. AG (Anything Goes) — praktisch keine Einschränkungen außer dem Team-Limit von 6 Pokémon. Heimat von Exemplaren, die selbst für Ubers zu stark sind (z. B. Mega-Rayquaza, Coronospa Rappenreiter), sowie andernorts verbotener Mechaniken.\n\n2. Uber — historisch die Bannliste für OU. Der Kampfplatz großer Legendärer und übermäßig zentralisierender Bedrohungen (Kyogre, Koraidon, Miraidon, Zacian…).\n\n3. OU (OverUsed) — der Maßstab-Tier. Smogons Vorzeigeformat, das für die meisten offiziellen Turniere genutzt wird. Top-Nicht-Legendäre und ausgewogene Legendäre (Demeteros Tiergeist, Gladimperio, Eisenkrieger…).\n\n4. UU (UnderUsed) — Pokémon unterhalb von OUs Nutzungsschwelle (~4,52 %), aber weiterhin starke Wettkampfoptionen: mächtige Nischenangreifer oder Pokémon, die von aktuellen OU-Trends verdrängt werden.\n\n5. RU (RarelyUsed) — unterhalb von UU, für Pokémon ohne die Vielseitigkeit oder Stärke für UU.\n\n6. NU (NeverUsed) — unterhalb von RU, Pokémon, die in höheren Divisionen oft übersehen werden.\n\n7. PU — der niedrigste offizielle nutzungsbasierte Tier (benannt nach „P.U.“, ein übler Geruch), immer noch ein hochkompetitives und komplexes Metagame.\n\n8. ZU (Zero Used) — ein inoffizieller Tier unterhalb von PU, der den verbleibenden Pokémon ein eigenes Wettkampf-Metagame gibt.</string>
+
+    <string name="smogon_tier_usage_threshold_heading">Nutzungsschwelle</string>
+    <string name="smogon_tier_usage_threshold_body" tools:ignore="StringFormatInvalid">Die Grenze, um in einem Tier zu bleiben, liegt bei etwa 4,52 % — ein Pokémon muss also in mindestens 1 von 22 Teams in der Ladder dieses Tiers vorkommen.</string>
+
+    <string name="smogon_tier_mobility_heading">Tier-Mobilität</string>
+    <string name="smogon_tier_mobility_body">Ein Pokémon aus einem niedrigeren Tier (z. B. NU) kann immer in einem höheren Tier (z. B. OU) eingesetzt werden, aber Pokémon aus höheren Tiers können nicht in niedrigere Tiers absteigen.</string>
+
+    <string name="smogon_tier_banlists_heading">Zwischenbannlisten &amp; Tier-Verschiebungen</string>
+    <string name="smogon_tier_banlists_body">Zwischen den Haupt-Tiers gibt es Zwischenkategorien namens BL (z. B. UUBL, RUBL, NUBL, PUBL). Ein Pokémon landet in UUBL, wenn es aus UU verbannt wurde, weil es zu stark war, aber nicht genug Nutzung hat, um offiziell als OU eingestuft zu werden — es kann nicht in UU verwendet werden, ist aber in OU erlaubt.</string>
+
+    <string name="smogon_tier_how_tiers_change_heading">Wie sich Tiers ändern</string>
+    <string name="smogon_tier_how_tiers_change_body">1. Vierteljährliche Nutzungs-Updates — alle drei Monate analysiert Smogon Kampfstatistiken von Pokémon Showdown. Pokémon, die die Nutzungsschwelle überschreiten, steigen auf, wenig genutzte fallen ab.\n\n2. Suspect Tests &amp; Quickbans — wenn ein Pokémon, eine Attacke oder eine Fähigkeit einen Tier dominiert, führt der Rat eine Community-Abstimmung (Suspect Test) durch oder verbannt es direkt in den höheren Tier.</string>
+
+    <string name="smogon_tier_bl_status_heading">BL-Status</string>
+    <string name="smogon_tier_bl_status_body">Borderline-Kategorien sind reine Bannlisten für niedrigere Tiers, keine spielbaren Metagames mit eigenen Laddern.</string>
+
+    <string name="smogon_tier_community_voting_heading">Community-Abstimmung</string>
+    <string name="smogon_tier_community_voting_body">Suspect Tests verlangen von Spielern, auf einem frischen Ladder-Konto eine hohe Fähigkeitsbewertung (GXE) zu erreichen, um Stimmrecht zu erhalten.</string>
+</resources>

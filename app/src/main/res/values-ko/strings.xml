@@ -1,0 +1,93 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">도감</string>
+    <string name="nav_triangles">삼각관계</string>
+    <string name="nav_team">파티</string>
+    <string name="nav_settings">설정</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">설정</string>
+
+    <string name="settings_language_section">언어</string>
+
+    <string name="settings_offline_data_section">오프라인 데이터</string>
+    <string name="settings_offline_data_subtitle">앱이 완전히 오프라인으로 작동하도록 데이터를 미리 다운로드하세요.</string>
+
+    <string name="settings_tier_essentials_title">필수 데이터</string>
+    <string name="settings_tier_essentials_subtitle">종족값, 기술, 타입 상성표, Smogon 티어 — 약 1MB.</string>
+
+    <string name="settings_tier_sprites_title">스프라이트</string>
+    <string name="settings_tier_sprites_subtitle">모든 포켓몬의 아트워크와 스프라이트 — 50~150MB.</string>
+
+    <string name="settings_tier_sprites_extra_title">이로치 &amp; 애니메이션 스프라이트</string>
+    <string name="settings_tier_sprites_extra_subtitle">모든 포켓몬의 이로치 아트워크/스프라이트와 Showdown 애니메이션 GIF — 상세 화면의 이로치/애니메이션 전환도 오프라인에서 작동하게 됩니다. 스프라이트 다운로드 용량이 약 2배가 됩니다.</string>
+
+    <string name="settings_tier_full_detail_title">전체 상세 정보</string>
+    <string name="settings_tier_full_detail_subtitle">완전한 오프라인 탐색을 위한 모든 포켓몬의 전체 데이터(종, 진화 계통) — 대용량 다운로드.</string>
+
+    <string name="settings_tier_cries_title">울음소리</string>
+    <string name="settings_tier_cries_subtitle">상세 화면의 재생 버튼이 오프라인에서도 작동하도록 모든 포켓몬의 울음소리 — 약 1300개의 짧은 오디오 클립.</string>
+
+    <string name="settings_cancel">취소</string>
+    <string name="settings_prefetch_finished_with_failures">완료되었지만 %1$d개 항목이 실패했습니다. 다시 시도할 수 있습니다.</string>
+    <string name="settings_prefetch_finished">다운로드가 완료되었습니다.</string>
+    <string name="settings_prefetch_now">지금 다운로드</string>
+    <string name="settings_retry">다시 시도</string>
+
+    <string name="settings_storage_section">저장 공간</string>
+    <string name="settings_storage_total">전체: %1$s</string>
+    <string name="settings_storage_api_data">API 데이터: %1$s</string>
+    <string name="settings_storage_images">이미지: %1$s</string>
+    <string name="settings_storage_cries">울음소리: %1$s</string>
+    <string name="settings_storage_refresh">새로고침</string>
+    <string name="settings_storage_clear">다운로드한 데이터 삭제</string>
+
+    <string name="settings_display_section">화면</string>
+    <string name="settings_amoled_title">AMOLED 블랙</string>
+    <string name="settings_amoled_subtitle">AMOLED 화면에서 배터리를 절약하기 위해 완전한 검정 배경의 다크 모드를 강제 적용합니다.</string>
+
+    <string name="settings_suggestions_section">파티 추천</string>
+    <string name="settings_suggestions_help_content_description">대전 티어란 무엇인가요?</string>
+    <string name="settings_suggestions_subtitle">파티 빌더의 추천 카드를 지정한 대전 티어 이하로 제한합니다(예: UU를 선택하면 RU, NU 등도 허용). 9세대 Smogon 티어를 기준으로 합니다.</string>
+    <string name="settings_tier_limit_label">티어 제한</string>
+    <string name="settings_tier_limit_none">제한 없음</string>
+    <string name="settings_tier_limit_dialog_title">추천 티어 제한</string>
+
+    <string name="settings_full_detail_warning_title">전체 상세 정보를 다운로드할까요?</string>
+    <string name="settings_full_detail_warning_text">약 1300개 항목에 대해 모든 포켓몬의 전체 데이터(종, 진화 계통 등)를 다운로드합니다. 대용량 다운로드이며 데이터와 저장 공간을 많이 사용합니다.</string>
+    <string name="settings_full_detail_warning_enable">활성화</string>
+
+    <!-- Smogon tier explanation dialog -->
+    <string name="smogon_tier_dialog_title">표준 대전 티어</string>
+    <string name="smogon_tier_dialog_close">닫기</string>
+
+    <string name="smogon_tier_intro_1">Smogon의 티어 시스템은 경쟁용 싱글 배틀의 세계 표준입니다. 주요 목표는 가능한 한 많은 포켓몬이 경쟁전에서 활약할 수 있는 균형 잡힌 환경을 만드는 것입니다.</string>
+    <string name="smogon_tier_intro_2">Ubers와 Anything Goes를 제외하면, 대부분의 티어는 사용률을 기준으로 합니다. 포켓몬이 상위 티어에서 많이 사용될수록 계층에서 더 높은 순위에 오릅니다.</string>
+
+    <string name="smogon_tier_core_concept_heading">기본 개념</string>
+    <string name="smogon_tier_core_concept_body">Smogon은 포켓몬을 플레이 가능성 티어로 분류하여, 약한 포켓몬이 지나치게 강력한 전설의 포켓몬과 맞붙지 않도록 합니다.</string>
+
+    <string name="smogon_tier_format_scope_heading">적용 범위</string>
+    <string name="smogon_tier_format_scope_body">이 티어는 Pokémon Showdown에서 진행되는 경쟁용 싱글 포맷에 특별히 적용됩니다.</string>
+
+    <string name="smogon_tier_primary_tiers_heading">주요 티어(높은 순)</string>
+    <string name="smogon_tier_primary_tiers_body">1. AG(Anything Goes) — 6마리 제한 외에는 사실상 제한이 없습니다. Ubers에서조차 감당하기 힘들 정도로 강력한 개체(예: 메가레쿠쟈, Calyrex-Shadow)와 다른 곳에서는 금지된 요소들의 무대입니다.\n\n2. Uber — 역사적으로 OU의 금지 목록입니다. 강력한 전설의 포켓몬과 환경을 지나치게 지배하는 위협(가이오가, 코라이돈, 미라이돈, 자시안 등)의 격전지입니다.\n\n3. OU(OverUsed) — 기준이 되는 티어입니다. Smogon의 대표 포맷으로, 대부분의 공식 대회에서 사용됩니다. 최상위 비전설 포켓몬과 균형 잡힌 전설의 포켓몬(Landorus-Therian, 대도각참, 무쇠무인 등).\n\n4. UU(UnderUsed) — OU의 사용률 기준(~4.52%)에는 못 미치지만 여전히 강력한 경쟁 옵션인 포켓몬: 강력한 틈새 공격수이거나 현재 OU 트렌드에 밀린 포켓몬.\n\n5. RU(RarelyUsed) — UU보다 아래로, UU에 필요한 다재다능함이나 파워가 부족한 포켓몬용.\n\n6. NU(NeverUsed) — RU보다 아래로, 상위 디비전에서 자주 간과되는 포켓몬.\n\n7. PU — 사용률 기반 공식 티어 중 가장 낮은 단계("P.U.", 즉 나쁜 냄새에서 유래)지만, 여전히 매우 경쟁적이고 복잡한 메타게임입니다.\n\n8. ZU(Zero Used) — PU보다 아래인 비공식 티어로, 남은 포켓몬들에게 자체적인 경쟁 메타게임을 제공합니다.</string>
+
+    <string name="smogon_tier_usage_threshold_heading">사용률 기준</string>
+    <string name="smogon_tier_usage_threshold_body" tools:ignore="StringFormatInvalid">티어에 머물기 위한 기준은 약 4.52%로, 해당 티어의 래더에서 최소 22개 팀 중 1개 팀에는 등장해야 한다는 의미입니다.</string>
+
+    <string name="smogon_tier_mobility_heading">티어 간 이동</string>
+    <string name="smogon_tier_mobility_body">하위 티어(예: NU)의 포켓몬은 언제나 상위 티어(예: OU)에서 사용할 수 있지만, 상위 티어의 포켓몬은 하위 티어로 내려갈 수 없습니다.</string>
+
+    <string name="smogon_tier_banlists_heading">중간 금지 목록 &amp; 티어 변동</string>
+    <string name="smogon_tier_banlists_body">주요 티어 사이에는 BL이라는 중간 카테고리가 존재합니다(예: UUBL, RUBL, NUBL, PUBL). 어떤 포켓몬이 너무 강해서 UU에서 금지되었지만 공식적으로 OU로 분류될 만큼 사용률이 높지 않은 경우 UUBL로 분류됩니다 — UU에서는 사용할 수 없지만 OU에서는 사용 가능합니다.</string>
+
+    <string name="smogon_tier_how_tiers_change_heading">티어가 바뀌는 방식</string>
+    <string name="smogon_tier_how_tiers_change_body">1. 분기별 사용률 업데이트 — 3개월마다 Smogon은 Pokémon Showdown의 배틀 통계를 분석합니다. 사용률 기준을 넘는 포켓몬은 상승하고, 사용률이 낮은 포켓몬은 하락합니다.\n\n2. Suspect 테스트 &amp; 퀵밴 — 특정 포켓몬, 기술 또는 특성이 티어의 균형을 깨뜨리면, 협의회가 커뮤니티 투표(Suspect 테스트)를 진행하거나 상위 티어로 즉시 금지(퀵밴)합니다.</string>
+
+    <string name="smogon_tier_bl_status_heading">BL 상태</string>
+    <string name="smogon_tier_bl_status_body">보더라인 카테고리는 하위 티어를 위한 순수한 금지 목록일 뿐, 자체 래더를 가진 플레이 가능한 메타게임이 아닙니다.</string>
+
+    <string name="smogon_tier_community_voting_heading">커뮤니티 투표</string>
+    <string name="smogon_tier_community_voting_body">Suspect 테스트에 참여하려면 투표권을 얻기 위해 새 래더 계정에서 높은 실력 점수(GXE)를 달성해야 합니다.</string>
+</resources>

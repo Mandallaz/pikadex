@@ -1,0 +1,93 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Bottom navigation -->
+    <string name="nav_pokedex">ずかん</string>
+    <string name="nav_triangles">三角関係</string>
+    <string name="nav_team">パーティ</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">設定</string>
+
+    <string name="settings_language_section">言語</string>
+
+    <string name="settings_offline_data_section">オフラインデータ</string>
+    <string name="settings_offline_data_subtitle">事前にデータをダウンロードして、アプリを完全にオフラインで使えるようにします。</string>
+
+    <string name="settings_tier_essentials_title">基本データ</string>
+    <string name="settings_tier_essentials_subtitle">種族値、技、タイプ相性表、Smogonティア — 約1MB。</string>
+
+    <string name="settings_tier_sprites_title">スプライト</string>
+    <string name="settings_tier_sprites_subtitle">すべてのポケモンのアートワークとスプライト — 50〜150MB。</string>
+
+    <string name="settings_tier_sprites_extra_title">色違い・アニメーションスプライト</string>
+    <string name="settings_tier_sprites_extra_subtitle">すべてのポケモンの色違いアートワーク/スプライトとShowdownのアニメーションGIF。詳細画面の色違い/アニメーション切り替えもオフラインで動作するようになります — スプライトのダウンロード量が約2倍になります。</string>
+
+    <string name="settings_tier_full_detail_title">完全な詳細データ</string>
+    <string name="settings_tier_full_detail_subtitle">完全なオフライン閲覧のための、すべてのポケモンの完全なデータ（種族、進化系統） — 大容量のダウンロード。</string>
+
+    <string name="settings_tier_cries_title">鳴き声</string>
+    <string name="settings_tier_cries_subtitle">詳細画面の再生ボタンがオフラインでも動作するように、すべてのポケモンの鳴き声 — 約1300個の短い音声クリップ。</string>
+
+    <string name="settings_cancel">キャンセル</string>
+    <string name="settings_prefetch_finished_with_failures">完了しましたが、%1$d件のアイテムが失敗しました。再試行できます。</string>
+    <string name="settings_prefetch_finished">ダウンロードが完了しました。</string>
+    <string name="settings_prefetch_now">今すぐダウンロード</string>
+    <string name="settings_retry">再試行</string>
+
+    <string name="settings_storage_section">ストレージ</string>
+    <string name="settings_storage_total">合計: %1$s</string>
+    <string name="settings_storage_api_data">APIデータ: %1$s</string>
+    <string name="settings_storage_images">画像: %1$s</string>
+    <string name="settings_storage_cries">鳴き声: %1$s</string>
+    <string name="settings_storage_refresh">更新</string>
+    <string name="settings_storage_clear">ダウンロード済みデータを削除</string>
+
+    <string name="settings_display_section">表示</string>
+    <string name="settings_amoled_title">AMOLEDブラック</string>
+    <string name="settings_amoled_subtitle">AMOLED画面のバッテリーを節約するため、真っ黒な背景のダークモードを強制します。</string>
+
+    <string name="settings_suggestions_section">パーティの提案</string>
+    <string name="settings_suggestions_help_content_description">対戦ティアとは？</string>
+    <string name="settings_suggestions_subtitle">パーティビルダーの提案カードを、指定した対戦ティア以下に制限します（例: UUを選ぶとRU、NUなども含まれます）。第9世代のSmogonティアに基づきます。</string>
+    <string name="settings_tier_limit_label">ティア上限</string>
+    <string name="settings_tier_limit_none">制限なし</string>
+    <string name="settings_tier_limit_dialog_title">提案のティア上限</string>
+
+    <string name="settings_full_detail_warning_title">完全な詳細データをダウンロードしますか？</string>
+    <string name="settings_full_detail_warning_text">約1300件分の、すべてのポケモンの完全なデータ（種族、進化系統など）をダウンロードします。大容量のダウンロードで、通信量とストレージを大きく消費します。</string>
+    <string name="settings_full_detail_warning_enable">有効にする</string>
+
+    <!-- Smogon tier explanation dialog -->
+    <string name="smogon_tier_dialog_title">標準的な対戦ティア</string>
+    <string name="smogon_tier_dialog_close">閉じる</string>
+
+    <string name="smogon_tier_intro_1">Smogonのティア制度は、シングル対戦における世界標準のシステムです。主な目的は、できるだけ多くのポケモンが対戦で活躍できる、バランスの取れた環境を作ることです。</string>
+    <string name="smogon_tier_intro_2">UbersとAnything Goesを除き、ほとんどのティアは使用率に基づいています。あるポケモンが上位のティアで多く使われるほど、階層の上位にランクされます。</string>
+
+    <string name="smogon_tier_core_concept_heading">基本コンセプト</string>
+    <string name="smogon_tier_core_concept_body">Smogonはポケモンをプレイ可能性のティアに分類し、非力なポケモンが過度に強力な伝説のポケモンと戦わなくて済むようにしています。</string>
+
+    <string name="smogon_tier_format_scope_heading">対象フォーマット</string>
+    <string name="smogon_tier_format_scope_body">これらのティアは、Pokémon Showdownでホストされているシングル対戦の競技フォーマットに特化して適用されます。</string>
+
+    <string name="smogon_tier_primary_tiers_heading">主要ティア（高い順）</string>
+    <string name="smogon_tier_primary_tiers_body">1. AG（Anything Goes） — 6匹制限以外ほぼ制限なし。Ubersでさえ手に負えないほど強力な個体（例: メガレックウザ、Calyrex-Shadow）や、他では禁止されている仕様の居場所です。\n\n2. Uber — 歴史的にOUの禁止リスト。強力な伝説のポケモンや、環境を過度に支配する脅威（カイオーガ、コライドン、ミライドン、ザシアンなど）の戦場です。\n\n3. OU（OverUsed） — 基準となるティア。Smogonの看板フォーマットで、ほとんどの公式大会で使用されます。トップクラスの非伝説と、バランスの取れた伝説（Landorus-Therian、ドドゲザン、テツノブジンなど）。\n\n4. UU（UnderUsed） — OUの使用率のしきい値（約4.52%）を下回るものの、依然として強力な対戦の選択肢: 強力なニッチアタッカーや、現在のOU環境で押されがちなポケモン。\n\n5. RU（RarelyUsed） — UUより下位で、UUに必要な汎用性やパワーに欠けるポケモン向け。\n\n6. NU（NeverUsed） — RUより下位で、上位ディビジョンでは見過ごされがちなポケモン。\n\n7. PU — 使用率に基づく公式ティアの最下位（「P.U.」＝嫌なにおいに由来）。それでも非常に競技性が高く複雑な環境です。\n\n8. ZU（Zero Used） — PUより下位の非公式ティアで、残りのポケモンに独自の対戦環境を与えます。</string>
+
+    <string name="smogon_tier_usage_threshold_heading">使用率のしきい値</string>
+    <string name="smogon_tier_usage_threshold_body" tools:ignore="StringFormatInvalid">あるティアにとどまる基準はおよそ4.52%で、そのティアのラダーにおいて22チームに1チーム以上の割合で登場する必要があります。</string>
+
+    <string name="smogon_tier_mobility_heading">ティア間の移動</string>
+    <string name="smogon_tier_mobility_body">下位ティアのポケモン（例: NU）は常に上位ティア（例: OU）で使用できますが、上位ティアのポケモンは下位ティアに降りることはできません。</string>
+
+    <string name="smogon_tier_banlists_heading">中間禁止リストとティアの変動</string>
+    <string name="smogon_tier_banlists_body">主要ティアの間には、BLと呼ばれる中間カテゴリが存在します（例: UUBL、RUBL、NUBL、PUBL）。あるポケモンが強すぎてUUから禁止されたものの、正式にOUに分類されるほどの使用率がない場合、UUBLに分類されます — UUでは使用できませんが、OUでは合法です。</string>
+
+    <string name="smogon_tier_how_tiers_change_heading">ティアが変わる仕組み</string>
+    <string name="smogon_tier_how_tiers_change_body">1. 四半期ごとの使用率更新 — 3か月ごとに、SmogonはPokémon Showdownの対戦統計を分析します。使用率のしきい値を超えたポケモンは昇格し、使用率が低いポケモンは降格します。\n\n2. Suspectテストとクイックバン — あるポケモン、技、または特性がティアのバランスを崩している場合、評議会がコミュニティ投票（Suspectテスト）を実施するか、上位ティアへ即座に禁止（クイックバン）します。</string>
+
+    <string name="smogon_tier_bl_status_heading">BLの位置づけ</string>
+    <string name="smogon_tier_bl_status_body">ボーダーラインカテゴリは、あくまで下位ティア向けの禁止リストであり、独自のラダーを持つプレイ可能な対戦環境ではありません。</string>
+
+    <string name="smogon_tier_community_voting_heading">コミュニティ投票</string>
+    <string name="smogon_tier_community_voting_body">Suspectテストでは、投票権を得るために、新しいラダーアカウントで高い技能評価（GXE）を達成する必要があります。</string>
+</resources>
