@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.FavoritesRepository
+import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.PokedexListContext
+import com.mandallaz.pikadex.data.SupportedLanguages
 import com.mandallaz.pikadex.data.remote.SmogonTierDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
@@ -14,6 +16,7 @@ import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.TypeTriangles
+import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.toDisplayName
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -115,7 +118,7 @@ internal const val STAT_KEY_TOTAL = "total"
  *  once per actual state change, off the main thread (see [PokedexListViewModel.displayedPokemon]). */
 // internal, not private: lets PokedexListViewModelTest exercise the filter/sort pipeline directly,
 // pure-function-style, rather than only through the ViewModel's coroutine/StateFlow machinery.
-internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String): List<NamedApiResource> {
+internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String, language: String = SupportedLanguages.DEFAULT_CODE): List<NamedApiResource> {
     // A resource with no id can't render a card (no sprite, no #number) — the grid used to filter
     // these out one at a time with an early return inside each item, re-running the same check on
     // every recomposition instead of once here.
@@ -133,8 +136,16 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String)
         // from both sides (same normalization SearchableListDialog already uses for moves/abilities)
         // makes either form find it.
         val normalizedQuery = trimmed.replace(" ", "").replace("-", "")
-        list = list.filter {
-            it.name.replace("-", "").contains(normalizedQuery) || (numericQuery != null && it.id == numericQuery)
+        list = list.filter { resource ->
+            val rawMatches = resource.name.replace("-", "").contains(normalizedQuery)
+            // B10 — search must also follow the picked language, not just the raw/English name:
+            // in French, searching "ray" shouldn't be the only way to find Mudbray if its French
+            // name "Tiboudet" doesn't contain the query at all. Matching both (not replacing the
+            // raw-name check) rather than switching exclusively to the localized name — a user who
+            // knows a Pokémon's English name should still be able to find it.
+            val localizedMatches = resource.name.localizedDisplayName(state.speciesNames, language)
+                .lowercase().replace(" ", "").replace("-", "").contains(normalizedQuery)
+            rawMatches || localizedMatches || (numericQuery != null && resource.id == numericQuery)
         }
     }
     state.typeFilterNames?.let { set -> list = list.filter { it.name in set } }
@@ -258,8 +269,12 @@ class PokedexListViewModel @JvmOverloads constructor(
             // enough that a cache-warm cold start (list ready in well under 150ms) flashed
             // "0 Pokémon"/"No Pokémon match your search and filters" before showing the grid. It also
             // makes clearing the search box snap back instantly instead of lagging.
-            debouncedSearchQuery.debounce { query -> if (query.isEmpty()) 0L else 150L }
-        ) { state, query -> computeDisplayed(state, query) }
+            debouncedSearchQuery.debounce { query -> if (query.isEmpty()) 0L else 150L },
+            // B10 — search results must react to a language change too, not just to state/query
+            // changes: switching language mid-search should re-filter against the new language's
+            // names without the user having to retype anything.
+            LanguageSettings.currentLanguage
+        ) { state, query, language -> computeDisplayed(state, query, language) }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
