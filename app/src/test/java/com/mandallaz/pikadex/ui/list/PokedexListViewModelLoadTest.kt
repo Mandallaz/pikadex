@@ -156,6 +156,24 @@ class PokedexListViewModelLoadTest {
         assertFalse(state.isFilterLoading)
     }
 
+    // issue #70 (B20) — applyTierFilter built formatFilterNames from allPokemon without the
+    // "empty means not loaded yet" guard that the rarity/counter/stat-minimum filters already have
+    // in computeDisplayed, so an empty master list (still loading, or failed silently) resolved the
+    // tier filter to an empty set and emptied the whole grid behind a confidently-checked chip.
+    @Test
+    fun `selecting a tier filter before the master list has loaded leaves the filter unapplied`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle() // initial load completes with allPokemon still empty
+        assertTrue(viewModel.uiState.value.allPokemon.isEmpty())
+        repository.smogonTiers = mapOf("charizard" to "OU")
+
+        viewModel.onFormatTierSelected("OU")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNull(state.formatFilterNames)
+        assertFalse(state.isFilterLoading)
+    }
+
     // Deselecting the last active type while its own request is still in flight has nowhere else
     // to clear isFilterLoading from (the cancelled job's own `finally`-equivalent never runs) —
     // this must happen at the cancel site itself, or the spinner is stuck forever.

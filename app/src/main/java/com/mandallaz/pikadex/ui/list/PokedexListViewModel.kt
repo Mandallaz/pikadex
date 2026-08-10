@@ -514,7 +514,17 @@ class PokedexListViewModel @JvmOverloads constructor(
                     }
                     return@launch
                 }
-                val names = _uiState.value.allPokemon
+                // Same "no data yet, don't filter" guard as rarity/counter/stat-minimum in
+                // computeDisplayed: allPokemon not being loaded yet means "not applied yet", not
+                // "no Pokémon in this tier" — building formatFilterNames from an empty list would
+                // otherwise resolve to an empty set and silently empty the whole grid behind a
+                // confidently-checked Tier chip.
+                val allPokemon = _uiState.value.allPokemon
+                if (allPokemon.isEmpty()) {
+                    _uiState.update { it.copy(isFilterLoading = false) }
+                    return@launch
+                }
+                val names = allPokemon
                     .filter { tiers[SmogonTierDataSource.showdownKey(it.name)] == tier }
                     .map { it.name }
                     .toSet()
