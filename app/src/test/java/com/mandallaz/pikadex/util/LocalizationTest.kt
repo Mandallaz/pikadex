@@ -40,4 +40,44 @@ class LocalizationTest {
         val noEnglish = listOf(Entry("de", "Samen-Pokémon"))
         assertNull(noEnglish.localizedOrEnglish("fr") { it.language })
     }
+
+    // --- localizedDisplayName (B9) -----------------------------------------------------
+
+    private val bulbasaurNames = mapOf(
+        "en" to "Bulbasaur",
+        "fr" to "Bulbizarre",
+        "de" to "Bisasam"
+    )
+    private val speciesNames = mapOf("bulbasaur" to bulbasaurNames)
+
+    // The bug itself: before B9, every screen showed the raw "bulbasaur" (formatted, not
+    // translated) regardless of the picked language. This is the regression guard for it.
+    @Test
+    fun `resolves the localized species name for a non-English language`() {
+        assertEquals("Bulbizarre", "bulbasaur".localizedDisplayName(speciesNames, "fr"))
+    }
+
+    @Test
+    fun `falls back to English when the requested language has no species-name entry`() {
+        assertEquals("Bulbasaur", "bulbasaur".localizedDisplayName(speciesNames, "ja"))
+    }
+
+    // English deliberately keeps toDisplayName()'s own special-case formatting (e.g.
+    // "nidoran-f" -> "Nidoran♀") rather than PokeAPI's own "en" entry, even when one is present —
+    // zero behavior change for the default language.
+    @Test
+    fun `English ignores the species-names map entirely, even when present`() {
+        val namesWithDifferentEnglish = mapOf("bulbasaur" to mapOf("en" to "Something Else"))
+        assertEquals("Bulbasaur", "bulbasaur".localizedDisplayName(namesWithDifferentEnglish, "en"))
+    }
+
+    @Test
+    fun `a species missing from the map falls back to the formatted raw name`() {
+        assertEquals("Charizard", "charizard".localizedDisplayName(speciesNames, "fr"))
+    }
+
+    @Test
+    fun `an empty map falls back to the formatted raw name for any language`() {
+        assertEquals("Nidoran♀", "nidoran-f".localizedDisplayName(emptyMap(), "fr"))
+    }
 }

@@ -263,4 +263,48 @@ object PokeApiGraphQLDataSource {
     )
     private data class MoveGraphQLAilment(val name: String)
     private data class MoveGraphQLStatChange(val change: Int, val stat: GraphQLStatName)
+
+    // B9 — verified live against graphql.pokeapi.co before being written, same as every other
+    // query here: pokemonspeciesnames is the species' names relation (one row per language it has
+    // a translation for), reached via pokemonspecy the same way pokemonspecy.is_legendary already
+    // is in QUERY above.
+    private const val SPECIES_NAMES_QUERY = """
+        query {
+          pokemon(limit: $ROW_LIMIT) {
+            name
+            pokemonspecy {
+              pokemonspeciesnames {
+                name
+                language { name }
+              }
+            }
+          }
+        }
+    """
+
+    /** pokemonName -> (languageCode -> localized species name), fetched once in bulk via GraphQL
+     *  (B9) — every species' `names` field already carries every language PokeAPI has a
+     *  translation for, same server-side localization [fetchAllBasics]'s genus/flavor-text
+     *  siblings already read elsewhere; this is the same data for the species' *name* itself,
+     *  which nothing in this app read before B9 (every screen used the raw English/romanized
+     *  `name` identifier instead, formatted via `toDisplayName()`). */
+    suspend fun fetchAllSpeciesNames(): Map<String, Map<String, String>> = runQuery(SPECIES_NAMES_QUERY, ::parseSpeciesNames)
+
+    /** Parses [SPECIES_NAMES_QUERY]'s response body — separate from [fetchAllSpeciesNames] so it's
+     *  unit-testable against a hand-written JSON body, same reasoning as [parseBasics]. */
+    internal fun parseSpeciesNames(body: String): Map<String, Map<String, String>> {
+        val pokemon = gson.fromJson(body, SpeciesNamesGraphQLResponse::class.java)?.data?.pokemon
+            ?: throw IOException("GraphQL response had no pokemon data")
+        logIfTruncated("pokemon (species names)", pokemon.size)
+        return pokemon.associate { p ->
+            p.name to p.pokemonspecy?.pokemonspeciesnames.orEmpty()
+                .associate { it.language.name to it.name }
+        }
+    }
+
+    private data class SpeciesNamesGraphQLResponse(val data: SpeciesNamesGraphQLData?)
+    private data class SpeciesNamesGraphQLData(val pokemon: List<SpeciesNamesGraphQLPokemon>?)
+    private data class SpeciesNamesGraphQLPokemon(val name: String, val pokemonspecy: SpeciesNamesGraphQLSpecy?)
+    private data class SpeciesNamesGraphQLSpecy(val pokemonspeciesnames: List<SpeciesNamesGraphQLName>?)
+    private data class SpeciesNamesGraphQLName(val name: String, val language: GraphQLStatName)
 }

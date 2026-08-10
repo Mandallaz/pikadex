@@ -36,6 +36,7 @@ class FakePokedexRepository : PokedexRepositoryApi {
     var allMoveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap()
     var statPercentile: Double = 0.5
     var detailBundle: PokemonDetailBundle? = null
+    var allSpeciesNames: Map<String, Map<String, String>> = emptyMap()
 
     /** Thrown by every method below if set — the "network error" path every ViewModel's `catch`
      *  block exists to handle. */
@@ -72,6 +73,7 @@ class FakePokedexRepository : PokedexRepositoryApi {
     override suspend fun getPokemonDetailBundle(nameOrId: String) = resolve(requireNotNull(detailBundle) {
         "FakePokedexRepository.detailBundle must be set before getPokemonDetailBundle is called"
     })
+    override suspend fun getAllSpeciesNames() = resolve(allSpeciesNames)
 }
 
 /** Minimal-but-valid [PokemonDto] fixture — every nullable field defaults to null/empty, matching

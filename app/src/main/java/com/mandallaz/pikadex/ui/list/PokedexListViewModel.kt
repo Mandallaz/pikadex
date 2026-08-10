@@ -73,7 +73,11 @@ data class PokedexListUiState(
     // Only keys with an active (> 0) minimum are present — a slider at its default (0) imposes no
     // constraint, so there's nothing to filter on and no reason for it to occupy a map entry.
     val statMinimums: Map<String, Int> = emptyMap(),
-    val counterFilterActive: Boolean = false
+    val counterFilterActive: Boolean = false,
+    // B9 — rawName -> (languageCode -> localized species name), fetched once in the background
+    // (see loadSpeciesNamesIfNeeded); empty until that completes, which is fine since every card
+    // falls back to the English-formatted raw name (String.localizedDisplayName) until then.
+    val speciesNames: Map<String, Map<String, String>> = emptyMap()
 ) {
     val hasActiveFilters: Boolean
         get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
@@ -261,6 +265,7 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     init {
         loadInitialData()
+        loadSpeciesNamesIfNeeded()
         viewModelScope.launch {
             FavoritesRepository.favorites.collect { favs ->
                 _uiState.update { it.copy(favorites = favs) }
@@ -489,6 +494,27 @@ class PokedexListViewModel @JvmOverloads constructor(
                 throw e // see onTypeToggled
             } catch (e: Exception) {
                 _uiState.update { it.copy(isFilterLoading = false, errorMessage = "Network error while filtering by tier.") }
+            }
+        }
+    }
+
+    /** B9 — bulk species-name fetch, triggered unconditionally from [init] (unlike
+     *  [loadBaseStatsIfNeeded], gated behind opening filters/sort): every visible card needs a
+     *  display name immediately, not just on some later user action. Best-effort — a failure here
+     *  just leaves every card showing its English-formatted raw name via
+     *  [com.mandallaz.pikadex.util.localizedDisplayName]'s own fallback, no error surfaced, same as
+     *  every other enrichment-only fetch in this app (e.g. [PokedexDetailViewModel]'s
+     *  formVersionGroup). */
+    private fun loadSpeciesNamesIfNeeded() {
+        if (_uiState.value.speciesNames.isNotEmpty()) return
+        viewModelScope.launch {
+            try {
+                val names = repository.getAllSpeciesNames()
+                _uiState.update { it.copy(speciesNames = names) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Best-effort, see this function's own doc.
             }
         }
     }

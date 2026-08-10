@@ -54,6 +54,7 @@ interface PokedexRepositoryApi {
     suspend fun getAllMoveInfo(): Map<String, PokeApiGraphQLDataSource.MoveInfo>
     suspend fun getStatPercentile(statKey: String, value: Int): Double
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle
+    suspend fun getAllSpeciesNames(): Map<String, Map<String, String>>
 }
 
 /**
@@ -83,6 +84,7 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
     private val smogonTierCache = AsyncCache<String, Map<String, String>>()
     private val allBasicsCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>()
     private val allMoveInfoCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.MoveInfo>>()
+    private val allSpeciesNamesCache = AsyncValueCache<Map<String, Map<String, String>>>()
     private val sortedStatArraysCache = AsyncValueCache<Map<String, IntArray>>()
 
     override suspend fun getMasterList(): List<NamedApiResource> =
@@ -195,6 +197,15 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         diskCached(MOVE_INFO_CACHE_KEY, MOVE_INFO_TYPE) { PokeApiGraphQLDataSource.fetchAllMoveInfo() }
     }
 
+    /** pokemonName -> (languageCode -> localized species name), fetched once in bulk via GraphQL
+     *  (B9). Persisted to disk for the same reason as [getAllBaseStats]/[getAllMoveInfo] — this
+     *  only changes when PokeAPI adds/corrects a translation, not on any cadence this app's users
+     *  would notice, so there's no reason to re-fetch ~1300 entries' worth of names every cold
+     *  start just to read one language's worth back out of it. */
+    override suspend fun getAllSpeciesNames(): Map<String, Map<String, String>> = allSpeciesNamesCache.get {
+        diskCached(SPECIES_NAMES_CACHE_KEY, SPECIES_NAMES_TYPE) { PokeApiGraphQLDataSource.fetchAllSpeciesNames() }
+    }
+
     /** Sorted value arrays per stat key (hp/attack/.../speed, plus a synthetic "total"), built
      *  once from the bulk stats map. [getStatPercentile] binary-searches these instead of
      *  re-scanning all ~1300 pokemon's values on every single pokemon detail load. Runs on
@@ -279,11 +290,14 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         // _v3: MoveInfo gained a `pp` field — bumped so an upgrading install re-fetches instead of
         // reading back an old cached payload with no pp in it and showing "—" for every move.
         const val MOVE_INFO_CACHE_KEY = "move_info_v3"
+        const val SPECIES_NAMES_CACHE_KEY = "species_names_v1"
         val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)
 
         val BASICS_TYPE: java.lang.reflect.Type =
             object : TypeToken<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>() {}.type
         val MOVE_INFO_TYPE: java.lang.reflect.Type =
             object : TypeToken<Map<String, PokeApiGraphQLDataSource.MoveInfo>>() {}.type
+        val SPECIES_NAMES_TYPE: java.lang.reflect.Type =
+            object : TypeToken<Map<String, Map<String, String>>>() {}.type
     }
 }

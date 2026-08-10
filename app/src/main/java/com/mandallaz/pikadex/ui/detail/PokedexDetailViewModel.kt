@@ -90,7 +90,11 @@ data class PokedexDetailUiState(
      *  doesn't flash stale data. */
     val teamImpact: TeamImpactSummary? = null,
     val isTeamImpactLoading: Boolean = false,
-    val teamImpactError: String? = null
+    val teamImpactError: String? = null,
+    // B9 — rawName -> (languageCode -> localized species name), bulk-fetched alongside moveInfo/
+    // percentiles below; best-effort like those, so a failure just leaves the title/evolution
+    // chain names in their English-formatted fallback rather than failing the whole page.
+    val speciesNames: Map<String, Map<String, String>> = emptyMap()
 )
 
 /** Result of [block], or null if it failed — but never swallowing coroutine cancellation, which
@@ -157,6 +161,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     // a genuine 3-step dependency chain and can't be parallelized further).
                     val moveInfoDeferred = async { repository.getAllMoveInfo() }
                     val allStatsDeferred = async { repository.getAllBaseStats() }
+                    val speciesNamesDeferred = async { repository.getAllSpeciesNames() }
 
                     val bundle = repository.getPokemonDetailBundle(nameOrId)
                     // Off Dispatchers.Default, not the caller's dispatcher (Main.immediate): this
@@ -208,6 +213,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     }.orEmpty()
 
                     val groupedMoves = groupedMovesDeferred.await()
+                    val speciesNames = orNullUnlessCancelled { speciesNamesDeferred.await() }.orEmpty()
 
                     // Best-effort, same shape as formVersionGroup above. getMasterList() is already
                     // cached by the time most detail screens open (the list screen itself, Compare,
@@ -234,7 +240,8 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             formVersionGroup = formVersionGroup,
                             groupedMoves = groupedMoves,
                             previousPokemonName = previousName,
-                            nextPokemonName = nextName
+                            nextPokemonName = nextName,
+                            speciesNames = speciesNames
                         )
                     }
                 }

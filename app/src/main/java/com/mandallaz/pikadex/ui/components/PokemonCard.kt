@@ -26,7 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mandallaz.pikadex.util.Sprites
-import com.mandallaz.pikadex.util.toDisplayName
 
 /**
  * Reads its team/favorite status from parameters rather than collecting
@@ -39,7 +38,12 @@ import com.mandallaz.pikadex.util.toDisplayName
 @Composable
 fun PokemonCard(
     id: Int,
-    name: String,
+    // B9 — the caller resolves this (raw name formatted, or the picked language's localized
+    // species name if available) rather than this card calling toDisplayName() on a raw name
+    // itself, same "hoist to the screen" reasoning as team/favorite status above: the screen
+    // already reads PokedexListUiState.speciesNames and the current language once, not once per
+    // card.
+    displayName: String,
     baseSpeciesId: Int?,
     isFavorite: Boolean,
     isInTeam: Boolean,
@@ -89,7 +93,7 @@ fun PokemonCard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = name.toDisplayName(),
+                    text = displayName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,

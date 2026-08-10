@@ -29,7 +29,7 @@ class PokemonCardLayoutTest {
             Row {
                 PokemonCard(
                     id = 25,
-                    name = "pikachu",
+                    displayName = "Pikachu",
                     baseSpeciesId = null,
                     isFavorite = false,
                     isInTeam = false,
@@ -41,7 +41,7 @@ class PokemonCardLayoutTest {
                 )
                 PokemonCard(
                     id = 10024,
-                    name = "zamazenta-crowned",
+                    displayName = "Zamazenta Crowned",
                     baseSpeciesId = null,
                     isFavorite = false,
                     isInTeam = false,

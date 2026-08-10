@@ -103,6 +103,7 @@ import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.evolutionPaths
+import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.localizedOrEnglish
 import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.SortStat
@@ -317,7 +318,8 @@ fun PokedexDetailScreen(
                     teamImpactError = uiState.teamImpactError,
                     teamImpact = uiState.teamImpact,
                     onPokemonClick = onPokemonClick,
-                    onViewTypeTriangles = onViewTypeTriangles
+                    onViewTypeTriangles = onViewTypeTriangles,
+                    speciesNames = uiState.speciesNames
                 )
             }
 
@@ -439,7 +441,11 @@ internal fun DetailContent(
     teamImpactError: String?,
     teamImpact: TeamImpactSummary?,
     onPokemonClick: (String) -> Unit,
-    onViewTypeTriangles: () -> Unit
+    onViewTypeTriangles: () -> Unit,
+    // B9 — defaulted so existing instrumented-test call sites (rendering this directly with fake
+    // DTOs, no ViewModel) keep compiling unchanged; real usage always passes the ViewModel's
+    // uiState.speciesNames.
+    speciesNames: Map<String, Map<String, String>> = emptyMap()
 ) {
     val primaryType = pokemon.types.orEmpty().minByOrNull { it.slot }?.type?.name ?: "normal"
     val primaryColor = TypeColors.of(primaryType)
@@ -528,7 +534,7 @@ internal fun DetailContent(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = pokemon.name.toDisplayName(),
+                    text = pokemon.name.localizedDisplayName(speciesNames, gameDataLanguage),
                     style = MaterialTheme.typography.titleLarge
                 )
                 val genus = species.genera.localizedOrEnglish(gameDataLanguage) { it.language.name }?.genus
@@ -729,10 +735,10 @@ internal fun DetailContent(
                                                         Text(it, style = MaterialTheme.typography.bodyMedium)
                                                     }
                                                 }
-                                                EvolutionStageBox(stage, pokemon, onPokemonClick)
+                                                EvolutionStageBox(stage, pokemon, onPokemonClick, speciesNames, gameDataLanguage)
                                             }
                                         } else {
-                                            EvolutionStageBox(stage, pokemon, onPokemonClick)
+                                            EvolutionStageBox(stage, pokemon, onPokemonClick, speciesNames, gameDataLanguage)
                                         }
                                     }
                                 }
@@ -764,7 +770,7 @@ internal fun DetailContent(
                             ) {
                                 otherForms.forEach { variety ->
                                     PokemonSpriteTile(
-                                        name = variety.pokemon.name,
+                                        displayName = variety.pokemon.name.localizedDisplayName(speciesNames, gameDataLanguage),
                                         id = variety.pokemon.id ?: 0,
                                         isCurrent = variety.pokemon.name == pokemon.name,
                                         onClick = { onPokemonClick(variety.pokemon.name) }
@@ -826,10 +832,12 @@ internal fun DetailContent(
 private fun EvolutionStageBox(
     stage: com.mandallaz.pikadex.util.EvolutionStage,
     pokemon: PokemonDto,
-    onPokemonClick: (String) -> Unit
+    onPokemonClick: (String) -> Unit,
+    speciesNames: Map<String, Map<String, String>>,
+    language: String
 ) {
     PokemonSpriteTile(
-        name = stage.speciesName,
+        displayName = stage.speciesName.localizedDisplayName(speciesNames, language),
         id = stage.id,
         isCurrent = stage.speciesName == pokemon.name,
         onClick = { onPokemonClick(stage.speciesName) }
@@ -837,10 +845,12 @@ private fun EvolutionStageBox(
 }
 
 /** A tappable sprite + name, highlighted when it's the Pokémon already on screen. Shared by the
- *  evolution chain and the Mega Evolution list so the two read as the same kind of link. */
+ *  evolution chain and the Mega Evolution list so the two read as the same kind of link. B9: the
+ *  caller resolves [displayName] (same "hoist to the caller" pattern as PokemonCard), since both
+ *  call sites already have `speciesNames`/the current language in scope. */
 @Composable
 private fun PokemonSpriteTile(
-    name: String,
+    displayName: String,
     id: Int,
     isCurrent: Boolean,
     onClick: () -> Unit
@@ -861,11 +871,11 @@ private fun PokemonSpriteTile(
     ) {
         PokemonSprite(
             id = id,
-            contentDescription = name,
+            contentDescription = displayName,
             modifier = Modifier.size(64.dp)
         )
         Text(
-            name.toDisplayName(),
+            displayName,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             softWrap = false

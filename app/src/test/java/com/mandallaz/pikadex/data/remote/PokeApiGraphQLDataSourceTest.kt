@@ -195,4 +195,43 @@ class PokeApiGraphQLDataSourceTest {
         assertEquals(0, entry.critRate)
         assertEquals("none", entry.ailment)
     }
+
+    // --- fetchAllSpeciesNames / parseSpeciesNames (B9) --------------------------------
+
+    // Shape verified live against graphql.pokeapi.co/v1beta2 for bulbasaur before writing this —
+    // see SPECIES_NAMES_QUERY's own comment.
+    private val speciesNamesSampleBody = """
+        {
+          "data": {
+            "pokemon": [
+              {
+                "name": "bulbasaur",
+                "pokemonspecy": {
+                  "pokemonspeciesnames": [
+                    { "name": "Bulbasaur", "language": { "name": "en" } },
+                    { "name": "Bulbizarre", "language": { "name": "fr" } },
+                    { "name": "Bisasam", "language": { "name": "de" } }
+                  ]
+                }
+              },
+              {
+                "name": "missingno",
+                "pokemonspecy": null
+              }
+            ]
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `parses one language-code-to-name entry per species`() {
+        val names = PokeApiGraphQLDataSource.parseSpeciesNames(speciesNamesSampleBody).getValue("bulbasaur")
+        assertEquals(mapOf("en" to "Bulbasaur", "fr" to "Bulbizarre", "de" to "Bisasam"), names)
+    }
+
+    @Test
+    fun `a null pokemonspecy degrades to an empty name map, not a crash`() {
+        val names = PokeApiGraphQLDataSource.parseSpeciesNames(speciesNamesSampleBody).getValue("missingno")
+        assertEquals(emptyMap<String, String>(), names)
+    }
 }

@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import com.mandallaz.pikadex.data.FavoritesRepository
+import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.OptionsDialog
@@ -80,6 +81,7 @@ import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.Sprites
+import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.toDisplayName
 
@@ -117,6 +119,7 @@ fun PokedexListScreen(
     val displayedPokemon by viewModel.displayedPokemon.collectAsState()
     val team by TeamRepository.team.collectAsState()
     val favorites by FavoritesRepository.favorites.collectAsState()
+    val language by LanguageSettings.currentLanguage.collectAsState()
     // rememberSaveable: rotating with the move/ability picker open used to close it while leaving
     // the filter sheet behind it restored — an odd half-restored state, and rotating inside the
     // picker separately cleared its own search text (see SearchableListDialog.kt).
@@ -361,7 +364,7 @@ fun PokedexListScreen(
                                     }
                                     PokemonCard(
                                         id = id,
-                                        name = resource.name,
+                                        displayName = resource.name.localizedDisplayName(uiState.speciesNames, language),
                                         baseSpeciesId = baseSpeciesId,
                                         isFavorite = resource.name in favorites,
                                         isInTeam = isInTeamAlready,

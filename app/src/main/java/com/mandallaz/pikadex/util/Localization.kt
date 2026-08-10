@@ -13,3 +13,20 @@ fun <T> List<T>?.localizedOrEnglish(languageCode: String, languageOf: (T) -> Str
     return entries.firstOrNull { languageOf(it) == languageCode }
         ?: entries.firstOrNull { languageOf(it) == "en" }
 }
+
+/** B9 — the species-*name* half of the game-data axis, which nothing in the app read before this:
+ *  every screen displayed the raw PokeAPI `name` identifier (e.g. "bulbasaur") formatted via
+ *  [toDisplayName], regardless of the picked language. [speciesNames] is
+ *  [com.mandallaz.pikadex.data.repository.PokedexRepositoryApi.getAllSpeciesNames]'s bulk map —
+ *  looks up this raw name's entry for [languageCode], falling back to English, and finally to the
+ *  formatted raw name itself for a species [speciesNames] has no entry for at all (a fetch that
+ *  hasn't completed yet, or a genuinely untranslated form). */
+fun String.localizedDisplayName(speciesNames: Map<String, Map<String, String>>, languageCode: String): String {
+    // English keeps its existing, separately-maintained formatting (toDisplayName's own special-case
+    // table for e.g. "nidoran-f" -> "Nidoran♀") unconditionally rather than PokeAPI's own "en" name
+    // entry — same output as before B9 for every existing user on the default language, zero risk of
+    // a formatting regression there.
+    if (languageCode == "en") return toDisplayName()
+    val namesForSpecies = speciesNames[this] ?: return toDisplayName()
+    return namesForSpecies[languageCode] ?: namesForSpecies["en"] ?: toDisplayName()
+}
