@@ -31,6 +31,11 @@ class FakePokedexRepository : PokedexRepositoryApi {
     var abilityDescription: String? = null
     var pokemonTypes: List<String> = emptyList()
     var pokemonLevelUpMoveNames: List<String> = emptyList()
+    // Per-name overrides for a multi-member team where each member needs distinct types/movepool
+    // (e.g. computeTeamMatrices) — checked before the flat properties above, which stay the
+    // simpler default for single-member/same-for-everyone tests.
+    var pokemonTypesByName: Map<String, List<String>> = emptyMap()
+    var pokemonLevelUpMoveNamesByName: Map<String, List<String>> = emptyMap()
     var smogonTiers: Map<String, String> = emptyMap()
     var allBasics: Map<String, PokeApiGraphQLDataSource.PokemonBasics> = emptyMap()
     var allMoveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap()
@@ -65,8 +70,9 @@ class FakePokedexRepository : PokedexRepositoryApi {
     override suspend fun getPokemonNamesForMove(move: String) = resolve(pokemonNamesForMove)
     override suspend fun getPokemonNamesForAbility(ability: String) = resolve(pokemonNamesForAbility)
     override suspend fun getAbilityDescription(ability: String) = resolve(abilityDescription)
-    override suspend fun getPokemonTypes(nameOrId: String) = resolve(pokemonTypes)
-    override suspend fun getPokemonLevelUpMoveNames(nameOrId: String) = resolve(pokemonLevelUpMoveNames)
+    override suspend fun getPokemonTypes(nameOrId: String) = resolve(pokemonTypesByName[nameOrId] ?: pokemonTypes)
+    override suspend fun getPokemonLevelUpMoveNames(nameOrId: String) =
+        resolve(pokemonLevelUpMoveNamesByName[nameOrId] ?: pokemonLevelUpMoveNames)
     override suspend fun getSmogonTiers(genCode: String) = resolve(smogonTiers)
     override suspend fun getAllBasics() = resolve(allBasics)
     override suspend fun getAllBaseStats() = resolve(allBasics.mapValues { it.value.stats })
