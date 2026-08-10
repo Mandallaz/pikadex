@@ -49,9 +49,8 @@ Sites, etc.) and paste that URL into Play Console's "Privacy policy" field —
 it's required even for apps that collect nothing.
 
 ## Screenshots / feature graphic
-Not included here — capture these from the running app:
-- Phone screenshots: at least 2, recommended 4-8 (List, Detail, Team, Type
-  Triangles all make good candidates).
+Phone screenshots (List, Detail, Type Triangles, Team, Settings, Compare) are captured in
+`store/screenshots/` — see that folder's own README for capture settings. Still missing:
 - Feature graphic: 1024x500 banner image for the store listing header.
 - App icon: 512x512 PNG for the store listing (separate from the in-app
   adaptive icon).
@@ -60,5 +59,5 @@ Not included here — capture these from the running app:
 The launcher icon is done — a custom Poké Ball adaptive icon, not the Android
 Studio template. What is still outstanding before submitting:
 
-- Screenshots and the feature graphic (see the section above).
+- The feature graphic and 512x512 app icon (see the section above).
 - Hosting PRIVACY_POLICY.md at a public URL for the Play Console field.
