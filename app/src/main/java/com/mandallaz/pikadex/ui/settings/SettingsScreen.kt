@@ -291,18 +291,26 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     }
 
     if (showFullDetailWarning) {
+        // B8: resolved here, in SettingsScreen's own (correctly localized) composition, rather
+        // than inside AlertDialog's title/text/button slot lambdas — those compose in a separate
+        // Window whose LocalContext isn't the locale-overridden one (see LocalizedContext's doc,
+        // and SmogonTierExplanationDialog for the same fix applied a different way).
+        val warningTitle = stringResource(R.string.settings_full_detail_warning_title)
+        val warningText = stringResource(R.string.settings_full_detail_warning_text)
+        val enableLabel = stringResource(R.string.settings_full_detail_warning_enable)
+        val cancelLabel = stringResource(R.string.settings_cancel)
         AlertDialog(
             onDismissRequest = { showFullDetailWarning = false },
-            title = { Text(stringResource(R.string.settings_full_detail_warning_title)) },
-            text = { Text(stringResource(R.string.settings_full_detail_warning_text)) },
+            title = { Text(warningTitle) },
+            text = { Text(warningText) },
             confirmButton = {
                 TextButton(onClick = {
                     showFullDetailWarning = false
                     viewModel.setFullDetailEnabled(true)
-                }) { Text(stringResource(R.string.settings_full_detail_warning_enable)) }
+                }) { Text(enableLabel) }
             },
             dismissButton = {
-                TextButton(onClick = { showFullDetailWarning = false }) { Text(stringResource(R.string.settings_cancel)) }
+                TextButton(onClick = { showFullDetailWarning = false }) { Text(cancelLabel) }
             }
         )
     }
