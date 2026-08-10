@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 /** One optional download tier. [label] doubles as the "phase" shown in
  *  [PrefetchState.Running]. */
@@ -46,9 +48,11 @@ sealed interface PrefetchState {
 
 private const val PREFETCH_CONCURRENCY = 6
 
-/** Politeness delay between waves of [PREFETCH_CONCURRENCY] concurrent requests — this is a bulk
- *  download of ~1300 entries' worth of data against public APIs, not a single user-triggered fetch. */
-private const val PREFETCH_WAVE_DELAY_MILLIS = 200L
+/** Politeness pause after each unit finishes, before its slot is handed to the next queued one —
+ *  this is a bulk download of ~1300 entries' worth of data against public APIs, not a single
+ *  user-triggered fetch. Paid per-unit rather than per-wave so it slows the steady-state request
+ *  rate without reintroducing a wait for the slowest unit in a batch. */
+private const val PREFETCH_UNIT_DELAY_MILLIS = 35L
 
 /**
  * Runs the tiers in [PrefetchTier], sequentially, on its own long-lived [CoroutineScope] rather
@@ -163,10 +167,13 @@ object PrefetchManager {
 }
 
 /**
- * Runs [units] in waves of [concurrency], with a [PREFETCH_WAVE_DELAY_MILLIS] pause between waves.
- * Each unit's failure is caught and counted rather than aborting the whole run — a 404 on one
- * obscure form, or one dropped connection, shouldn't cost the other ~1300 units their result.
- * [onProgress] fires once per completed unit (success or failure alike) with the running total.
+ * Runs [units] through a [concurrency]-permit [Semaphore]: every unit is launched up front and
+ * blocks on acquiring a permit, so a slot freed by one finishing unit is immediately handed to the
+ * next queued one — unlike wave-based chunking, no unit ever waits on stragglers from an earlier
+ * batch that happened to start alongside it. Each unit's failure is caught and counted rather than
+ * aborting the whole run — a 404 on one obscure form, or one dropped connection, shouldn't cost the
+ * other ~1300 units their result. [onProgress] fires once per completed unit (success or failure
+ * alike) with the running total.
  *
  * Internal rather than private: this is the one part of the prefetch system with real unit test
  * coverage — the tier-specific wiring in [PrefetchManager.buildUnits] is manual-verification only,
@@ -179,11 +186,11 @@ internal suspend fun runPrefetchBatch(
 ): Int {
     val failed = AtomicInteger(0)
     val done = AtomicInteger(0)
-    val waves = units.chunked(concurrency)
-    waves.forEachIndexed { index, wave ->
-        coroutineScope {
-            wave.forEach { unit ->
-                launch {
+    val semaphore = Semaphore(concurrency)
+    coroutineScope {
+        units.forEach { unit ->
+            launch {
+                semaphore.withPermit {
                     try {
                         unit()
                     } catch (e: CancellationException) {
@@ -192,10 +199,10 @@ internal suspend fun runPrefetchBatch(
                         failed.incrementAndGet()
                     }
                     onProgress(done.incrementAndGet())
+                    delay(PREFETCH_UNIT_DELAY_MILLIS)
                 }
             }
         }
-        if (index < waves.lastIndex) delay(PREFETCH_WAVE_DELAY_MILLIS)
     }
     return failed.get()
 }
