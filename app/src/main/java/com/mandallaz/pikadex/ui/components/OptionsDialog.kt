@@ -24,6 +24,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.ui.LocalizedContext
+import com.mandallaz.pikadex.util.SmogonGen
+import com.mandallaz.pikadex.util.SmogonLink
+import com.mandallaz.pikadex.util.SmogonTierLabels
+
+/** issue #71 (B21) — [SmogonGen.labelRes] resolved at render time, same @StringRes-then-render
+ *  pattern as [MoveCategory]'s own `localizedLabel()` extension in `PokedexDetailScreen.kt`. */
+@Composable
+fun SmogonGen.localizedLabel(): String = stringResource(labelRes)
+
+/** Same as [SmogonGen.localizedLabel] above, for the Smogon strategy-dex chips. */
+@Composable
+fun SmogonLink.localizedLabel(): String = stringResource(labelRes)
+
+/** issue #71 (B21) — resolves a tier code to its localized label via [SmogonTierLabels.labelResFor],
+ *  falling back to the raw code for a tier this app doesn't have a label for (same fallback the old
+ *  plain-String `labelFor` had). Kept here, not in [SmogonTierLabels] itself, so that plain-Kotlin
+ *  object doesn't gain a Compose dependency just for this. */
+@Composable
+fun localizedTierLabel(tierCode: String): String =
+    SmogonTierLabels.labelResFor(tierCode)?.let { stringResource(it) } ?: tierCode
 
 /** Small picker dialog for short, fixed option lists (a handful of items) — no search field,
  * unlike [SearchableListDialog] which is for the hundreds of moves/abilities.
@@ -32,12 +52,17 @@ import com.mandallaz.pikadex.ui.LocalizedContext
  * checkmark) — previously every row looked identical whether or not it was the current choice, so
  * reopening e.g. the Sort dialog gave no hint of what was already selected. The list height caps
  * at 60% of the screen rather than a flat 420dp, which used to clip the bottom couple of entries
- * (Gen 9 in the Format dialog) on shorter devices while leaving unused space on taller ones. */
+ * (Gen 9 in the Format dialog) on shorter devices while leaving unused space on taller ones.
+ *
+ * [labelFor] is a @Composable lambda (B21) — needed so callers can resolve a @StringRes-backed
+ * label (e.g. [SmogonGen.localizedLabel]) via stringResource() from inside it, not just return an
+ * already-hardcoded String like [com.mandallaz.pikadex.util.SortStat.label]/
+ * [com.mandallaz.pikadex.util.RarityFilter.label] still do. */
 @Composable
 fun <T> OptionsDialog(
     title: String,
     options: List<T>,
-    labelFor: (T) -> String,
+    labelFor: @Composable (T) -> String,
     selected: T? = null,
     onDismiss: () -> Unit,
     onSelect: (T) -> Unit

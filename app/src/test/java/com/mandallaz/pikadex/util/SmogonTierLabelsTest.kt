@@ -1,7 +1,9 @@
 package com.mandallaz.pikadex.util
 
+import com.mandallaz.pikadex.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -33,13 +35,29 @@ class SmogonTierLabelsTest {
         assertTrue(SmogonTierLabels.isAtOrBelowCeiling("Uber", ceiling = "NotARealTier"))
     }
 
+    // issue #71 (B21) — labelFor used to return a hardcoded English String; it's now a @Composable
+    // resolving a @StringRes id via stringResource(), which a plain JVM unit test can't call (no
+    // Android Resources without Robolectric/instrumentation). These check labelResFor's id mapping
+    // instead — the same invariant, one layer earlier.
     @Test
-    fun `labelFor falls back to the raw code for an unknown tier`() {
-        assertEquals("Weird", SmogonTierLabels.labelFor("Weird"))
+    fun `labelResFor is null for an unknown tier, same fallback-to-raw-code contract as before`() {
+        assertNull(SmogonTierLabels.labelResFor("Weird"))
     }
 
     @Test
-    fun `labelFor expands a known code`() {
-        assertEquals("UnderUsed (UU)", SmogonTierLabels.labelFor("UU"))
+    fun `labelResFor resolves a known code to its resource id`() {
+        assertEquals(R.string.smogon_tier_label_uu, SmogonTierLabels.labelResFor("UU"))
+    }
+
+    @Test
+    fun `every tier code sortedTiers can return has a label`() {
+        val allCodes = listOf(
+            "AG", "Uber", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU",
+            "PUBL", "PU", "ZUBL", "ZU", "NFE", "LC", "CAP", "CAP NFE", "CAP LC"
+        )
+        assertEquals(allCodes.toSet(), SmogonTierLabels.sortedTiers(allCodes).toSet())
+        allCodes.forEach { code ->
+            assertTrue("missing label for $code", SmogonTierLabels.LABELS.containsKey(code))
+        }
     }
 }

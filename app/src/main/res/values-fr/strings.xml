@@ -94,6 +94,39 @@
     <string name="smogon_tier_community_voting_heading">Vote communautaire</string>
     <string name="smogon_tier_community_voting_body">Les Suspect Tests exigent des joueurs qu\'ils atteignent une cote de compétence élevée (GXE) sur un compte ladder récent pour obtenir le droit de vote.</string>
 
+    <!-- B21 — Smogon generation and tier-code picker labels. Deliberately identical to the
+         default English resources in every locale: both the generation game titles and the tier
+         acronyms are kept in English everywhere already (see smogon_tier_primary_tiers_body above,
+         unchanged across locales), matching Smogon's own international jargon convention. -->
+    <string name="smogon_gen_1_label">Gen 1 · Red/Blue</string>
+    <string name="smogon_gen_2_label">Gen 2 · Gold/Silver</string>
+    <string name="smogon_gen_3_label">Gen 3 · Ruby/Sapphire</string>
+    <string name="smogon_gen_4_label">Gen 4 · Diamond/Pearl</string>
+    <string name="smogon_gen_5_label">Gen 5 · Black/White</string>
+    <string name="smogon_gen_6_label">Gen 6 · X/Y</string>
+    <string name="smogon_gen_7_label">Gen 7 · Sun/Moon</string>
+    <string name="smogon_gen_8_label">Gen 8 · Sword/Shield</string>
+    <string name="smogon_gen_9_label">Gen 9 · Scarlet/Violet</string>
+
+    <string name="smogon_tier_label_ag">Anything Goes (AG)</string>
+    <string name="smogon_tier_label_uber">Uber</string>
+    <string name="smogon_tier_label_ou">OverUsed (OU)</string>
+    <string name="smogon_tier_label_uubl">UU Borderline (UUBL)</string>
+    <string name="smogon_tier_label_uu">UnderUsed (UU)</string>
+    <string name="smogon_tier_label_rubl">RU Borderline (RUBL)</string>
+    <string name="smogon_tier_label_ru">RarelyUsed (RU)</string>
+    <string name="smogon_tier_label_nubl">NU Borderline (NUBL)</string>
+    <string name="smogon_tier_label_nu">NeverUsed (NU)</string>
+    <string name="smogon_tier_label_publ">PU Borderline (PUBL)</string>
+    <string name="smogon_tier_label_pu">Practically Useless (PU)</string>
+    <string name="smogon_tier_label_zubl">ZU Borderline (ZUBL)</string>
+    <string name="smogon_tier_label_zu">ZeroUsed (ZU)</string>
+    <string name="smogon_tier_label_nfe">Not Fully Evolved (NFE)</string>
+    <string name="smogon_tier_label_lc">Little Cup (LC)</string>
+    <string name="smogon_tier_label_cap">CAP</string>
+    <string name="smogon_tier_label_cap_nfe">CAP – Not Fully Evolved</string>
+    <string name="smogon_tier_label_cap_lc">CAP – Little Cup</string>
+
     <!-- Detail screen (B11) -->
     <string name="detail_back">Retour</string>
     <string name="detail_remove_from_team">Retirer de l\'équipe</string>

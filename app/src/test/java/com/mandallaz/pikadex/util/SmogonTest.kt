@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.util
 
+import com.mandallaz.pikadex.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -97,11 +98,15 @@ class SmogonTest {
         assertEquals(9, codesFor("some-future-mon", speciesGeneration = "generation-x").size)
     }
 
+    // issue #71 (B21) — label used to be a bare String, checkable by content; it's now a @StringRes
+    // id (resolved at render time via stringResource(), which needs a Composable/Android Resources
+    // a plain JVM unit test doesn't have), so this checks the id matches the expected resource
+    // instead of the rendered text.
     @Test
-    fun `labels are human readable, not bare dex codes`() {
-        val labels = Smogon.linksFor("bulbasaur", "generation-i").map { it.label }
-        assertTrue(labels.first().contains("Scarlet/Violet"))
-        assertTrue(labels.last().contains("Red/Blue"))
+    fun `labels resolve to the human-readable resource, not a bare dex code`() {
+        val labelResIds = Smogon.linksFor("bulbasaur", "generation-i").map { it.labelRes }
+        assertEquals(R.string.smogon_gen_9_label, labelResIds.first())
+        assertEquals(R.string.smogon_gen_1_label, labelResIds.last())
     }
 
     @Test

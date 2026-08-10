@@ -78,9 +78,10 @@ import com.mandallaz.pikadex.ui.components.OptionsDialog
 import com.mandallaz.pikadex.ui.components.PokemonCard
 import com.mandallaz.pikadex.ui.components.SearchableListDialog
 import com.mandallaz.pikadex.ui.components.TypeBadge
+import com.mandallaz.pikadex.ui.components.localizedLabel
+import com.mandallaz.pikadex.ui.components.localizedTierLabel
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
-import com.mandallaz.pikadex.util.SmogonTierLabels
 import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.Sprites
@@ -485,7 +486,7 @@ fun PokedexListScreen(
             OptionsDialog(
                 title = stringResource(R.string.list_choose_generation_title),
                 options = listOf<SmogonGen?>(null) + Smogon.ALL_GENERATIONS,
-                labelFor = { it?.label ?: anyFormat },
+                labelFor = { it?.localizedLabel() ?: anyFormat },
                 selected = uiState.selectedFormatGen,
                 onDismiss = { activeDialog = ActiveDialog.NONE },
                 onSelect = { gen ->
@@ -498,9 +499,9 @@ fun PokedexListScreen(
         ActiveDialog.FORMAT_TIER -> {
             val anyTier = stringResource(R.string.list_any_tier)
             OptionsDialog(
-                title = stringResource(R.string.list_choose_tier_title, uiState.effectiveFormatGen.label),
+                title = stringResource(R.string.list_choose_tier_title, uiState.effectiveFormatGen.localizedLabel()),
                 options = listOf<String?>(null) + uiState.formatTierOptions,
-                labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: anyTier },
+                labelFor = { it?.let { tier -> localizedTierLabel(tier) } ?: anyTier },
                 selected = uiState.selectedFormatTier,
                 onDismiss = { activeDialog = ActiveDialog.NONE },
                 onSelect = { tier ->
@@ -630,12 +631,12 @@ private fun FilterSheetContent(
                 onClick = onOpenAbility
             )
             SelectableChip(
-                label = uiState.selectedFormatGen?.label ?: stringResource(R.string.list_format_label),
+                label = uiState.selectedFormatGen?.localizedLabel() ?: stringResource(R.string.list_format_label),
                 selected = uiState.selectedFormatGen != null,
                 onClick = onOpenFormat
             )
             SelectableChip(
-                label = uiState.selectedFormatTier?.let { SmogonTierLabels.labelFor(it) } ?: stringResource(R.string.list_tier_label),
+                label = uiState.selectedFormatTier?.let { localizedTierLabel(it) } ?: stringResource(R.string.list_tier_label),
                 selected = uiState.selectedFormatTier != null,
                 onClick = onOpenTier
             )

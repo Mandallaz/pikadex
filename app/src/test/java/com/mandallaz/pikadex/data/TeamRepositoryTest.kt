@@ -26,4 +26,21 @@ class TeamRepositoryTest {
         val team = listOf(idlessResource("a"), idlessResource("b"))
         assertEquals(emptyList<NamedApiResource>(), persistableMembers(team))
     }
+
+    // issue #71 (B21) — confirmed live during B14's French testing: after creating the first team
+    // on a fresh install, the Team screen's title bar read "My Team" in French mode, because the
+    // hardcoded English literal was what got persisted at first-run migration. resolveStoredTeamName
+    // is the fix's core: the persisted sentinel now maps to null, letting the UI resolve a localized
+    // default instead — this test is the regression guard for that mapping.
+    @Test
+    fun `an unset team name resolves to null, not the old hardcoded English literal`() {
+        assertEquals(null, resolveStoredTeamName(""))
+        assertEquals(null, resolveStoredTeamName(null))
+    }
+
+    @Test
+    fun `an existing custom team name (including one already stored as the old literal) passes through unchanged`() {
+        assertEquals("My Team", resolveStoredTeamName("My Team"))
+        assertEquals("Ash's Squad", resolveStoredTeamName("Ash's Squad"))
+    }
 }

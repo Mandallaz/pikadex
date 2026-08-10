@@ -43,7 +43,7 @@ import com.mandallaz.pikadex.data.PrefetchState
 import com.mandallaz.pikadex.data.SupportedLanguages
 import com.mandallaz.pikadex.ui.components.OptionsDialog
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
-import com.mandallaz.pikadex.util.SmogonTierLabels
+import com.mandallaz.pikadex.ui.components.localizedTierLabel
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -249,7 +249,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             ) {
                 Text(stringResource(R.string.settings_tier_limit_label), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 Text(
-                    uiState.maxSuggestionTier?.let { SmogonTierLabels.labelFor(it) } ?: stringResource(R.string.settings_tier_limit_none),
+                    uiState.maxSuggestionTier?.let { localizedTierLabel(it) } ?: stringResource(R.string.settings_tier_limit_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -261,7 +261,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         OptionsDialog(
             title = stringResource(R.string.settings_language_section),
             options = SupportedLanguages.ALL,
-            labelFor = AppLanguage::label,
+            labelFor = { it.label },
             selected = uiState.currentLanguage,
             onDismiss = { showLanguageDialog = false },
             onSelect = { language ->
@@ -276,7 +276,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         OptionsDialog(
             title = stringResource(R.string.settings_tier_limit_dialog_title),
             options = listOf<String?>(null) + uiState.suggestionTierOptions,
-            labelFor = { it?.let { tier -> SmogonTierLabels.labelFor(tier) } ?: noLimitLabel },
+            labelFor = { it?.let { tier -> localizedTierLabel(tier) } ?: noLimitLabel },
             selected = uiState.maxSuggestionTier,
             onDismiss = { showTierDialog = false },
             onSelect = { tier ->

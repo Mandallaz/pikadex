@@ -64,7 +64,7 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
-import com.mandallaz.pikadex.util.SmogonTierLabels
+import com.mandallaz.pikadex.ui.components.localizedTierLabel
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.isCompactMatrixLayout
 import com.mandallaz.pikadex.util.TeamSuggestion
@@ -590,7 +590,7 @@ private fun SuggestionsCard(
             // visible cause.
             if (tierCeiling != null) {
                 Text(
-                    stringResource(R.string.team_suggestions_tier_limited, SmogonTierLabels.labelFor(tierCeiling)),
+                    stringResource(R.string.team_suggestions_tier_limited, localizedTierLabel(tierCeiling)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)

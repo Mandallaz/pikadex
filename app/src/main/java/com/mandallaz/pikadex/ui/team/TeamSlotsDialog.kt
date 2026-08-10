@@ -35,6 +35,11 @@ import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.TeamSlot
 
+/** issue #71 (B21) — [TeamSlot.name] is null for a slot that's never been explicitly (re)named;
+ *  resolves that to the localized default here, at the one place every row in this dialog reads it. */
+@Composable
+private fun TeamSlot.displayName(): String = name ?: stringResource(R.string.team_default_name)
+
 /** Lets the user switch between, create, rename, or delete their named teams — reached by tapping
  *  the team name in [TeamScreen]'s top bar. A plain [AlertDialog] with a scrolling list rather than
  *  a full-screen picker (unlike [PresetTeamDialog]): the trainer-team list is ~80 entries with a
@@ -67,8 +72,9 @@ fun TeamSlotsDialog(
         text = {
             LazyColumn {
                 items(teams, key = { it.id }) { slot ->
-                    val renameCd = stringResource(R.string.teamslots_rename_cd, slot.name)
-                    val deleteCd = stringResource(R.string.teamslots_delete_cd, slot.name)
+                    val displayName = slot.displayName()
+                    val renameCd = stringResource(R.string.teamslots_rename_cd, displayName)
+                    val deleteCd = stringResource(R.string.teamslots_delete_cd, displayName)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -91,7 +97,7 @@ fun TeamSlotsDialog(
                         }
                         Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(
-                                slot.name,
+                                displayName,
                                 fontWeight = if (slot.id == activeTeamId) FontWeight.Bold else FontWeight.Normal
                             )
                             Text(
@@ -127,7 +133,7 @@ fun TeamSlotsDialog(
 
     renaming?.let { slot ->
         RenameTeamDialog(
-            initialName = slot.name,
+            initialName = slot.displayName(),
             onDismiss = { renaming = null },
             onConfirm = { newName ->
                 onRename(slot.id, newName)
@@ -137,7 +143,7 @@ fun TeamSlotsDialog(
     }
 
     pendingDelete?.let { slot ->
-        val deleteTitle = stringResource(R.string.teamslots_delete_confirm_title, slot.name)
+        val deleteTitle = stringResource(R.string.teamslots_delete_confirm_title, slot.displayName())
         val deleteBody = stringResource(R.string.teamslots_delete_confirm_body, slot.size)
         val deleteLabel = stringResource(R.string.teamslots_delete)
         val cancelLabel = stringResource(R.string.teamslots_cancel)

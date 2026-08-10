@@ -1,8 +1,11 @@
 package com.mandallaz.pikadex.util
 
-data class SmogonGen(val code: String, val label: String)
+import androidx.annotation.StringRes
+import com.mandallaz.pikadex.R
 
-data class SmogonLink(val code: String, val label: String, val url: String)
+data class SmogonGen(val code: String, @param:StringRes val labelRes: Int)
+
+data class SmogonLink(val code: String, @param:StringRes val labelRes: Int, val url: String)
 
 /**
  * Builds links to Smogon's strategy dex (smogon.com/dex/{gen}/pokemon/{name}/) for a pokemon, and
@@ -19,15 +22,15 @@ object Smogon {
     // Oldest to newest. speciesGeneration (PokeAPI) -> Smogon generation code + a clear label,
     // since the bare 2-letter dex codes (rb, ss, sv...) aren't self-explanatory.
     private val GENERATIONS = listOf(
-        "generation-i" to SmogonGen("rb", "Gen 1 · Red/Blue"),
-        "generation-ii" to SmogonGen("gs", "Gen 2 · Gold/Silver"),
-        "generation-iii" to SmogonGen("rs", "Gen 3 · Ruby/Sapphire"),
-        "generation-iv" to SmogonGen("dp", "Gen 4 · Diamond/Pearl"),
-        "generation-v" to SmogonGen("bw", "Gen 5 · Black/White"),
-        "generation-vi" to SmogonGen("xy", "Gen 6 · X/Y"),
-        "generation-vii" to SmogonGen("sm", "Gen 7 · Sun/Moon"),
-        "generation-viii" to SmogonGen("ss", "Gen 8 · Sword/Shield"),
-        "generation-ix" to SmogonGen("sv", "Gen 9 · Scarlet/Violet")
+        "generation-i" to SmogonGen("rb", R.string.smogon_gen_1_label),
+        "generation-ii" to SmogonGen("gs", R.string.smogon_gen_2_label),
+        "generation-iii" to SmogonGen("rs", R.string.smogon_gen_3_label),
+        "generation-iv" to SmogonGen("dp", R.string.smogon_gen_4_label),
+        "generation-v" to SmogonGen("bw", R.string.smogon_gen_5_label),
+        "generation-vi" to SmogonGen("xy", R.string.smogon_gen_6_label),
+        "generation-vii" to SmogonGen("sm", R.string.smogon_gen_7_label),
+        "generation-viii" to SmogonGen("ss", R.string.smogon_gen_8_label),
+        "generation-ix" to SmogonGen("sv", R.string.smogon_gen_9_label)
     )
 
     /** Oldest to newest. */
@@ -108,7 +111,7 @@ object Smogon {
         if (startIndex > endIndex) return emptyList()
 
         return GENERATIONS.subList(startIndex, endIndex + 1)
-            .map { (_, gen) -> SmogonLink(gen.code, gen.label, "https://www.smogon.com/dex/${gen.code}/pokemon/$pokemonName/") }
+            .map { (_, gen) -> SmogonLink(gen.code, gen.labelRes, "https://www.smogon.com/dex/${gen.code}/pokemon/$pokemonName/") }
             .reversed()
     }
 }

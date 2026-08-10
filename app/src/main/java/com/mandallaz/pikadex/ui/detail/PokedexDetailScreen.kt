@@ -96,6 +96,7 @@ import com.mandallaz.pikadex.ui.components.PokemonArtwork
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.SearchableListDialog
 import com.mandallaz.pikadex.ui.components.StatBar
+import com.mandallaz.pikadex.ui.components.localizedLabel
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.Smogon
@@ -1152,7 +1153,7 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, form
                 links.forEach { link ->
                     AssistChip(
                         onClick = { context.openExternalLink(link.url) },
-                        label = { Text(link.label, style = MaterialTheme.typography.labelMedium) },
+                        label = { Text(link.localizedLabel(), style = MaterialTheme.typography.labelMedium) },
                         trailingIcon = {
                             Icon(
                                 Icons.AutoMirrored.Filled.OpenInNew,

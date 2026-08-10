@@ -15,14 +15,19 @@ import kotlinx.coroutines.flow.asStateFlow
 /** One named team slot's metadata — not its members, which live in [TeamRepository.team] only for
  *  the *active* slot (every other slot's roster is read from storage on demand, e.g. when
  *  switching to it). [size] is shown in the slot picker without needing to switch to a team just
- *  to see how full it is. */
-data class TeamSlot(val id: Int, val name: String, val size: Int)
+ *  to see how full it is.
+ *
+ *  issue #71 (B21) — [name] is null for a slot that's never been explicitly (re)named: the UI
+ *  resolves that to a localized default (`R.string.team_default_name`) at render time, rather than
+ *  this data layer persisting a hardcoded English literal that never went through stringResource(). */
+data class TeamSlot(val id: Int, val name: String?, val size: Int)
 
 /**
  * One or more named rosters of up to [MAX_SIZE] pokemon, persisted across app restarts. Originally
  * a single unnamed roster (a single "members" key) — multiple teams were added on top of that
- * without disturbing it: the legacy key is migrated into slot 1 ("My Team") on first run under the
- * new scheme and then left alone (never deleted, in case something ever needs to fall back to it).
+ * without disturbing it: the legacy key is migrated into slot 1 (unnamed — see [UNNAMED_SENTINEL])
+ * on first run under the new scheme and then left alone (never deleted, in case something ever
+ * needs to fall back to it).
  *
  * [team]/[isFull]/[contains]/[add]/[remove]/[replaceAll]/[toggle] all still operate on the *active*
  * team specifically, unchanged in meaning from before multiple teams existed — every existing
@@ -41,8 +46,14 @@ object TeamRepository {
     private const val KEY_NEXT_TEAM_ID = "next_team_id"
     private const val PREFIX_TEAM_NAME = "team_name_"
     private const val PREFIX_MEMBERS = "members_"
-    private const val DEFAULT_TEAM_NAME = "My Team"
-    private const val NEW_TEAM_NAME = "New Team"
+
+    /** issue #71 (B21) — persisted in place of a hardcoded English name for a slot that's never
+     *  been explicitly (re)named, so the UI can resolve a localized default instead. Not renaming
+     *  the stored value for existing users (who may already have "My Team" persisted from before
+     *  this fix) — [resolveStoredTeamName] only treats *this exact* sentinel as "unnamed"; an
+     *  existing "My Team" string keeps displaying as-is, same as any other custom name. Blank is
+     *  safe as the sentinel: [renameTeam] and [createTeam] already refuse to persist a blank name. */
+    private const val UNNAMED_SENTINEL = ""
 
     private var prefs: SharedPreferences? = null
 
@@ -64,12 +75,12 @@ object TeamRepository {
 
     /** Runs exactly once, the first time this app version's storage scheme is read — detected by
      *  the absence of [KEY_TEAM_IDS], which every install under the new scheme always has. The
-     *  legacy `members` key (if any; a fresh install has none) becomes slot 1, "My Team". */
+     *  legacy `members` key (if any; a fresh install has none) becomes slot 1, unnamed. */
     private fun migrateLegacySingleTeamIfNeeded(p: SharedPreferences) {
         if (p.contains(KEY_TEAM_IDS)) return
         p.edit {
             putString(KEY_TEAM_IDS, encodeTeamIds(listOf(1)))
-            putString(PREFIX_TEAM_NAME + 1, DEFAULT_TEAM_NAME)
+            putString(PREFIX_TEAM_NAME + 1, UNNAMED_SENTINEL)
             putString(PREFIX_MEMBERS + 1, p.getString(KEY_MEMBERS_LEGACY, null) ?: "")
             putInt(KEY_ACTIVE_TEAM_ID, 1)
             putInt(KEY_NEXT_TEAM_ID, 2)
@@ -85,7 +96,7 @@ object TeamRepository {
         _team.value = decodeMembers(p.getString(PREFIX_MEMBERS + active, null))
     }
 
-    private fun teamName(p: SharedPreferences, id: Int): String = p.getString(PREFIX_TEAM_NAME + id, null) ?: DEFAULT_TEAM_NAME
+    private fun teamName(p: SharedPreferences, id: Int): String? = resolveStoredTeamName(p.getString(PREFIX_TEAM_NAME + id, null))
 
     private fun persistActiveTeam() {
         val p = prefs ?: return
@@ -145,17 +156,18 @@ object TeamRepository {
     /** Creates a new, empty team slot and returns its id — [setActiveTeam] it explicitly if it
      *  should become the one being edited; creating one doesn't switch to it on its own, since a
      *  caller might want to e.g. populate it with a preset before ever showing it as active. */
-    fun createTeam(name: String = NEW_TEAM_NAME): Int {
+    fun createTeam(name: String = UNNAMED_SENTINEL): Int {
         val p = prefs ?: return _activeTeamId.value
         val id = p.getInt(KEY_NEXT_TEAM_ID, 2)
         val ids = decodeTeamIds(p.getString(KEY_TEAM_IDS, null)).ifEmpty { listOf(1) } + id
+        val storedName = name.ifBlank { UNNAMED_SENTINEL }
         p.edit {
             putString(KEY_TEAM_IDS, encodeTeamIds(ids))
-            putString(PREFIX_TEAM_NAME + id, name.ifBlank { NEW_TEAM_NAME })
+            putString(PREFIX_TEAM_NAME + id, storedName)
             putString(PREFIX_MEMBERS + id, "")
             putInt(KEY_NEXT_TEAM_ID, id + 1)
         }
-        _teams.value = _teams.value + TeamSlot(id, name.ifBlank { NEW_TEAM_NAME }, 0)
+        _teams.value = _teams.value + TeamSlot(id, resolveStoredTeamName(storedName), 0)
         return id
     }
 
@@ -200,3 +212,10 @@ object TeamRepository {
  *  so it's testable without a real Context/SharedPreferences. */
 internal fun persistableMembers(team: List<NamedApiResource>): List<NamedApiResource> =
     team.filter { it.id != null }
+
+/** issue #71 (B21) — maps the stored team-name string to what [TeamSlot.name] should actually be:
+ *  null (i.e. "not customized, let the UI show a localized default") for a missing key or the
+ *  empty-string sentinel, the stored value verbatim otherwise. A free function, not private logic
+ *  inline in [TeamRepository.teamName]/[TeamRepository.createTeam], so it's testable without a real
+ *  Context/SharedPreferences — same reasoning as [persistableMembers] above. */
+internal fun resolveStoredTeamName(stored: String?): String? = stored?.takeIf { it.isNotEmpty() }
