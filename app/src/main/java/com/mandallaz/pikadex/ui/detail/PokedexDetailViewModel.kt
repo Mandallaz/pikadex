@@ -137,7 +137,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             val cachedFile = withContext(Dispatchers.IO) { CryCache.file(context, id) }
             val source = resolveCrySource(cachedFile, id)
-            cryPlayer.play(source.primary, source.fallback)
+            cryPlayer.play(context, source.primary, source.fallback)
         }
     }
 
