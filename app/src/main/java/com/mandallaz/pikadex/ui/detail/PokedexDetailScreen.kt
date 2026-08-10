@@ -76,11 +76,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
@@ -157,6 +159,9 @@ fun PokedexDetailScreen(
     // surprising default for every visit, not just something a user opts into.
     var animated by rememberSaveable { mutableStateOf(false) }
     var showCompareDialog by rememberSaveable { mutableStateOf(false) }
+    // Resolved here, in the composable body, not inside the snackbar's coroutineScope.launch{}
+    // lambda below — stringResource() is a @Composable function and that lambda isn't one.
+    val teamFullMessage = stringResource(R.string.detail_team_full_snackbar, TeamRepository.MAX_SIZE, TeamRepository.MAX_SIZE)
 
     LaunchedEffect(pokemonNameOrId) { viewModel.load(pokemonNameOrId) }
 
@@ -187,7 +192,7 @@ fun PokedexDetailScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.detail_back))
                     }
                 },
                 actions = {
@@ -202,16 +207,18 @@ fun PokedexDetailScreen(
                                 // was actually rejected — see TeamRepository.ToggleResult.
                                 if (viewModel.toggleTeamMembership() == TeamRepository.ToggleResult.RejectedTeamFull) {
                                     coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            "Your team is full (${TeamRepository.MAX_SIZE}/${TeamRepository.MAX_SIZE}). Remove one first."
-                                        )
+                                        snackbarHostState.showSnackbar(teamFullMessage)
                                     }
                                 }
                             }
                         ) {
                             Icon(
                                 imageVector = if (isInTeam) Icons.Filled.Groups else Icons.Filled.GroupAdd,
-                                contentDescription = if (isInTeam) "Remove from team" else "Add to team",
+                                contentDescription = if (isInTeam) {
+                                    stringResource(R.string.detail_remove_from_team)
+                                } else {
+                                    stringResource(R.string.detail_add_to_team)
+                                },
                                 tint = if (!isInTeam && isTeamFull) {
                                     LocalContentColor.current.copy(alpha = 0.38f)
                                 } else {
@@ -222,7 +229,11 @@ fun PokedexDetailScreen(
                         IconButton(onClick = { viewModel.toggleFavorite() }) {
                             Icon(
                                 imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites"
+                                contentDescription = if (isFavorite) {
+                                    stringResource(R.string.detail_remove_from_favorites)
+                                } else {
+                                    stringResource(R.string.detail_add_to_favorites)
+                                }
                             )
                         }
                         IconButton(
@@ -231,7 +242,7 @@ fun PokedexDetailScreen(
                                 showCompareDialog = true
                             }
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = "Compare with…")
+                            Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = stringResource(R.string.detail_compare_with))
                         }
                     }
                 }
@@ -279,7 +290,11 @@ fun PokedexDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = uiState.errorMessage ?: "Pokémon not found.",
+                        // uiState.errorMessage itself is a ViewModel-level network-error string
+                        // (e.g. "Couldn't load this Pokémon..."), same English-only boundary as
+                        // every other ViewModel's error messages across the app today — only the
+                        // "not found" fallback below is UI chrome.
+                        text = uiState.errorMessage ?: stringResource(R.string.detail_not_found),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
@@ -290,7 +305,7 @@ fun PokedexDetailScreen(
                     // and re-entered the screen.
                     if (uiState.errorMessage != null) {
                         Spacer(modifier = Modifier.size(16.dp))
-                        Button(onClick = { viewModel.load(pokemonNameOrId) }) { Text("Retry") }
+                        Button(onClick = { viewModel.load(pokemonNameOrId) }) { Text(stringResource(R.string.detail_retry)) }
                     }
                 }
                 else -> DetailContent(
@@ -319,7 +334,9 @@ fun PokedexDetailScreen(
                     teamImpact = uiState.teamImpact,
                     onPokemonClick = onPokemonClick,
                     onViewTypeTriangles = onViewTypeTriangles,
-                    speciesNames = uiState.speciesNames
+                    speciesNames = uiState.speciesNames,
+                    moveLocalizedNames = uiState.moveLocalizedNames,
+                    abilityLocalizedNames = uiState.abilityLocalizedNames
                 )
             }
 
@@ -343,7 +360,7 @@ fun PokedexDetailScreen(
                     shadowElevation = 3.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous Pokémon")
+                        Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.detail_previous_pokemon))
                     }
                 }
             }
@@ -357,7 +374,7 @@ fun PokedexDetailScreen(
                     shadowElevation = 3.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.ChevronRight, contentDescription = "Next Pokémon")
+                        Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.detail_next_pokemon))
                     }
                 }
             }
@@ -367,7 +384,7 @@ fun PokedexDetailScreen(
     val currentPokemon = uiState.pokemon
     if (showCompareDialog && currentPokemon != null) {
         SearchableListDialog(
-            title = "Compare with…",
+            title = stringResource(R.string.detail_compare_with),
             options = uiState.compareCandidates.filterNot { it == currentPokemon.name },
             onDismiss = { showCompareDialog = false },
             onSelect = { name ->
@@ -445,7 +462,10 @@ internal fun DetailContent(
     // B9 — defaulted so existing instrumented-test call sites (rendering this directly with fake
     // DTOs, no ViewModel) keep compiling unchanged; real usage always passes the ViewModel's
     // uiState.speciesNames.
-    speciesNames: Map<String, Map<String, String>> = emptyMap()
+    speciesNames: Map<String, Map<String, String>> = emptyMap(),
+    // B11 — same defaulting reasoning as speciesNames above.
+    moveLocalizedNames: Map<String, Map<String, String>> = emptyMap(),
+    abilityLocalizedNames: Map<String, Map<String, String>> = emptyMap()
 ) {
     val primaryType = pokemon.types.orEmpty().minByOrNull { it.slot }?.type?.name ?: "normal"
     val primaryColor = TypeColors.of(primaryType)
@@ -492,14 +512,22 @@ internal fun DetailContent(
                     IconButton(onClick = onToggleShiny) {
                         Icon(
                             imageVector = Icons.Filled.AutoAwesome,
-                            contentDescription = if (shiny) "Show normal coloring" else "Show shiny coloring",
+                            contentDescription = if (shiny) {
+                                stringResource(R.string.detail_show_normal_coloring)
+                            } else {
+                                stringResource(R.string.detail_show_shiny_coloring)
+                            },
                             tint = if (shiny) MaterialTheme.colorScheme.primary else LocalContentColor.current
                         )
                     }
                     IconButton(onClick = onToggleAnimated) {
                         Icon(
                             imageVector = Icons.Filled.Animation,
-                            contentDescription = if (animated) "Show static artwork" else "Show animated battle sprite",
+                            contentDescription = if (animated) {
+                                stringResource(R.string.detail_show_static_artwork)
+                            } else {
+                                stringResource(R.string.detail_show_animated_sprite)
+                            },
                             tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
                         )
                     }
@@ -509,7 +537,7 @@ internal fun DetailContent(
                     IconButton(onClick = onPlayCry, enabled = !isCryPlaying) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = "Play cry",
+                            contentDescription = stringResource(R.string.detail_play_cry),
                             tint = if (isCryPlaying) {
                                 LocalContentColor.current.copy(alpha = 0.38f)
                             } else {
@@ -549,10 +577,10 @@ internal fun DetailContent(
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
                         if (species.isLegendary) {
-                            AssistChip(onClick = {}, label = { Text("Legendary") })
+                            AssistChip(onClick = {}, label = { Text(stringResource(R.string.detail_legendary)) })
                         }
                         if (species.isMythical) {
-                            AssistChip(onClick = {}, label = { Text("Mythical") })
+                            AssistChip(onClick = {}, label = { Text(stringResource(R.string.detail_mythical)) })
                         }
                     }
                 }
@@ -588,18 +616,19 @@ internal fun DetailContent(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Height", style = MaterialTheme.typography.labelLarge)
-                    Text("${pokemon.height / 10.0} m")
+                    Text(stringResource(R.string.detail_height), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.detail_height_value, "${pokemon.height / 10.0}"))
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Weight", style = MaterialTheme.typography.labelLarge)
-                    Text("${pokemon.weight / 10.0} kg")
+                    Text(stringResource(R.string.detail_weight), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.detail_weight_value, "${pokemon.weight / 10.0}"))
                 }
                 val eggGroups = species.eggGroups.orEmpty()
                 if (eggGroups.isNotEmpty()) {
+                    val undiscoveredLabel = stringResource(R.string.detail_egg_group_undiscovered)
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Egg Groups", style = MaterialTheme.typography.labelLarge)
-                        Text(eggGroups.joinToString(", ") { eggGroupDisplayName(it.name) })
+                        Text(stringResource(R.string.detail_egg_groups), style = MaterialTheme.typography.labelLarge)
+                        Text(eggGroups.joinToString(", ") { eggGroupDisplayName(it.name, undiscoveredLabel) })
                     }
                 }
             }
@@ -609,12 +638,12 @@ internal fun DetailContent(
             Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Base Stats",
+                        stringResource(R.string.detail_base_stats_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        "Bar length scaled to ${com.mandallaz.pikadex.ui.components.STAT_BAR_SCALE_MAX.toInt()} · color ranks this stat against every other Pokémon",
+                        stringResource(R.string.detail_base_stats_subtitle, com.mandallaz.pikadex.ui.components.STAT_BAR_SCALE_MAX.toInt()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -625,7 +654,7 @@ internal fun DetailContent(
                     }
                     val total = pokemon.stats.orEmpty().sumOf { it.baseStat }
                     Text(
-                        "Total: $total",
+                        stringResource(R.string.detail_stat_total, total),
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -635,7 +664,7 @@ internal fun DetailContent(
                     // then thrown away.
                     statPercentiles["total"]?.let { percentile ->
                         Text(
-                            "Stronger than ${(percentile * 100).roundToInt()}% of all Pokémon",
+                            stringResource(R.string.detail_stronger_than, (percentile * 100).roundToInt()),
                             style = MaterialTheme.typography.bodySmall,
                             // Deliberately not StatColors.forPercentile: those hues are tuned to be
                             // read as a filled bar against the surface, and are nowhere near enough
@@ -654,15 +683,17 @@ internal fun DetailContent(
             Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Abilities",
+                        stringResource(R.string.detail_abilities_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
+                    val hiddenSuffix = stringResource(R.string.detail_ability_hidden_suffix)
                     pokemon.abilities.orEmpty().sortedBy { it.slot }.forEach { slot ->
                         Column(modifier = Modifier.padding(vertical = 4.dp)) {
                             Text(
-                                text = slot.ability.name.toDisplayName() + if (slot.isHidden) " (hidden)" else "",
+                                text = slot.ability.name.localizedDisplayName(abilityLocalizedNames, gameDataLanguage) +
+                                    if (slot.isHidden) " $hiddenSuffix" else "",
                                 fontWeight = FontWeight.Medium
                             )
                             abilityDescriptions[slot.ability.name]?.let { description ->
@@ -695,7 +726,7 @@ internal fun DetailContent(
                 Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Evolution",
+                            stringResource(R.string.detail_evolution_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -705,7 +736,7 @@ internal fun DetailContent(
                         }
                         if (paths.all { it.size <= 1 }) {
                             Text(
-                                "This Pokémon does not evolve.",
+                                stringResource(R.string.detail_no_evolution),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -748,7 +779,7 @@ internal fun DetailContent(
                         if (otherForms.isNotEmpty()) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                             Text(
-                                "Other Forms",
+                                stringResource(R.string.detail_other_forms_title),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -759,7 +790,7 @@ internal fun DetailContent(
                             // field for), so this only confirms the form exists rather than
                             // guessing or fabricating an acquisition method.
                             Text(
-                                "Alternate forms of this species, not covered by the evolution steps above.",
+                                stringResource(R.string.detail_other_forms_subtitle),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 4.dp)
@@ -809,19 +840,23 @@ internal fun DetailContent(
 
         moveSection(
             MoveCategory.LEVEL_UP, levelUpMoves, moveInfo,
-            expanded = MoveCategory.LEVEL_UP in expandedCategories
+            expanded = MoveCategory.LEVEL_UP in expandedCategories,
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
         ) { toggle(MoveCategory.LEVEL_UP) }
         moveSection(
             MoveCategory.MACHINE, machineMoves, moveInfo,
-            expanded = MoveCategory.MACHINE in expandedCategories
+            expanded = MoveCategory.MACHINE in expandedCategories,
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
         ) { toggle(MoveCategory.MACHINE) }
         moveSection(
             MoveCategory.EGG, eggMoves, moveInfo,
-            expanded = MoveCategory.EGG in expandedCategories
+            expanded = MoveCategory.EGG in expandedCategories,
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
         ) { toggle(MoveCategory.EGG) }
         moveSection(
             MoveCategory.TUTOR, tutorMoves, moveInfo,
-            expanded = MoveCategory.TUTOR in expandedCategories
+            expanded = MoveCategory.TUTOR in expandedCategories,
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
         ) { toggle(MoveCategory.TUTOR) }
 
         item { Spacer(modifier = Modifier.size(24.dp)) }
@@ -907,13 +942,17 @@ private fun TeamImpactCard(
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Team Coverage Impact",
+                stringResource(R.string.detail_team_impact_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
-                if (hasNoImpact) "Nothing." else "What adding this Pokémon to your active team would change.",
+                if (hasNoImpact) {
+                    stringResource(R.string.detail_team_impact_nothing)
+                } else {
+                    stringResource(R.string.detail_team_impact_subtitle)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -942,17 +981,17 @@ private fun TeamImpactCard(
 private fun TeamImpactSummaryText(impact: TeamImpactSummary) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ImpactSection(
-            "Defensively",
-            "Fixes these shared weaknesses:" to impact.weaknessesFixed,
-            "Introduces these shared weaknesses:" to impact.weaknessesIntroduced,
-            "Adds an immunity to:" to impact.immunitiesGained,
-            "Adds a resistance to:" to impact.resistancesGained,
-            "Adds a severe (×4) weakness to:" to impact.quadWeaknessesGained
+            stringResource(R.string.detail_defensively),
+            stringResource(R.string.detail_fixes_weaknesses) to impact.weaknessesFixed,
+            stringResource(R.string.detail_introduces_weaknesses) to impact.weaknessesIntroduced,
+            stringResource(R.string.detail_adds_immunity) to impact.immunitiesGained,
+            stringResource(R.string.detail_adds_resistance) to impact.resistancesGained,
+            stringResource(R.string.detail_adds_quad_weakness) to impact.quadWeaknessesGained
         )
         ImpactSection(
-            "Offensively",
-            "Closes these coverage gaps:" to impact.gapsClosed,
-            "Opens these coverage gaps:" to impact.gapsOpened
+            stringResource(R.string.detail_offensively),
+            stringResource(R.string.detail_closes_gaps) to impact.gapsClosed,
+            stringResource(R.string.detail_opens_gaps) to impact.gapsOpened
         )
     }
 }
@@ -992,7 +1031,7 @@ private fun TypeMatchupsCard(typeMatchups: Map<String, Double>) {
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Type Matchups",
+                stringResource(R.string.detail_type_matchups_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -1026,12 +1065,12 @@ private fun TypeTrianglesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Type Triangles",
+                    stringResource(R.string.detail_type_triangles_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 TextButton(onClick = onViewTypeTriangles) {
-                    Text("View chart")
+                    Text(stringResource(R.string.detail_view_chart))
                     Icon(
                         Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = null,
@@ -1041,7 +1080,7 @@ private fun TypeTrianglesCard(
             }
 
             Text(
-                "This typing is the best counter to:",
+                stringResource(R.string.detail_best_counter_to),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
@@ -1065,7 +1104,13 @@ private fun TriangleRow(triangle: TypeTriangle) {
             triangle.types.forEach { type -> TypeBadge(type, TypeIds.idOrNull(type)) }
         }
         Text(
-            text = triangle.title + if (triangle.isPerfect) " (Perfect)" else " (Imperfect)",
+            // triangle.title itself is data-level (from util/TypeTriangles), out of this pass's
+            // scope — same boundary as ViewModel error messages; only the suffix is screen chrome.
+            text = triangle.title + " " + if (triangle.isPerfect) {
+                stringResource(R.string.detail_triangle_perfect_suffix)
+            } else {
+                stringResource(R.string.detail_triangle_imperfect_suffix)
+            },
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(top = 6.dp)
@@ -1092,7 +1137,7 @@ private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, form
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                "Smogon Strategy Dex",
+                stringResource(R.string.detail_smogon_strategy_dex_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 6.dp)
@@ -1136,6 +1181,8 @@ private fun LazyListScope.moveSection(
     moves: List<LearnedMove>,
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     expanded: Boolean,
+    moveLocalizedNames: Map<String, Map<String, String>>,
+    language: String,
     onToggleExpanded: () -> Unit
 ) {
     // An empty category (e.g. no Egg moves for a legendary) used to render as a normal expandable
@@ -1160,7 +1207,7 @@ private fun LazyListScope.moveSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "${category.label} (${moves.size})",
+                    stringResource(R.string.detail_move_category_header, category.localizedLabel(), moves.size),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (moves.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else Color.Unspecified
@@ -1168,7 +1215,11 @@ private fun LazyListScope.moveSection(
                 if (moves.isNotEmpty()) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (expanded) "Collapse" else "Expand"
+                        contentDescription = if (expanded) {
+                            stringResource(R.string.detail_collapse)
+                        } else {
+                            stringResource(R.string.detail_expand)
+                        }
                     )
                 }
             }
@@ -1189,21 +1240,49 @@ private fun LazyListScope.moveSection(
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
                 if (index > 0) HorizontalDivider(modifier = Modifier.padding(bottom = 6.dp))
-                MoveRow(move, category, moveInfo)
+                MoveRow(move, category, moveInfo, moveLocalizedNames, language)
             }
         }
     }
 }
 
+/** B11 — a `when` over [MoveCategory], not a field on the enum itself: [MoveCategory] lives in
+ *  `util/MoveGrouping.kt`, which has no Compose dependency and shouldn't gain one just for this. */
 @Composable
-private fun MoveRow(move: LearnedMove, category: MoveCategory, moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>) {
+private fun MoveCategory.localizedLabel(): String = stringResource(
+    when (this) {
+        MoveCategory.LEVEL_UP -> R.string.detail_move_category_level_up
+        MoveCategory.MACHINE -> R.string.detail_move_category_machine
+        MoveCategory.EGG -> R.string.detail_move_category_egg
+        MoveCategory.TUTOR -> R.string.detail_move_category_tutor
+    }
+)
+
+@Composable
+private fun MoveRow(
+    move: LearnedMove,
+    category: MoveCategory,
+    moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
+    moveLocalizedNames: Map<String, Map<String, String>>,
+    language: String
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(move.moveName.toDisplayName(), fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        Text(
+            move.moveName.localizedDisplayName(moveLocalizedNames, language),
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
         if (category == MoveCategory.LEVEL_UP) {
-            Text(if (move.level > 0) "Lv. ${move.level}" else "Evolution")
+            Text(
+                if (move.level > 0) {
+                    stringResource(R.string.detail_move_level, move.level)
+                } else {
+                    stringResource(R.string.detail_move_evolution)
+                }
+            )
         }
     }
     moveInfo[move.moveName]?.let { info ->
@@ -1301,8 +1380,11 @@ internal fun selectShowdownUrl(shiny: Boolean, showdown: ShowdownSprites?): Stri
 /** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would
  *  render that as "No Eggs", which reads like a typo rather than the actual game term. Internal,
  *  not private, so it's unit-testable directly. */
-internal fun eggGroupDisplayName(name: String): String = when (name) {
-    "no-eggs" -> "Undiscovered"
+// B11 — undiscoveredLabel defaulted to the English literal so the existing JVM unit test
+// (PokedexDetailScreenTest, no Compose runtime) keeps calling this as a pure function; the real
+// call site in DetailContent passes stringResource(R.string.detail_egg_group_undiscovered).
+internal fun eggGroupDisplayName(name: String, undiscoveredLabel: String = "Undiscovered"): String = when (name) {
+    "no-eggs" -> undiscoveredLabel
     else -> name.toDisplayName()
 }
 

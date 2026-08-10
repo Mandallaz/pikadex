@@ -55,6 +55,8 @@ interface PokedexRepositoryApi {
     suspend fun getStatPercentile(statKey: String, value: Int): Double
     suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle
     suspend fun getAllSpeciesNames(): Map<String, Map<String, String>>
+    suspend fun getAllMoveLocalizedNames(): Map<String, Map<String, String>>
+    suspend fun getAllAbilityLocalizedNames(): Map<String, Map<String, String>>
 }
 
 /**
@@ -85,6 +87,8 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
     private val allBasicsCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>()
     private val allMoveInfoCache = AsyncValueCache<Map<String, PokeApiGraphQLDataSource.MoveInfo>>()
     private val allSpeciesNamesCache = AsyncValueCache<Map<String, Map<String, String>>>()
+    private val allMoveLocalizedNamesCache = AsyncValueCache<Map<String, Map<String, String>>>()
+    private val allAbilityLocalizedNamesCache = AsyncValueCache<Map<String, Map<String, String>>>()
     private val sortedStatArraysCache = AsyncValueCache<Map<String, IntArray>>()
 
     override suspend fun getMasterList(): List<NamedApiResource> =
@@ -206,6 +210,18 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         diskCached(SPECIES_NAMES_CACHE_KEY, SPECIES_NAMES_TYPE) { PokeApiGraphQLDataSource.fetchAllSpeciesNames() }
     }
 
+    /** moveName -> (languageCode -> localized move name), fetched once in bulk via GraphQL (B11) —
+     *  same reasoning/caching as [getAllSpeciesNames]. */
+    override suspend fun getAllMoveLocalizedNames(): Map<String, Map<String, String>> = allMoveLocalizedNamesCache.get {
+        diskCached(MOVE_NAMES_CACHE_KEY, SPECIES_NAMES_TYPE) { PokeApiGraphQLDataSource.fetchAllMoveNames() }
+    }
+
+    /** abilityName -> (languageCode -> localized ability name), fetched once in bulk via GraphQL
+     *  (B11) — same reasoning/caching as [getAllSpeciesNames]. */
+    override suspend fun getAllAbilityLocalizedNames(): Map<String, Map<String, String>> = allAbilityLocalizedNamesCache.get {
+        diskCached(ABILITY_NAMES_CACHE_KEY, SPECIES_NAMES_TYPE) { PokeApiGraphQLDataSource.fetchAllAbilityNames() }
+    }
+
     /** Sorted value arrays per stat key (hp/attack/.../speed, plus a synthetic "total"), built
      *  once from the bulk stats map. [getStatPercentile] binary-searches these instead of
      *  re-scanning all ~1300 pokemon's values on every single pokemon detail load. Runs on
@@ -291,6 +307,8 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         // reading back an old cached payload with no pp in it and showing "—" for every move.
         const val MOVE_INFO_CACHE_KEY = "move_info_v3"
         const val SPECIES_NAMES_CACHE_KEY = "species_names_v1"
+        const val MOVE_NAMES_CACHE_KEY = "move_names_v1"
+        const val ABILITY_NAMES_CACHE_KEY = "ability_names_v1"
         val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)
 
         val BASICS_TYPE: java.lang.reflect.Type =

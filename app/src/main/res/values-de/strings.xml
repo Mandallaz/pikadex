@@ -90,4 +90,92 @@
 
     <string name="smogon_tier_community_voting_heading">Community-Abstimmung</string>
     <string name="smogon_tier_community_voting_body">Suspect Tests verlangen von Spielern, auf einem frischen Ladder-Konto eine hohe Fähigkeitsbewertung (GXE) zu erreichen, um Stimmrecht zu erhalten.</string>
+
+    <!-- Detail screen (B11) -->
+    <string name="detail_back">Zurück</string>
+    <string name="detail_remove_from_team">Aus Team entfernen</string>
+    <string name="detail_add_to_team">Zum Team hinzufügen</string>
+    <string name="detail_remove_from_favorites">Aus Favoriten entfernen</string>
+    <string name="detail_add_to_favorites">Zu Favoriten hinzufügen</string>
+    <string name="detail_compare_with">Vergleichen mit…</string>
+    <string name="detail_team_full_snackbar">Dein Team ist voll (%1$d/%2$d). Entferne zuerst eines.</string>
+    <string name="detail_previous_pokemon">Vorheriges Pokémon</string>
+    <string name="detail_next_pokemon">Nächstes Pokémon</string>
+    <string name="detail_retry">Erneut versuchen</string>
+    <string name="detail_not_found">Pokémon nicht gefunden.</string>
+
+    <string name="detail_show_normal_coloring">Normale Färbung anzeigen</string>
+    <string name="detail_show_shiny_coloring">Schillernde Färbung anzeigen</string>
+    <string name="detail_show_static_artwork">Statisches Artwork anzeigen</string>
+    <string name="detail_show_animated_sprite">Animierten Kampf-Sprite anzeigen</string>
+    <string name="detail_play_cry">Ruf abspielen</string>
+    <string name="detail_legendary">Legendär</string>
+    <string name="detail_mythical">Mysteriös</string>
+    <string name="detail_height">Größe</string>
+    <string name="detail_weight">Gewicht</string>
+    <string name="detail_egg_groups">Ei-Gruppen</string>
+    <string name="detail_egg_group_undiscovered">Unentdeckt</string>
+    <string name="detail_height_value">%1$s m</string>
+    <string name="detail_weight_value">%1$s kg</string>
+
+    <string name="detail_base_stats_title">Basiswerte</string>
+    <string name="detail_base_stats_subtitle">Balkenlänge skaliert auf %1$d · Farbe ordnet diesen Wert im Vergleich zu allen anderen Pokémon ein</string>
+    <string name="detail_stat_total">Gesamt: %1$d</string>
+    <string name="detail_stronger_than">Stärker als %1$d %% aller Pokémon</string>
+
+    <string name="detail_abilities_title">Fähigkeiten</string>
+    <string name="detail_ability_hidden_suffix">(versteckt)</string>
+
+    <string name="detail_evolution_title">Entwicklung</string>
+    <string name="detail_no_evolution">Dieses Pokémon entwickelt sich nicht weiter.</string>
+    <string name="detail_other_forms_title">Andere Formen</string>
+    <string name="detail_other_forms_subtitle">Alternative Formen dieser Spezies, nicht durch die obigen Entwicklungsschritte abgedeckt.</string>
+
+    <string name="detail_team_impact_title">Auswirkung auf die Team-Abdeckung</string>
+    <string name="detail_team_impact_nothing">Nichts.</string>
+    <string name="detail_team_impact_subtitle">Was sich ändern würde, wenn du dieses Pokémon zu deinem aktiven Team hinzufügst.</string>
+    <string name="detail_defensively">Defensiv</string>
+    <string name="detail_offensively">Offensiv</string>
+    <string name="detail_fixes_weaknesses">Behebt diese gemeinsamen Schwächen:</string>
+    <string name="detail_introduces_weaknesses">Führt diese gemeinsamen Schwächen ein:</string>
+    <string name="detail_adds_immunity">Fügt Immunität hinzu gegen:</string>
+    <string name="detail_adds_resistance">Fügt Resistenz hinzu gegen:</string>
+    <string name="detail_adds_quad_weakness">Fügt eine schwere (×4) Schwäche hinzu gegen:</string>
+    <string name="detail_closes_gaps">Schließt diese Abdeckungslücken:</string>
+    <string name="detail_opens_gaps">Öffnet diese Abdeckungslücken:</string>
+
+    <string name="detail_type_matchups_title">Typ-Vergleiche</string>
+
+    <string name="detail_type_triangles_title">Typ-Dreiecke</string>
+    <string name="detail_view_chart">Diagramm ansehen</string>
+    <string name="detail_best_counter_to">Dieser Typ ist der beste Konter für:</string>
+    <string name="detail_triangle_perfect_suffix">(Perfekt)</string>
+    <string name="detail_triangle_imperfect_suffix">(Unvollständig)</string>
+
+    <string name="detail_smogon_strategy_dex_title">Smogon Strategie-Dex</string>
+
+    <string name="detail_collapse">Einklappen</string>
+    <string name="detail_expand">Ausklappen</string>
+    <string name="detail_move_category_level_up">Level Up</string>
+    <string name="detail_move_category_machine">TM/VM</string>
+    <string name="detail_move_category_egg">Zucht</string>
+    <string name="detail_move_category_tutor">Lehrer</string>
+    <string name="detail_move_category_header">%1$s (%2$d)</string>
+    <string name="detail_move_level">St. %1$d</string>
+    <string name="detail_move_evolution">Entwicklung</string>
+
+    <string name="detail_damage_class_physical">Physisch</string>
+    <string name="detail_damage_class_special">Speziell</string>
+    <string name="detail_damage_class_status">Status</string>
+    <string name="detail_dash_placeholder">—</string>
+    <string name="detail_move_stats_line">%1$s · Stärke %2$s · Genauigkeit %3$s · AP %4$s</string>
+    <string name="detail_move_stats_line_with_priority">%1$s · Stärke %2$s · Genauigkeit %3$s · AP %4$s · Priorität %5$s</string>
+
+    <string name="detail_ailment_always">Immer</string>
+    <string name="detail_ailment_chance">%1$d %%</string>
+    <string name="detail_crit_rate">Krit-Rate +%1$d</string>
+    <string name="detail_drains">Entzieht %1$d %% des Schadens</string>
+    <string name="detail_recoil">Rückstoß %1$d %% des Schadens</string>
+    <string name="detail_heals">Heilt %1$d %% der max. KP</string>
+    <string name="detail_flinch_chance">%1$d %% Zurückschrecken</string>
 </resources>

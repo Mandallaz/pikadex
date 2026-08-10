@@ -37,6 +37,8 @@ class FakePokedexRepository : PokedexRepositoryApi {
     var statPercentile: Double = 0.5
     var detailBundle: PokemonDetailBundle? = null
     var allSpeciesNames: Map<String, Map<String, String>> = emptyMap()
+    var allMoveLocalizedNames: Map<String, Map<String, String>> = emptyMap()
+    var allAbilityLocalizedNames: Map<String, Map<String, String>> = emptyMap()
 
     /** Thrown by every method below if set — the "network error" path every ViewModel's `catch`
      *  block exists to handle. */
@@ -74,6 +76,8 @@ class FakePokedexRepository : PokedexRepositoryApi {
         "FakePokedexRepository.detailBundle must be set before getPokemonDetailBundle is called"
     })
     override suspend fun getAllSpeciesNames() = resolve(allSpeciesNames)
+    override suspend fun getAllMoveLocalizedNames() = resolve(allMoveLocalizedNames)
+    override suspend fun getAllAbilityLocalizedNames() = resolve(allAbilityLocalizedNames)
 }
 
 /** Minimal-but-valid [PokemonDto] fixture — every nullable field defaults to null/empty, matching

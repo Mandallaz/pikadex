@@ -90,4 +90,92 @@
 
     <string name="smogon_tier_community_voting_heading">コミュニティ投票</string>
     <string name="smogon_tier_community_voting_body">Suspectテストでは、投票権を得るために、新しいラダーアカウントで高い技能評価（GXE）を達成する必要があります。</string>
+
+    <!-- Detail screen (B11) -->
+    <string name="detail_back">戻る</string>
+    <string name="detail_remove_from_team">パーティから外す</string>
+    <string name="detail_add_to_team">パーティに加える</string>
+    <string name="detail_remove_from_favorites">お気に入りから削除</string>
+    <string name="detail_add_to_favorites">お気に入りに追加</string>
+    <string name="detail_compare_with">比較する…</string>
+    <string name="detail_team_full_snackbar">パーティがいっぱいです（%1$d/%2$d）。先に1匹外してください。</string>
+    <string name="detail_previous_pokemon">前のポケモン</string>
+    <string name="detail_next_pokemon">次のポケモン</string>
+    <string name="detail_retry">再試行</string>
+    <string name="detail_not_found">ポケモンが見つかりません。</string>
+
+    <string name="detail_show_normal_coloring">通常色を表示</string>
+    <string name="detail_show_shiny_coloring">色違いを表示</string>
+    <string name="detail_show_static_artwork">静止画像を表示</string>
+    <string name="detail_show_animated_sprite">アニメーションバトルスプライトを表示</string>
+    <string name="detail_play_cry">鳴き声を再生</string>
+    <string name="detail_legendary">伝説</string>
+    <string name="detail_mythical">幻</string>
+    <string name="detail_height">高さ</string>
+    <string name="detail_weight">重さ</string>
+    <string name="detail_egg_groups">タマゴグループ</string>
+    <string name="detail_egg_group_undiscovered">タマゴみはっけん</string>
+    <string name="detail_height_value">%1$s m</string>
+    <string name="detail_weight_value">%1$s kg</string>
+
+    <string name="detail_base_stats_title">種族値</string>
+    <string name="detail_base_stats_subtitle">バーの長さは%1$dを基準にスケーリング · 色はこの能力値を他の全ポケモンと比較したランクを表します</string>
+    <string name="detail_stat_total">合計: %1$d</string>
+    <string name="detail_stronger_than">全ポケモン中上位%1$d%%の強さ</string>
+
+    <string name="detail_abilities_title">特性</string>
+    <string name="detail_ability_hidden_suffix">（隠れ特性）</string>
+
+    <string name="detail_evolution_title">進化</string>
+    <string name="detail_no_evolution">このポケモンは進化しません。</string>
+    <string name="detail_other_forms_title">その他のすがた</string>
+    <string name="detail_other_forms_subtitle">この種族の別のすがた。上記の進化ステップには含まれていません。</string>
+
+    <string name="detail_team_impact_title">パーティのカバレッジへの影響</string>
+    <string name="detail_team_impact_nothing">影響なし。</string>
+    <string name="detail_team_impact_subtitle">このポケモンを現在のパーティに加えた場合の変化。</string>
+    <string name="detail_defensively">防御面</string>
+    <string name="detail_offensively">攻撃面</string>
+    <string name="detail_fixes_weaknesses">これらの共通弱点を解消:</string>
+    <string name="detail_introduces_weaknesses">これらの共通弱点を新たに追加:</string>
+    <string name="detail_adds_immunity">無効タイプを追加:</string>
+    <string name="detail_adds_resistance">耐性タイプを追加:</string>
+    <string name="detail_adds_quad_weakness">深刻な弱点（×4）を追加:</string>
+    <string name="detail_closes_gaps">これらの攻撃の穴を解消:</string>
+    <string name="detail_opens_gaps">これらの攻撃の穴を新たに追加:</string>
+
+    <string name="detail_type_matchups_title">タイプ相性</string>
+
+    <string name="detail_type_triangles_title">三角関係</string>
+    <string name="detail_view_chart">図を見る</string>
+    <string name="detail_best_counter_to">このタイプは次の三角関係の最良のカウンターです:</string>
+    <string name="detail_triangle_perfect_suffix">（完全）</string>
+    <string name="detail_triangle_imperfect_suffix">（不完全）</string>
+
+    <string name="detail_smogon_strategy_dex_title">Smogon戦略ずかん</string>
+
+    <string name="detail_collapse">折りたたむ</string>
+    <string name="detail_expand">展開する</string>
+    <string name="detail_move_category_level_up">レベルアップ</string>
+    <string name="detail_move_category_machine">わざマシン</string>
+    <string name="detail_move_category_egg">タマゴわざ</string>
+    <string name="detail_move_category_tutor">教え技</string>
+    <string name="detail_move_category_header">%1$s（%2$d）</string>
+    <string name="detail_move_level">Lv. %1$d</string>
+    <string name="detail_move_evolution">進化</string>
+
+    <string name="detail_damage_class_physical">物理</string>
+    <string name="detail_damage_class_special">特殊</string>
+    <string name="detail_damage_class_status">変化</string>
+    <string name="detail_dash_placeholder">—</string>
+    <string name="detail_move_stats_line">%1$s · 威力 %2$s · 命中率 %3$s · PP %4$s</string>
+    <string name="detail_move_stats_line_with_priority">%1$s · 威力 %2$s · 命中率 %3$s · PP %4$s · 優先度 %5$s</string>
+
+    <string name="detail_ailment_always">必ず</string>
+    <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_crit_rate">急所率 +%1$d</string>
+    <string name="detail_drains">与えたダメージの%1$d%%を吸収</string>
+    <string name="detail_recoil">与えたダメージの%1$d%%の反動</string>
+    <string name="detail_heals">最大HPの%1$d%%を回復</string>
+    <string name="detail_flinch_chance">%1$d%%の確率でひるみ</string>
 </resources>

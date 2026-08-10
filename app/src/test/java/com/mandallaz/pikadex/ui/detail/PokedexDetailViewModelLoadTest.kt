@@ -71,6 +71,26 @@ class PokedexDetailViewModelLoadTest {
         assertNull(state.errorMessage)
     }
 
+    // B11 — load() must also bulk-fetch move/ability localized names, same as it already does for
+    // species names (B9), so the detail screen's move list and ability cards can follow the
+    // picked language too.
+    @Test
+    fun `load populates move and ability localized names alongside species names`() = runTest(dispatcher) {
+        repository.detailBundle = bundleFor("charmander")
+        repository.typeDetailByName = mapOf("fire" to fakeTypeDetailDto("fire"))
+        repository.allSpeciesNames = mapOf("charmander" to mapOf("fr" to "Salamèche"))
+        repository.allMoveLocalizedNames = mapOf("scratch" to mapOf("fr" to "Griffe"))
+        repository.allAbilityLocalizedNames = mapOf("blaze" to mapOf("fr" to "Brasier"))
+
+        viewModel.load("charmander")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(mapOf("fr" to "Salamèche"), state.speciesNames["charmander"])
+        assertEquals(mapOf("fr" to "Griffe"), state.moveLocalizedNames["scratch"])
+        assertEquals(mapOf("fr" to "Brasier"), state.abilityLocalizedNames["blaze"])
+    }
+
     // The bug this guards against: PokedexDetailViewModel.load's `catch` block used to be the
     // only way isLoading ever went back to false on a network failure — if it were ever removed
     // or bypassed, a failed load leaves the screen spinning forever.

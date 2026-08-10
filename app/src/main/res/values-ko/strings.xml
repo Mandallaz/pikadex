@@ -90,4 +90,92 @@
 
     <string name="smogon_tier_community_voting_heading">커뮤니티 투표</string>
     <string name="smogon_tier_community_voting_body">Suspect 테스트에 참여하려면 투표권을 얻기 위해 새 래더 계정에서 높은 실력 점수(GXE)를 달성해야 합니다.</string>
+
+    <!-- Detail screen (B11) -->
+    <string name="detail_back">뒤로</string>
+    <string name="detail_remove_from_team">파티에서 제거</string>
+    <string name="detail_add_to_team">파티에 추가</string>
+    <string name="detail_remove_from_favorites">즐겨찾기에서 제거</string>
+    <string name="detail_add_to_favorites">즐겨찾기에 추가</string>
+    <string name="detail_compare_with">비교하기…</string>
+    <string name="detail_team_full_snackbar">파티가 가득 찼습니다 (%1$d/%2$d). 먼저 하나를 제거하세요.</string>
+    <string name="detail_previous_pokemon">이전 포켓몬</string>
+    <string name="detail_next_pokemon">다음 포켓몬</string>
+    <string name="detail_retry">다시 시도</string>
+    <string name="detail_not_found">포켓몬을 찾을 수 없습니다.</string>
+
+    <string name="detail_show_normal_coloring">일반 색상 보기</string>
+    <string name="detail_show_shiny_coloring">이로치 색상 보기</string>
+    <string name="detail_show_static_artwork">정지 이미지 보기</string>
+    <string name="detail_show_animated_sprite">애니메이션 배틀 스프라이트 보기</string>
+    <string name="detail_play_cry">울음소리 재생</string>
+    <string name="detail_legendary">전설의 포켓몬</string>
+    <string name="detail_mythical">환상의 포켓몬</string>
+    <string name="detail_height">키</string>
+    <string name="detail_weight">몸무게</string>
+    <string name="detail_egg_groups">알그룹</string>
+    <string name="detail_egg_group_undiscovered">미발견</string>
+    <string name="detail_height_value">%1$s m</string>
+    <string name="detail_weight_value">%1$s kg</string>
+
+    <string name="detail_base_stats_title">종족값</string>
+    <string name="detail_base_stats_subtitle">막대 길이는 %1$d를 기준으로 조정 · 색상은 이 능력치를 다른 모든 포켓몬과 비교한 순위를 나타냅니다</string>
+    <string name="detail_stat_total">합계: %1$d</string>
+    <string name="detail_stronger_than">전체 포켓몬 중 상위 %1$d%%</string>
+
+    <string name="detail_abilities_title">특성</string>
+    <string name="detail_ability_hidden_suffix">(숨겨진 특성)</string>
+
+    <string name="detail_evolution_title">진화</string>
+    <string name="detail_no_evolution">이 포켓몬은 진화하지 않습니다.</string>
+    <string name="detail_other_forms_title">다른 폼</string>
+    <string name="detail_other_forms_subtitle">이 종의 다른 폼으로, 위의 진화 단계에는 포함되지 않습니다.</string>
+
+    <string name="detail_team_impact_title">파티 커버리지 영향</string>
+    <string name="detail_team_impact_nothing">변화 없음.</string>
+    <string name="detail_team_impact_subtitle">이 포켓몬을 현재 파티에 추가하면 바뀌는 점.</string>
+    <string name="detail_defensively">방어 측면</string>
+    <string name="detail_offensively">공격 측면</string>
+    <string name="detail_fixes_weaknesses">다음 공통 약점을 보완합니다:</string>
+    <string name="detail_introduces_weaknesses">다음 공통 약점을 새로 추가합니다:</string>
+    <string name="detail_adds_immunity">다음에 대한 무효를 추가합니다:</string>
+    <string name="detail_adds_resistance">다음에 대한 반감을 추가합니다:</string>
+    <string name="detail_adds_quad_weakness">다음에 대한 심각한(×4) 약점을 추가합니다:</string>
+    <string name="detail_closes_gaps">다음 공격 공백을 해소합니다:</string>
+    <string name="detail_opens_gaps">다음 공격 공백을 새로 만듭니다:</string>
+
+    <string name="detail_type_matchups_title">타입 상성</string>
+
+    <string name="detail_type_triangles_title">삼각관계</string>
+    <string name="detail_view_chart">차트 보기</string>
+    <string name="detail_best_counter_to">이 타입은 다음의 최고의 카운터입니다:</string>
+    <string name="detail_triangle_perfect_suffix">(완전)</string>
+    <string name="detail_triangle_imperfect_suffix">(불완전)</string>
+
+    <string name="detail_smogon_strategy_dex_title">Smogon 전략 도감</string>
+
+    <string name="detail_collapse">접기</string>
+    <string name="detail_expand">펼치기</string>
+    <string name="detail_move_category_level_up">레벨업</string>
+    <string name="detail_move_category_machine">기술머신</string>
+    <string name="detail_move_category_egg">교배기</string>
+    <string name="detail_move_category_tutor">기술교육</string>
+    <string name="detail_move_category_header">%1$s (%2$d)</string>
+    <string name="detail_move_level">Lv. %1$d</string>
+    <string name="detail_move_evolution">진화</string>
+
+    <string name="detail_damage_class_physical">물리</string>
+    <string name="detail_damage_class_special">특수</string>
+    <string name="detail_damage_class_status">변화</string>
+    <string name="detail_dash_placeholder">—</string>
+    <string name="detail_move_stats_line">%1$s · 위력 %2$s · 명중률 %3$s · PP %4$s</string>
+    <string name="detail_move_stats_line_with_priority">%1$s · 위력 %2$s · 명중률 %3$s · PP %4$s · 우선도 %5$s</string>
+
+    <string name="detail_ailment_always">항상</string>
+    <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_crit_rate">급소율 +%1$d</string>
+    <string name="detail_drains">가한 피해의 %1$d%% 흡수</string>
+    <string name="detail_recoil">가한 피해의 %1$d%% 반동</string>
+    <string name="detail_heals">최대 HP의 %1$d%% 회복</string>
+    <string name="detail_flinch_chance">%1$d%% 확률로 풀죽음</string>
 </resources>

@@ -90,4 +90,92 @@
 
     <string name="smogon_tier_community_voting_heading">社区投票</string>
     <string name="smogon_tier_community_voting_body">Suspect测试要求玩家在全新的天梯账号上达到较高的实力评分（GXE），才能获得投票资格。</string>
+
+    <!-- Detail screen (B11) -->
+    <string name="detail_back">返回</string>
+    <string name="detail_remove_from_team">从队伍中移除</string>
+    <string name="detail_add_to_team">加入队伍</string>
+    <string name="detail_remove_from_favorites">取消收藏</string>
+    <string name="detail_add_to_favorites">添加到收藏</string>
+    <string name="detail_compare_with">与…比较</string>
+    <string name="detail_team_full_snackbar">你的队伍已满（%1$d/%2$d）。请先移除一只。</string>
+    <string name="detail_previous_pokemon">上一只宝可梦</string>
+    <string name="detail_next_pokemon">下一只宝可梦</string>
+    <string name="detail_retry">重试</string>
+    <string name="detail_not_found">未找到宝可梦。</string>
+
+    <string name="detail_show_normal_coloring">显示普通配色</string>
+    <string name="detail_show_shiny_coloring">显示异色配色</string>
+    <string name="detail_show_static_artwork">显示静态插图</string>
+    <string name="detail_show_animated_sprite">显示动态战斗精灵图</string>
+    <string name="detail_play_cry">播放鸣叫声</string>
+    <string name="detail_legendary">传说</string>
+    <string name="detail_mythical">幻兽</string>
+    <string name="detail_height">身高</string>
+    <string name="detail_weight">体重</string>
+    <string name="detail_egg_groups">蛋组</string>
+    <string name="detail_egg_group_undiscovered">未发现蛋组</string>
+    <string name="detail_height_value">%1$s 米</string>
+    <string name="detail_weight_value">%1$s 千克</string>
+
+    <string name="detail_base_stats_title">种族值</string>
+    <string name="detail_base_stats_subtitle">条形长度以%1$d为基准 · 颜色表示该数值相对于其他所有宝可梦的排名</string>
+    <string name="detail_stat_total">总计：%1$d</string>
+    <string name="detail_stronger_than">强于%1$d%%的所有宝可梦</string>
+
+    <string name="detail_abilities_title">特性</string>
+    <string name="detail_ability_hidden_suffix">（隐藏特性）</string>
+
+    <string name="detail_evolution_title">进化</string>
+    <string name="detail_no_evolution">这只宝可梦不会进化。</string>
+    <string name="detail_other_forms_title">其他形态</string>
+    <string name="detail_other_forms_subtitle">该物种的其他形态，未包含在上面的进化步骤中。</string>
+
+    <string name="detail_team_impact_title">队伍覆盖影响</string>
+    <string name="detail_team_impact_nothing">无影响。</string>
+    <string name="detail_team_impact_subtitle">将这只宝可梦加入当前队伍会带来的变化。</string>
+    <string name="detail_defensively">防御方面</string>
+    <string name="detail_offensively">攻击方面</string>
+    <string name="detail_fixes_weaknesses">修复以下共同弱点：</string>
+    <string name="detail_introduces_weaknesses">引入以下共同弱点：</string>
+    <string name="detail_adds_immunity">增加免疫：</string>
+    <string name="detail_adds_resistance">增加抵抗：</string>
+    <string name="detail_adds_quad_weakness">增加严重（×4）弱点：</string>
+    <string name="detail_closes_gaps">弥补以下攻击空缺：</string>
+    <string name="detail_opens_gaps">产生以下攻击空缺：</string>
+
+    <string name="detail_type_matchups_title">属性相克</string>
+
+    <string name="detail_type_triangles_title">三角关系</string>
+    <string name="detail_view_chart">查看图表</string>
+    <string name="detail_best_counter_to">此属性组合是以下三角关系的最佳克制方：</string>
+    <string name="detail_triangle_perfect_suffix">（完美）</string>
+    <string name="detail_triangle_imperfect_suffix">（不完美）</string>
+
+    <string name="detail_smogon_strategy_dex_title">Smogon战略图鉴</string>
+
+    <string name="detail_collapse">收起</string>
+    <string name="detail_expand">展开</string>
+    <string name="detail_move_category_level_up">升级学会</string>
+    <string name="detail_move_category_machine">招式学习器</string>
+    <string name="detail_move_category_egg">遗传招式</string>
+    <string name="detail_move_category_tutor">教授招式</string>
+    <string name="detail_move_category_header">%1$s（%2$d）</string>
+    <string name="detail_move_level">Lv. %1$d</string>
+    <string name="detail_move_evolution">进化</string>
+
+    <string name="detail_damage_class_physical">物理</string>
+    <string name="detail_damage_class_special">特殊</string>
+    <string name="detail_damage_class_status">变化</string>
+    <string name="detail_dash_placeholder">—</string>
+    <string name="detail_move_stats_line">%1$s · 威力 %2$s · 命中率 %3$s · PP %4$s</string>
+    <string name="detail_move_stats_line_with_priority">%1$s · 威力 %2$s · 命中率 %3$s · PP %4$s · 先制 %5$s</string>
+
+    <string name="detail_ailment_always">必定</string>
+    <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_crit_rate">要害率 +%1$d</string>
+    <string name="detail_drains">吸收造成伤害的%1$d%%</string>
+    <string name="detail_recoil">反作用力为造成伤害的%1$d%%</string>
+    <string name="detail_heals">回复最大HP的%1$d%%</string>
+    <string name="detail_flinch_chance">%1$d%%几率畏缩</string>
 </resources>

@@ -90,4 +90,92 @@
 
     <string name="smogon_tier_community_voting_heading">Votación comunitaria</string>
     <string name="smogon_tier_community_voting_body">Los Suspect Tests exigen a los jugadores alcanzar una puntuación de habilidad alta (GXE) en una cuenta de ladder nueva para obtener derecho a voto.</string>
+
+    <!-- Detail screen (B11) -->
+    <string name="detail_back">Atrás</string>
+    <string name="detail_remove_from_team">Quitar del equipo</string>
+    <string name="detail_add_to_team">Añadir al equipo</string>
+    <string name="detail_remove_from_favorites">Quitar de favoritos</string>
+    <string name="detail_add_to_favorites">Añadir a favoritos</string>
+    <string name="detail_compare_with">Comparar con…</string>
+    <string name="detail_team_full_snackbar">Tu equipo está completo (%1$d/%2$d). Quita uno primero.</string>
+    <string name="detail_previous_pokemon">Pokémon anterior</string>
+    <string name="detail_next_pokemon">Pokémon siguiente</string>
+    <string name="detail_retry">Reintentar</string>
+    <string name="detail_not_found">Pokémon no encontrado.</string>
+
+    <string name="detail_show_normal_coloring">Mostrar color normal</string>
+    <string name="detail_show_shiny_coloring">Mostrar color variocolor</string>
+    <string name="detail_show_static_artwork">Mostrar ilustración estática</string>
+    <string name="detail_show_animated_sprite">Mostrar sprite de combate animado</string>
+    <string name="detail_play_cry">Reproducir grito</string>
+    <string name="detail_legendary">Legendario</string>
+    <string name="detail_mythical">Singular</string>
+    <string name="detail_height">Altura</string>
+    <string name="detail_weight">Peso</string>
+    <string name="detail_egg_groups">Grupos Huevo</string>
+    <string name="detail_egg_group_undiscovered">Desconocido</string>
+    <string name="detail_height_value">%1$s m</string>
+    <string name="detail_weight_value">%1$s kg</string>
+
+    <string name="detail_base_stats_title">Estadísticas base</string>
+    <string name="detail_base_stats_subtitle">Longitud de barra ajustada a %1$d · el color clasifica esta estadística frente a todos los demás Pokémon</string>
+    <string name="detail_stat_total">Total: %1$d</string>
+    <string name="detail_stronger_than">Más fuerte que el %1$d%% de todos los Pokémon</string>
+
+    <string name="detail_abilities_title">Habilidades</string>
+    <string name="detail_ability_hidden_suffix">(oculta)</string>
+
+    <string name="detail_evolution_title">Evolución</string>
+    <string name="detail_no_evolution">Este Pokémon no evoluciona.</string>
+    <string name="detail_other_forms_title">Otras formas</string>
+    <string name="detail_other_forms_subtitle">Formas alternativas de esta especie, no cubiertas por los pasos de evolución anteriores.</string>
+
+    <string name="detail_team_impact_title">Impacto en la cobertura del equipo</string>
+    <string name="detail_team_impact_nothing">Nada.</string>
+    <string name="detail_team_impact_subtitle">Lo que cambiaría al añadir este Pokémon a tu equipo activo.</string>
+    <string name="detail_defensively">Defensivamente</string>
+    <string name="detail_offensively">Ofensivamente</string>
+    <string name="detail_fixes_weaknesses">Corrige estas debilidades compartidas:</string>
+    <string name="detail_introduces_weaknesses">Introduce estas debilidades compartidas:</string>
+    <string name="detail_adds_immunity">Añade inmunidad a:</string>
+    <string name="detail_adds_resistance">Añade resistencia a:</string>
+    <string name="detail_adds_quad_weakness">Añade una debilidad severa (×4) a:</string>
+    <string name="detail_closes_gaps">Cierra estas brechas de cobertura:</string>
+    <string name="detail_opens_gaps">Abre estas brechas de cobertura:</string>
+
+    <string name="detail_type_matchups_title">Enfrentamientos de tipo</string>
+
+    <string name="detail_type_triangles_title">Triángulos de tipo</string>
+    <string name="detail_view_chart">Ver esquema</string>
+    <string name="detail_best_counter_to">Este tipado es el mejor contrincante para:</string>
+    <string name="detail_triangle_perfect_suffix">(Perfecto)</string>
+    <string name="detail_triangle_imperfect_suffix">(Imperfecto)</string>
+
+    <string name="detail_smogon_strategy_dex_title">Dex estratégico de Smogon</string>
+
+    <string name="detail_collapse">Contraer</string>
+    <string name="detail_expand">Expandir</string>
+    <string name="detail_move_category_level_up">Subir de nivel</string>
+    <string name="detail_move_category_machine">MT/MO</string>
+    <string name="detail_move_category_egg">Cría</string>
+    <string name="detail_move_category_tutor">Tutor</string>
+    <string name="detail_move_category_header">%1$s (%2$d)</string>
+    <string name="detail_move_level">Nv. %1$d</string>
+    <string name="detail_move_evolution">Evolución</string>
+
+    <string name="detail_damage_class_physical">Físico</string>
+    <string name="detail_damage_class_special">Especial</string>
+    <string name="detail_damage_class_status">Estado</string>
+    <string name="detail_dash_placeholder">—</string>
+    <string name="detail_move_stats_line">%1$s · Potencia %2$s · Precisión %3$s · PP %4$s</string>
+    <string name="detail_move_stats_line_with_priority">%1$s · Potencia %2$s · Precisión %3$s · PP %4$s · Prioridad %5$s</string>
+
+    <string name="detail_ailment_always">Siempre</string>
+    <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_crit_rate">Tasa crít. +%1$d</string>
+    <string name="detail_drains">Absorbe %1$d%% del daño</string>
+    <string name="detail_recoil">Retroceso %1$d%% del daño</string>
+    <string name="detail_heals">Cura %1$d%% de los PS máx.</string>
+    <string name="detail_flinch_chance">%1$d%% de retroceso (flinch)</string>
 </resources>

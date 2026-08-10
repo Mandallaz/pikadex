@@ -234,4 +234,77 @@ class PokeApiGraphQLDataSourceTest {
         val names = PokeApiGraphQLDataSource.parseSpeciesNames(speciesNamesSampleBody).getValue("missingno")
         assertEquals(emptyMap<String, String>(), names)
     }
+
+    // --- fetchAllMoveNames / parseMoveNames (B11) ---------------------------------
+
+    // Shape verified live against graphql.pokeapi.co/v1beta2 for tackle before writing this — see
+    // MOVE_NAMES_QUERY's own comment.
+    private val moveNamesSampleBody = """
+        {
+          "data": {
+            "move": [
+              {
+                "name": "tackle",
+                "movenames": [
+                  { "name": "Tackle", "language": { "name": "en" } },
+                  { "name": "Charge", "language": { "name": "fr" } },
+                  { "name": "Tackle", "language": { "name": "de" } }
+                ]
+              },
+              {
+                "name": "no-names-move",
+                "movenames": null
+              }
+            ]
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `parses one language-code-to-name entry per move`() {
+        val names = PokeApiGraphQLDataSource.parseMoveNames(moveNamesSampleBody).getValue("tackle")
+        assertEquals(mapOf("en" to "Tackle", "fr" to "Charge", "de" to "Tackle"), names)
+    }
+
+    @Test
+    fun `a null movenames degrades to an empty name map, not a crash`() {
+        val names = PokeApiGraphQLDataSource.parseMoveNames(moveNamesSampleBody).getValue("no-names-move")
+        assertEquals(emptyMap<String, String>(), names)
+    }
+
+    // --- fetchAllAbilityNames / parseAbilityNames (B11) ---------------------------
+
+    // Shape verified live against graphql.pokeapi.co/v1beta2 for levitate before writing this —
+    // see ABILITY_NAMES_QUERY's own comment.
+    private val abilityNamesSampleBody = """
+        {
+          "data": {
+            "ability": [
+              {
+                "name": "levitate",
+                "abilitynames": [
+                  { "name": "Levitate", "language": { "name": "en" } },
+                  { "name": "Lévitation", "language": { "name": "fr" } }
+                ]
+              },
+              {
+                "name": "no-names-ability",
+                "abilitynames": null
+              }
+            ]
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `parses one language-code-to-name entry per ability`() {
+        val names = PokeApiGraphQLDataSource.parseAbilityNames(abilityNamesSampleBody).getValue("levitate")
+        assertEquals(mapOf("en" to "Levitate", "fr" to "Lévitation"), names)
+    }
+
+    @Test
+    fun `a null abilitynames degrades to an empty name map, not a crash`() {
+        val names = PokeApiGraphQLDataSource.parseAbilityNames(abilityNamesSampleBody).getValue("no-names-ability")
+        assertEquals(emptyMap<String, String>(), names)
+    }
 }

@@ -307,4 +307,66 @@ object PokeApiGraphQLDataSource {
     private data class SpeciesNamesGraphQLPokemon(val name: String, val pokemonspecy: SpeciesNamesGraphQLSpecy?)
     private data class SpeciesNamesGraphQLSpecy(val pokemonspeciesnames: List<SpeciesNamesGraphQLName>?)
     private data class SpeciesNamesGraphQLName(val name: String, val language: GraphQLStatName)
+
+    // B11 — same pattern as B9's SPECIES_NAMES_QUERY, verified live against graphql.pokeapi.co
+    // before being written: movenames/abilitynames are the move/ability names relations, one row
+    // per language each has a translation for.
+    private const val MOVE_NAMES_QUERY = """
+        query {
+          move(limit: $ROW_LIMIT) {
+            name
+            movenames {
+              name
+              language { name }
+            }
+          }
+        }
+    """
+
+    private const val ABILITY_NAMES_QUERY = """
+        query {
+          ability(limit: $ROW_LIMIT) {
+            name
+            abilitynames {
+              name
+              language { name }
+            }
+          }
+        }
+    """
+
+    /** moveName -> (languageCode -> localized move name), fetched once in bulk via GraphQL (B11) —
+     *  same reasoning as [fetchAllSpeciesNames]: nothing read this before, every screen showed the
+     *  raw English/hyphenated move identifier formatted via `toDisplayName()` regardless of the
+     *  picked language. */
+    suspend fun fetchAllMoveNames(): Map<String, Map<String, String>> = runQuery(MOVE_NAMES_QUERY, ::parseMoveNames)
+
+    /** abilityName -> (languageCode -> localized ability name), fetched once in bulk via GraphQL
+     *  (B11) — same reasoning as [fetchAllMoveNames]. */
+    suspend fun fetchAllAbilityNames(): Map<String, Map<String, String>> = runQuery(ABILITY_NAMES_QUERY, ::parseAbilityNames)
+
+    /** Parses [MOVE_NAMES_QUERY]'s response body — separate from [fetchAllMoveNames] so it's
+     *  unit-testable against a hand-written JSON body, same reasoning as [parseSpeciesNames]. */
+    internal fun parseMoveNames(body: String): Map<String, Map<String, String>> {
+        val moves = gson.fromJson(body, MoveNamesGraphQLResponse::class.java)?.data?.move
+            ?: throw IOException("GraphQL response had no move data")
+        logIfTruncated("move (names)", moves.size)
+        return moves.associate { m -> m.name to m.movenames.orEmpty().associate { it.language.name to it.name } }
+    }
+
+    /** Parses [ABILITY_NAMES_QUERY]'s response body — same reasoning as [parseMoveNames]. */
+    internal fun parseAbilityNames(body: String): Map<String, Map<String, String>> {
+        val abilities = gson.fromJson(body, AbilityNamesGraphQLResponse::class.java)?.data?.ability
+            ?: throw IOException("GraphQL response had no ability data")
+        logIfTruncated("ability (names)", abilities.size)
+        return abilities.associate { a -> a.name to a.abilitynames.orEmpty().associate { it.language.name to it.name } }
+    }
+
+    private data class MoveNamesGraphQLResponse(val data: MoveNamesGraphQLData?)
+    private data class MoveNamesGraphQLData(val move: List<MoveNamesGraphQLMove>?)
+    private data class MoveNamesGraphQLMove(val name: String, val movenames: List<SpeciesNamesGraphQLName>?)
+
+    private data class AbilityNamesGraphQLResponse(val data: AbilityNamesGraphQLData?)
+    private data class AbilityNamesGraphQLData(val ability: List<AbilityNamesGraphQLAbility>?)
+    private data class AbilityNamesGraphQLAbility(val name: String, val abilitynames: List<SpeciesNamesGraphQLName>?)
 }

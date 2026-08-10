@@ -93,4 +93,92 @@
 
     <string name="smogon_tier_community_voting_heading">Community voting</string>
     <string name="smogon_tier_community_voting_body">Suspect tests require players to achieve a high skill rating (GXE) on a fresh ladder account to earn voting rights.</string>
+
+    <!-- Detail screen (B11) -->
+    <string name="detail_back">Back</string>
+    <string name="detail_remove_from_team">Remove from team</string>
+    <string name="detail_add_to_team">Add to team</string>
+    <string name="detail_remove_from_favorites">Remove from favorites</string>
+    <string name="detail_add_to_favorites">Add to favorites</string>
+    <string name="detail_compare_with">Compare with…</string>
+    <string name="detail_team_full_snackbar">Your team is full (%1$d/%2$d). Remove one first.</string>
+    <string name="detail_previous_pokemon">Previous Pokémon</string>
+    <string name="detail_next_pokemon">Next Pokémon</string>
+    <string name="detail_retry">Retry</string>
+    <string name="detail_not_found">Pokémon not found.</string>
+
+    <string name="detail_show_normal_coloring">Show normal coloring</string>
+    <string name="detail_show_shiny_coloring">Show shiny coloring</string>
+    <string name="detail_show_static_artwork">Show static artwork</string>
+    <string name="detail_show_animated_sprite">Show animated battle sprite</string>
+    <string name="detail_play_cry">Play cry</string>
+    <string name="detail_legendary">Legendary</string>
+    <string name="detail_mythical">Mythical</string>
+    <string name="detail_height">Height</string>
+    <string name="detail_weight">Weight</string>
+    <string name="detail_egg_groups">Egg Groups</string>
+    <string name="detail_egg_group_undiscovered">Undiscovered</string>
+    <string name="detail_height_value">%1$s m</string>
+    <string name="detail_weight_value">%1$s kg</string>
+
+    <string name="detail_base_stats_title">Base Stats</string>
+    <string name="detail_base_stats_subtitle">Bar length scaled to %1$d · color ranks this stat against every other Pokémon</string>
+    <string name="detail_stat_total">Total: %1$d</string>
+    <string name="detail_stronger_than">Stronger than %1$d%% of all Pokémon</string>
+
+    <string name="detail_abilities_title">Abilities</string>
+    <string name="detail_ability_hidden_suffix">(hidden)</string>
+
+    <string name="detail_evolution_title">Evolution</string>
+    <string name="detail_no_evolution">This Pokémon does not evolve.</string>
+    <string name="detail_other_forms_title">Other Forms</string>
+    <string name="detail_other_forms_subtitle">Alternate forms of this species, not covered by the evolution steps above.</string>
+
+    <string name="detail_team_impact_title">Team Coverage Impact</string>
+    <string name="detail_team_impact_nothing">Nothing.</string>
+    <string name="detail_team_impact_subtitle">What adding this Pokémon to your active team would change.</string>
+    <string name="detail_defensively">Defensively</string>
+    <string name="detail_offensively">Offensively</string>
+    <string name="detail_fixes_weaknesses">Fixes these shared weaknesses:</string>
+    <string name="detail_introduces_weaknesses">Introduces these shared weaknesses:</string>
+    <string name="detail_adds_immunity">Adds an immunity to:</string>
+    <string name="detail_adds_resistance">Adds a resistance to:</string>
+    <string name="detail_adds_quad_weakness">Adds a severe (×4) weakness to:</string>
+    <string name="detail_closes_gaps">Closes these coverage gaps:</string>
+    <string name="detail_opens_gaps">Opens these coverage gaps:</string>
+
+    <string name="detail_type_matchups_title">Type Matchups</string>
+
+    <string name="detail_type_triangles_title">Type Triangles</string>
+    <string name="detail_view_chart">View chart</string>
+    <string name="detail_best_counter_to">This typing is the best counter to:</string>
+    <string name="detail_triangle_perfect_suffix">(Perfect)</string>
+    <string name="detail_triangle_imperfect_suffix">(Imperfect)</string>
+
+    <string name="detail_smogon_strategy_dex_title">Smogon Strategy Dex</string>
+
+    <string name="detail_collapse">Collapse</string>
+    <string name="detail_expand">Expand</string>
+    <string name="detail_move_category_level_up">Level Up</string>
+    <string name="detail_move_category_machine">TM/HM</string>
+    <string name="detail_move_category_egg">Breeding</string>
+    <string name="detail_move_category_tutor">Tutor</string>
+    <string name="detail_move_category_header">%1$s (%2$d)</string>
+    <string name="detail_move_level">Lv. %1$d</string>
+    <string name="detail_move_evolution">Evolution</string>
+
+    <string name="detail_damage_class_physical">Physical</string>
+    <string name="detail_damage_class_special">Special</string>
+    <string name="detail_damage_class_status">Status</string>
+    <string name="detail_dash_placeholder">—</string>
+    <string name="detail_move_stats_line">%1$s · Power %2$s · Accuracy %3$s · PP %4$s</string>
+    <string name="detail_move_stats_line_with_priority">%1$s · Power %2$s · Accuracy %3$s · PP %4$s · Priority %5$s</string>
+
+    <string name="detail_ailment_always">Always</string>
+    <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_crit_rate">Crit rate +%1$d</string>
+    <string name="detail_drains">Drains %1$d%% dealt</string>
+    <string name="detail_recoil">Recoil %1$d%% dealt</string>
+    <string name="detail_heals">Heals %1$d%% max HP</string>
+    <string name="detail_flinch_chance">%1$d%% Flinch</string>
 </resources>
