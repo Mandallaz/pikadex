@@ -1,5 +1,8 @@
 package com.mandallaz.pikadex.util
 
+import androidx.annotation.StringRes
+import com.mandallaz.pikadex.R
+
 /**
  * A notable trainer's roster, loadable into the team builder to inspect its type coverage.
  *
@@ -19,9 +22,9 @@ data class PresetTeam(
     val pokemon: List<String>
 )
 
-enum class PresetRole(val label: String) {
-    GYM_LEADER("Gym Leader"),
-    CHAMPION("Champion")
+enum class PresetRole(@param:StringRes val labelRes: Int) {
+    GYM_LEADER(R.string.preset_role_gym_leader),
+    CHAMPION(R.string.preset_role_champion)
 }
 
 object PresetTeams {

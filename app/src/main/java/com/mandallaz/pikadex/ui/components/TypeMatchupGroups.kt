@@ -26,7 +26,7 @@ fun TypeMatchupGroups(multipliers: Map<String, Double>, modifier: Modifier = Mod
     Column(modifier = modifier) {
         buckets.forEach { bucket ->
             Text(
-                bucket.label,
+                stringResource(bucket.labelRes),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )

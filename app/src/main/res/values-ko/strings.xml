@@ -183,6 +183,19 @@
     <string name="detail_error_team_impact">팀 영향 미리보기 중 네트워크 오류가 발생했습니다.</string>
     <string name="detail_error_load_pokemon_list">포켓몬 목록을 불러오는 중 네트워크 오류가 발생했습니다.</string>
     <string name="detail_no_notable_matchups">눈에 띄는 약점이나 내성이 없습니다.</string>
+    <string name="detail_matchup_weak_x4">약점 (×4)</string>
+    <string name="detail_matchup_weak_x2">약점 (×2)</string>
+    <string name="detail_matchup_resists_half">내성 (×½)</string>
+    <string name="detail_matchup_resists_quarter">내성 (×¼)</string>
+    <string name="detail_matchup_immune">무효</string>
+    <string name="detail_evolution_condition_level">레벨 %1$d</string>
+    <string name="detail_evolution_condition_item">도구: %1$s</string>
+    <string name="detail_evolution_condition_trade">교환</string>
+    <string name="detail_evolution_condition_trade_with_item">교환 (%1$s)</string>
+    <string name="detail_evolution_condition_friendship">높은 친밀도</string>
+    <string name="detail_evolution_condition_move">%1$s를 배움</string>
+    <string name="detail_evolution_condition_time">%1$s 중</string>
+    <string name="detail_evolution_condition_raw">%1$s</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">팀 전환</string>
@@ -238,6 +251,8 @@
     <string name="preset_replace">교체</string>
     <string name="preset_cancel">취소</string>
     <string name="preset_new_team">새 팀</string>
+    <string name="preset_role_gym_leader">체육관 관장</string>
+    <string name="preset_role_champion">챔피언</string>
 
     <!-- Team slots dialog (F35 continued) -->
     <string name="teamslots_title">내 팀</string>

@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.util
 
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.DamageRelations
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
@@ -102,11 +103,14 @@ class TypeEffectivenessTest {
         assertEquals(listOf("electric", "ice", "rock"), buckets.single().types)
     }
 
+    // B14 — bucket labels used to be raw English strings; each bucket now carries a @StringRes id
+    // (resolved via stringResource() at render time) so the multiplier notation ("×4", "×½"...)
+    // follows the app's picked language instead of always being English.
     @Test
-    fun `bucket labels use the same multiplier notation as the team matrix`() {
+    fun `bucket labels resolve to distinct string resources per multiplier`() {
         val buckets = bucketizeMatchups(mapOf("electric" to 4.0, "fire" to 0.5))
-        assertTrue(buckets.any { it.label.contains("×4") })
-        assertTrue(buckets.any { it.label.contains("×½") })
+        assertEquals(R.string.detail_matchup_weak_x4, buckets.first { it.multiplier == 4.0 }.labelRes)
+        assertEquals(R.string.detail_matchup_resists_half, buckets.first { it.multiplier == 0.5 }.labelRes)
     }
 
     // A tiny drift off the bucket's exact value — the kind a non-power-of-two modifier could

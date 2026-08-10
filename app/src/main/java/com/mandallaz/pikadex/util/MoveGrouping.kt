@@ -8,11 +8,11 @@ data class LearnedMove(
     val versionGroup: String
 )
 
-enum class MoveCategory(val apiMethodName: String, val label: String) {
-    LEVEL_UP("level-up", "Level Up"),
-    MACHINE("machine", "TM/HM"),
-    EGG("egg", "Breeding"),
-    TUTOR("tutor", "Tutor")
+enum class MoveCategory(val apiMethodName: String) {
+    LEVEL_UP("level-up"),
+    MACHINE("machine"),
+    EGG("egg"),
+    TUTOR("tutor")
 }
 
 /**

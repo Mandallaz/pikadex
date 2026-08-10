@@ -183,6 +183,19 @@
     <string name="detail_error_team_impact">チームへの影響のプレビュー中にネットワークエラーが発生しました。</string>
     <string name="detail_error_load_pokemon_list">ポケモンリストの読み込み中にネットワークエラーが発生しました。</string>
     <string name="detail_no_notable_matchups">目立った弱点や耐性はありません。</string>
+    <string name="detail_matchup_weak_x4">弱点 (×4)</string>
+    <string name="detail_matchup_weak_x2">弱点 (×2)</string>
+    <string name="detail_matchup_resists_half">耐性 (×½)</string>
+    <string name="detail_matchup_resists_quarter">耐性 (×¼)</string>
+    <string name="detail_matchup_immune">無効</string>
+    <string name="detail_evolution_condition_level">レベル%1$d</string>
+    <string name="detail_evolution_condition_item">どうぐ: %1$s</string>
+    <string name="detail_evolution_condition_trade">通信交換</string>
+    <string name="detail_evolution_condition_trade_with_item">通信交換 (%1$s)</string>
+    <string name="detail_evolution_condition_friendship">高いなつき度</string>
+    <string name="detail_evolution_condition_move">%1$sを覚えている</string>
+    <string name="detail_evolution_condition_time">%1$s中</string>
+    <string name="detail_evolution_condition_raw">%1$s</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">チームを切り替え</string>
@@ -238,6 +251,8 @@
     <string name="preset_replace">置き換える</string>
     <string name="preset_cancel">キャンセル</string>
     <string name="preset_new_team">新しいチーム</string>
+    <string name="preset_role_gym_leader">ジムリーダー</string>
+    <string name="preset_role_champion">チャンピオン</string>
 
     <!-- Team slots dialog (F35 continued) -->
     <string name="teamslots_title">チーム一覧</string>

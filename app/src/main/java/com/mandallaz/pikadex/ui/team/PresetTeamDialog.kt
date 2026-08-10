@@ -175,7 +175,7 @@ private fun PresetTeamRow(
                     AssistChip(
                         onClick = onClick,
                         enabled = false,
-                        label = { Text(team.role.label, style = MaterialTheme.typography.labelSmall) },
+                        label = { Text(stringResource(team.role.labelRes), style = MaterialTheme.typography.labelSmall) },
                         colors = AssistChipDefaults.assistChipColors(
                             disabledLabelColor = MaterialTheme.colorScheme.primary
                         ),

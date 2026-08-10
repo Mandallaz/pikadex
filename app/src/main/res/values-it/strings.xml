@@ -183,6 +183,19 @@
     <string name="detail_error_team_impact">Errore di rete durante l\'anteprima dell\'impatto sulla squadra.</string>
     <string name="detail_error_load_pokemon_list">Errore di rete durante il caricamento dell\'elenco dei Pokémon.</string>
     <string name="detail_no_notable_matchups">Nessuna debolezza o resistenza degna di nota.</string>
+    <string name="detail_matchup_weak_x4">Debole contro (×4)</string>
+    <string name="detail_matchup_weak_x2">Debole contro (×2)</string>
+    <string name="detail_matchup_resists_half">Resiste a (×½)</string>
+    <string name="detail_matchup_resists_quarter">Resiste a (×¼)</string>
+    <string name="detail_matchup_immune">Immune a</string>
+    <string name="detail_evolution_condition_level">Livello %1$d</string>
+    <string name="detail_evolution_condition_item">Oggetto: %1$s</string>
+    <string name="detail_evolution_condition_trade">Scambio</string>
+    <string name="detail_evolution_condition_trade_with_item">Scambio (%1$s)</string>
+    <string name="detail_evolution_condition_friendship">Amicizia alta</string>
+    <string name="detail_evolution_condition_move">Conosce %1$s</string>
+    <string name="detail_evolution_condition_time">Durante %1$s</string>
+    <string name="detail_evolution_condition_raw">%1$s</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">Cambia squadra</string>
@@ -238,6 +251,8 @@
     <string name="preset_replace">Sostituisci</string>
     <string name="preset_cancel">Annulla</string>
     <string name="preset_new_team">Nuova squadra</string>
+    <string name="preset_role_gym_leader">Capopalestra</string>
+    <string name="preset_role_champion">Campione</string>
 
     <!-- Team slots dialog (F35 continued) -->
     <string name="teamslots_title">Le tue squadre</string>

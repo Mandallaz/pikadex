@@ -183,6 +183,19 @@
     <string name="detail_error_team_impact">预览队伍影响时发生网络错误。</string>
     <string name="detail_error_load_pokemon_list">加载宝可梦列表时发生网络错误。</string>
     <string name="detail_no_notable_matchups">没有明显的弱点或抗性。</string>
+    <string name="detail_matchup_weak_x4">弱点 (×4)</string>
+    <string name="detail_matchup_weak_x2">弱点 (×2)</string>
+    <string name="detail_matchup_resists_half">抗性 (×½)</string>
+    <string name="detail_matchup_resists_quarter">抗性 (×¼)</string>
+    <string name="detail_matchup_immune">免疫</string>
+    <string name="detail_evolution_condition_level">等级 %1$d</string>
+    <string name="detail_evolution_condition_item">道具：%1$s</string>
+    <string name="detail_evolution_condition_trade">交换</string>
+    <string name="detail_evolution_condition_trade_with_item">交换 (%1$s)</string>
+    <string name="detail_evolution_condition_friendship">高亲密度</string>
+    <string name="detail_evolution_condition_move">学会%1$s</string>
+    <string name="detail_evolution_condition_time">%1$s时</string>
+    <string name="detail_evolution_condition_raw">%1$s</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">切换队伍</string>
@@ -238,6 +251,8 @@
     <string name="preset_replace">替换</string>
     <string name="preset_cancel">取消</string>
     <string name="preset_new_team">新队伍</string>
+    <string name="preset_role_gym_leader">道馆馆主</string>
+    <string name="preset_role_champion">冠军</string>
 
     <!-- Team slots dialog (F35 continued) -->
     <string name="teamslots_title">你的队伍</string>

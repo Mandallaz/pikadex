@@ -137,7 +137,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             when (val state = prefetchState) {
                 is PrefetchState.Running -> {
                     Column(modifier = Modifier.padding(top = 12.dp)) {
-                        Text("${state.phase}${if (state.total > 0) " — ${state.done}/${state.total}" else "…"}")
+                        Text("${stringResource(state.phaseRes)}${if (state.total > 0) " — ${state.done}/${state.total}" else "…"}")
                         LinearProgressIndicator(
                             progress = { if (state.total > 0) state.done.toFloat() / state.total else 0f },
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp)

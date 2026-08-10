@@ -766,7 +766,7 @@ internal fun DetailContent(
                                                 ) {
                                                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
                                                     stage.conditionLabel?.let {
-                                                        Text(it, style = MaterialTheme.typography.bodyMedium)
+                                                        Text(it.resolve(), style = MaterialTheme.typography.bodyMedium)
                                                     }
                                                 }
                                                 EvolutionStageBox(stage, pokemon, onPokemonClick, speciesNames, gameDataLanguage)

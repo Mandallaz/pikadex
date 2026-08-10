@@ -28,22 +28,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
-/** One optional download tier. [label] doubles as the "phase" shown in
- *  [PrefetchState.Running]. */
-enum class PrefetchTier(val label: String) {
-    ESSENTIALS("Essentials"),
-    SPRITES("Sprites"),
+/** One optional download tier. [labelRes] doubles as the "phase" shown in
+ *  [PrefetchState.Running] — reuses the same resource as this tier's Settings toggle title. */
+enum class PrefetchTier(@param:StringRes val labelRes: Int) {
+    ESSENTIALS(R.string.settings_tier_essentials_title),
+    SPRITES(R.string.settings_tier_sprites_title),
     // Opt-in, separate from SPRITES (issue #31): shiny + animated Showdown GIFs roughly double
     // SPRITES' own download volume, so it isn't worth defaulting on for users who never touch
     // those toggles on the detail screen.
-    SPRITES_EXTRA("Shiny & animated sprites"),
-    FULL_DETAIL("Full detail"),
-    CRIES("Cries")
+    SPRITES_EXTRA(R.string.settings_tier_sprites_extra_title),
+    FULL_DETAIL(R.string.settings_tier_full_detail_title),
+    CRIES(R.string.settings_tier_cries_title)
 }
 
 sealed interface PrefetchState {
     data object Idle : PrefetchState
-    data class Running(val done: Int, val total: Int, val phase: String) : PrefetchState
+    data class Running(val done: Int, val total: Int, @param:StringRes val phaseRes: Int) : PrefetchState
     data class Finished(val failed: Int) : PrefetchState
     data class Failed(@param:StringRes val messageRes: Int) : PrefetchState
 }
@@ -88,11 +88,11 @@ object PrefetchManager {
             try {
                 var totalFailed = 0
                 tiers.forEach { tier ->
-                    _state.update { PrefetchState.Running(done = 0, total = 0, phase = tier.label) }
+                    _state.update { PrefetchState.Running(done = 0, total = 0, phaseRes = tier.labelRes) }
                     val units = buildUnits(tier, appContext, repository)
-                    _state.update { PrefetchState.Running(done = 0, total = units.size, phase = tier.label) }
+                    _state.update { PrefetchState.Running(done = 0, total = units.size, phaseRes = tier.labelRes) }
                     totalFailed += runPrefetchBatch(units, PREFETCH_CONCURRENCY) { done ->
-                        _state.update { PrefetchState.Running(done = done, total = units.size, phase = tier.label) }
+                        _state.update { PrefetchState.Running(done = done, total = units.size, phaseRes = tier.labelRes) }
                     }
                 }
                 _state.update { PrefetchState.Finished(totalFailed) }

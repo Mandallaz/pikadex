@@ -1,5 +1,7 @@
 package com.mandallaz.pikadex.util
 
+import androidx.annotation.StringRes
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import kotlin.math.abs
 
@@ -141,17 +143,17 @@ fun teamQuadWeaknesses(defensiveMatrix: Map<String, Map<String, Double>>, member
     }
 }
 
-data class MatchupBucket(val label: String, val multiplier: Double, val types: List<String>)
+data class MatchupBucket(@param:StringRes val labelRes: Int, val multiplier: Double, val types: List<String>)
 
 // "×" + vulgar fractions to match the notation TeamScreen's matrix already uses ("×4", "×½"...)
 // — this used to read "x4"/"x1/2" here but "×2"/"×½" there, an inconsistency for the exact same
 // concept shown on two screens of the same app.
 private val BUCKET_ORDER = listOf(
-    4.0 to "Weak to (×4)",
-    2.0 to "Weak to (×2)",
-    0.5 to "Resists (×½)",
-    0.25 to "Resists (×¼)",
-    0.0 to "Immune to"
+    4.0 to R.string.detail_matchup_weak_x4,
+    2.0 to R.string.detail_matchup_weak_x2,
+    0.5 to R.string.detail_matchup_resists_half,
+    0.25 to R.string.detail_matchup_resists_quarter,
+    0.0 to R.string.detail_matchup_immune
 )
 
 // The multipliers actually computed today are all products of exact powers of two (2.0, 0.5, 0.0),
@@ -164,7 +166,7 @@ private const val EPSILON = 1e-9
 
 /** Groups a defensive-multiplier map into display buckets, skipping neutral (x1) types. */
 fun bucketizeMatchups(multipliers: Map<String, Double>): List<MatchupBucket> =
-    BUCKET_ORDER.mapNotNull { (multiplier, label) ->
+    BUCKET_ORDER.mapNotNull { (multiplier, labelRes) ->
         val types = multipliers.filterValues { abs(it - multiplier) < EPSILON }.keys.sorted()
-        if (types.isEmpty()) null else MatchupBucket(label, multiplier, types)
+        if (types.isEmpty()) null else MatchupBucket(labelRes, multiplier, types)
     }

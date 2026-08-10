@@ -1,12 +1,14 @@
 package com.mandallaz.pikadex.util
 
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.ChainLink
 import com.mandallaz.pikadex.data.remote.dto.EvolutionDetail
+import com.mandallaz.pikadex.ui.UiText
 
 data class EvolutionStage(
     val speciesName: String,
     val id: Int,
-    val conditionLabel: String?
+    val conditionLabel: UiText?
 )
 
 /**
@@ -28,17 +30,19 @@ fun evolutionPaths(link: ChainLink): List<List<EvolutionStage>> {
     }
 }
 
-fun describeEvolutionDetail(detail: EvolutionDetail?): String? {
+fun describeEvolutionDetail(detail: EvolutionDetail?): UiText? {
     if (detail == null) return null
     val trigger = detail.trigger?.name
     return when {
-        detail.minLevel != null -> "Level ${detail.minLevel}"
-        detail.item != null -> "Item: ${detail.item.name.toDisplayName()}"
-        trigger == "trade" -> "Trade" + (detail.heldItem?.let { " (${it.name.toDisplayName()})" } ?: "")
-        detail.minHappiness != null -> "High friendship"
-        detail.knownMove != null -> "Knows ${detail.knownMove.name.toDisplayName()}"
-        detail.timeOfDay?.isNotBlank() == true -> "During ${detail.timeOfDay}"
-        trigger != null -> trigger.toDisplayName()
+        detail.minLevel != null -> UiText(R.string.detail_evolution_condition_level, listOf(detail.minLevel))
+        detail.item != null -> UiText(R.string.detail_evolution_condition_item, listOf(detail.item.name.toDisplayName()))
+        trigger == "trade" -> detail.heldItem?.let {
+            UiText(R.string.detail_evolution_condition_trade_with_item, listOf(it.name.toDisplayName()))
+        } ?: UiText(R.string.detail_evolution_condition_trade)
+        detail.minHappiness != null -> UiText(R.string.detail_evolution_condition_friendship)
+        detail.knownMove != null -> UiText(R.string.detail_evolution_condition_move, listOf(detail.knownMove.name.toDisplayName()))
+        detail.timeOfDay?.isNotBlank() == true -> UiText(R.string.detail_evolution_condition_time, listOf(detail.timeOfDay))
+        trigger != null -> UiText(R.string.detail_evolution_condition_raw, listOf(trigger.toDisplayName()))
         else -> null
     }
 }

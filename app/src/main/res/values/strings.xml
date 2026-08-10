@@ -188,6 +188,21 @@
     <string name="detail_error_team_impact">Network error while previewing team impact.</string>
     <string name="detail_error_load_pokemon_list">Network error while loading the Pokémon list.</string>
     <string name="detail_no_notable_matchups">No notable weaknesses or resistances.</string>
+    <string name="detail_matchup_weak_x4">Weak to (×4)</string>
+    <string name="detail_matchup_weak_x2">Weak to (×2)</string>
+    <string name="detail_matchup_resists_half">Resists (×½)</string>
+    <string name="detail_matchup_resists_quarter">Resists (×¼)</string>
+    <string name="detail_matchup_immune">Immune to</string>
+
+    <!-- Evolution condition labels (B14) -->
+    <string name="detail_evolution_condition_level">Level %1$d</string>
+    <string name="detail_evolution_condition_item">Item: %1$s</string>
+    <string name="detail_evolution_condition_trade">Trade</string>
+    <string name="detail_evolution_condition_trade_with_item">Trade (%1$s)</string>
+    <string name="detail_evolution_condition_friendship">High friendship</string>
+    <string name="detail_evolution_condition_move">Knows %1$s</string>
+    <string name="detail_evolution_condition_time">During %1$s</string>
+    <string name="detail_evolution_condition_raw">%1$s</string>
 
     <!-- Team screen (F35 continued) -->
     <string name="team_switch_team_cd">Switch team</string>
@@ -247,6 +262,8 @@
     <string name="preset_replace">Replace</string>
     <string name="preset_cancel">Cancel</string>
     <string name="preset_new_team">New team</string>
+    <string name="preset_role_gym_leader">Gym Leader</string>
+    <string name="preset_role_champion">Champion</string>
 
     <!-- Team slots dialog (F35 continued) -->
     <string name="teamslots_title">Your teams</string>
