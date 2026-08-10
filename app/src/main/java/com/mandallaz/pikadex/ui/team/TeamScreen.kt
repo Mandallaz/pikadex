@@ -50,12 +50,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -97,9 +99,21 @@ private val COMPACT_LAYOUT_MIN_REMAINING_HEIGHT = 150.dp
  * multipliers, and without them "×2 on the Fire row" is genuinely ambiguous between "takes double
  * from Fire" and "deals double to Fire".
  */
-private enum class MatrixMode(val label: String, val caption: String) {
-    DEFENSE("Defense", "Damage each member takes from an attack of this type."),
-    OFFENSE("Offense", "Best each member can deal to this type, from its own typing and the attacks it learns by level-up.")
+private enum class MatrixMode {
+    DEFENSE,
+    OFFENSE
+}
+
+@Composable
+private fun MatrixMode.label(): String = when (this) {
+    MatrixMode.DEFENSE -> stringResource(R.string.team_mode_defense_label)
+    MatrixMode.OFFENSE -> stringResource(R.string.team_mode_offense_label)
+}
+
+@Composable
+private fun MatrixMode.caption(): String = when (this) {
+    MatrixMode.DEFENSE -> stringResource(R.string.team_mode_defense_caption)
+    MatrixMode.OFFENSE -> stringResource(R.string.team_mode_offense_caption)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,11 +130,14 @@ fun TeamScreen(
     val language by LanguageSettings.currentLanguage.collectAsState()
     val teams by viewModel.teams.collectAsState()
     val activeTeamId by viewModel.activeTeamId.collectAsState()
-    val activeTeamName = teams.firstOrNull { it.id == activeTeamId }?.name ?: "Team"
+    val activeTeamName = teams.firstOrNull { it.id == activeTeamId }?.name ?: stringResource(R.string.team_default_name)
     var showPresetPicker by rememberSaveable { mutableStateOf(false) }
     var showTeamSlots by rememberSaveable { mutableStateOf(false) }
     // rememberSaveable, so rotating doesn't silently drop the user back to Defense.
     var matrixMode by rememberSaveable { mutableStateOf(MatrixMode.DEFENSE) }
+    // Resolved here, not inside TeamSlotsDialog's onCreate lambda below — stringResource() is
+    // @Composable and that lambda isn't.
+    val newTeamDefaultName = stringResource(R.string.team_new_team_default_name)
 
     Scaffold(
         topBar = {
@@ -131,7 +148,7 @@ fun TeamScreen(
                         modifier = Modifier.clickable { showTeamSlots = true }
                     ) {
                         Text("$activeTeamName (${uiState.members.size}/${TeamRepository.MAX_SIZE})")
-                        Icon(Icons.Filled.ArrowDropDown, contentDescription = "Switch team")
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.team_switch_team_cd))
                     }
                 },
                 actions = {
@@ -139,7 +156,7 @@ fun TeamScreen(
                         viewModel.preparePresetPreviews()
                         showPresetPicker = true
                     }) {
-                        Icon(Icons.Filled.Groups, contentDescription = "Load a trainer's team")
+                        Icon(Icons.Filled.Groups, contentDescription = stringResource(R.string.team_load_trainer_team_cd))
                     }
                 }
             )
@@ -153,15 +170,15 @@ fun TeamScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        "Your team is empty. Add up to 6 Pokémon from the Pokédex to see how the team resists or is weak to each type.",
+                        stringResource(R.string.team_empty_message),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    Button(onClick = onBrowsePokedex) { Text("Browse Pokédex") }
+                    Button(onClick = onBrowsePokedex) { Text(stringResource(R.string.team_browse_pokedex)) }
                     TextButton(onClick = {
                         viewModel.preparePresetPreviews()
                         showPresetPicker = true
-                    }) { Text("Or load a trainer's team") }
+                    }) { Text(stringResource(R.string.team_or_load_trainer_team)) }
                 }
                 return@BoxWithConstraints
             }
@@ -247,7 +264,7 @@ fun TeamScreen(
                         Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
                         // Without this the matrix only ever recomputed when the team itself changed, so
                         // a failed fetch left every cell blank until the user added or removed a member.
-                        Button(onClick = viewModel::retry, modifier = Modifier.padding(start = 8.dp)) { Text("Retry") }
+                        Button(onClick = viewModel::retry, modifier = Modifier.padding(start = 8.dp)) { Text(stringResource(R.string.team_retry)) }
                     }
                 }
 
@@ -262,13 +279,13 @@ fun TeamScreen(
                         FilterChip(
                             selected = matrixMode == mode,
                             onClick = { matrixMode = mode },
-                            label = { Text(mode.label) }
+                            label = { Text(mode.label()) }
                         )
                     }
                 }
 
                 Text(
-                    text = matrixMode.caption,
+                    text = matrixMode.caption(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
@@ -279,9 +296,11 @@ fun TeamScreen(
                         val sharedWeaknesses = uiState.sharedWeaknesses
                         if (sharedWeaknesses.isNotEmpty()) {
                             MatrixCallout(
-                                title = "Team-wide weaknesses",
-                                body = "At least half your team is weak to: " +
+                                title = stringResource(R.string.team_weaknesses_title),
+                                body = stringResource(
+                                    R.string.team_weaknesses_body,
                                     sharedWeaknesses.joinToString(", ") { it.toDisplayName() }
+                                )
                             )
                         }
                     }
@@ -292,14 +311,16 @@ fun TeamScreen(
                         if (!uiState.isLoading && !uiState.isMatrixStale) {
                             if (gaps.isNotEmpty()) {
                                 MatrixCallout(
-                                    title = "Coverage gaps",
-                                    body = "Nothing on your team hits these for more than ×1: " +
+                                    title = stringResource(R.string.team_gaps_title),
+                                    body = stringResource(
+                                        R.string.team_gaps_body,
                                         gaps.joinToString(", ") { it.toDisplayName() }
+                                    )
                                 )
                             } else {
                                 MatrixCallout(
-                                    title = "No coverage gaps",
-                                    body = "Every type can be hit for super-effective damage by at least one member.",
+                                    title = stringResource(R.string.team_no_gaps_title),
+                                    body = stringResource(R.string.team_no_gaps_body),
                                     isWarning = false
                                 )
                             }
@@ -443,7 +464,7 @@ fun TeamScreen(
                 showTeamSlots = false
             },
             onCreate = {
-                val newId = viewModel.createTeam("New Team")
+                val newId = viewModel.createTeam(newTeamDefaultName)
                 viewModel.setActiveTeam(newId)
                 showTeamSlots = false
             },
@@ -484,7 +505,7 @@ private fun TeamMemberChip(
         ) {
             Icon(
                 Icons.Filled.Close,
-                contentDescription = "Remove ${member.name} from team",
+                contentDescription = stringResource(R.string.team_remove_member_cd, member.name.localizedDisplayName(speciesNames, language)),
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -496,9 +517,9 @@ private fun AddMemberChip(onClick: () -> Unit) {
     Box(modifier = Modifier.padding(top = 12.dp, end = 8.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             OutlinedIconButton(onClick = onClick, modifier = Modifier.size(56.dp)) {
-                Icon(Icons.Filled.Add, contentDescription = "Add a Pokémon to your team")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.team_add_member_cd))
             }
-            Text("Add", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.team_add_label), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -557,9 +578,9 @@ private fun SuggestionsCard(
 ) {
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text("Suggestions", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.team_suggestions_title), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
             Text(
-                "Would help both your team-wide weaknesses and coverage gaps.",
+                stringResource(R.string.team_suggestions_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
@@ -569,7 +590,7 @@ private fun SuggestionsCard(
             // visible cause.
             if (tierCeiling != null) {
                 Text(
-                    "Limited to ${SmogonTierLabels.labelFor(tierCeiling)} and below (Settings).",
+                    stringResource(R.string.team_suggestions_tier_limited, SmogonTierLabels.labelFor(tierCeiling)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
@@ -581,7 +602,7 @@ private fun SuggestionsCard(
             if (suggestions.size > 4) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                     Text(
-                        "Swipe to see all ${suggestions.size}",
+                        stringResource(R.string.team_suggestions_swipe_all, suggestions.size),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -638,7 +659,7 @@ private fun SuggestionTile(
             overflow = TextOverflow.Ellipsis
         )
         Text(
-            "BST ${suggestion.statTotal}",
+            stringResource(R.string.team_suggestion_bst, suggestion.statTotal),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -656,8 +677,11 @@ private fun SuggestionTile(
         // work it out by eye from the type badges above. Also what [rankSuggestions] sorts by, so
         // it doubles as an explanation for the tile's position in the row.
         Text(
-            "Resists ${suggestion.weaknessesResisted.joinToString(", ") { it.toDisplayName() }} · " +
-                "Hits ${suggestion.gapsHit.joinToString(", ") { it.toDisplayName() }}",
+            stringResource(
+                R.string.team_suggestion_resists_hits,
+                suggestion.weaknessesResisted.joinToString(", ") { it.toDisplayName() },
+                suggestion.gapsHit.joinToString(", ") { it.toDisplayName() }
+            ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -678,9 +702,12 @@ private fun SuggestionTile(
                     modifier = Modifier.size(12.dp).padding(top = 1.dp)
                 )
                 Text(
-                    "Not as " + suggestion.conflictingForms.joinToString(", ") {
-                        it.removePrefix("${suggestion.name}-").toDisplayName()
-                    },
+                    stringResource(
+                        R.string.team_suggestion_not_as,
+                        suggestion.conflictingForms.joinToString(", ") {
+                            it.removePrefix("${suggestion.name}-").toDisplayName()
+                        }
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                     maxLines = 2,
@@ -692,7 +719,7 @@ private fun SuggestionTile(
         IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
             Icon(
                 Icons.Filled.Add,
-                contentDescription = "Add ${suggestion.name} to team",
+                contentDescription = stringResource(R.string.team_suggestion_add_cd, suggestion.name.localizedDisplayName(speciesNames, language)),
                 modifier = Modifier.size(18.dp)
             )
         }

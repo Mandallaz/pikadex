@@ -180,4 +180,68 @@
     <string name="detail_recoil">Contrecoup %1$d %% des dégâts</string>
     <string name="detail_heals">Soigne %1$d %% des PV max</string>
     <string name="detail_flinch_chance">%1$d %% de rétivité</string>
+
+    <!-- Team screen (F35 continued) -->
+    <string name="team_switch_team_cd">Changer d\'équipe</string>
+    <string name="team_load_trainer_team_cd">Charger l\'équipe d\'un dresseur</string>
+    <string name="team_default_name">Équipe</string>
+    <string name="team_empty_message">Votre équipe est vide. Ajoutez jusqu\'à 6 Pokémon depuis le Pokédex pour voir comment l\'équipe résiste ou est vulnérable à chaque type.</string>
+    <string name="team_browse_pokedex">Parcourir le Pokédex</string>
+    <string name="team_or_load_trainer_team">Ou charger l\'équipe d\'un dresseur</string>
+    <string name="team_retry">Réessayer</string>
+    <string name="team_mode_defense_label">Défense</string>
+    <string name="team_mode_defense_caption">Dégâts que chaque membre subit d\'une attaque de ce type.</string>
+    <string name="team_mode_offense_label">Attaque</string>
+    <string name="team_mode_offense_caption">Meilleurs dégâts que chaque membre peut infliger à ce type, selon son propre typage et les capacités qu\'il apprend en montant de niveau.</string>
+    <string name="team_weaknesses_title">Faiblesses partagées par l\'équipe</string>
+    <string name="team_weaknesses_body">Au moins la moitié de votre équipe est vulnérable à : %1$s</string>
+    <string name="team_gaps_title">Lacunes de couverture</string>
+    <string name="team_gaps_body">Rien dans votre équipe ne touche ces types pour plus de ×1 : %1$s</string>
+    <string name="team_no_gaps_title">Aucune lacune de couverture</string>
+    <string name="team_no_gaps_body">Chaque type peut subir des dégâts super efficaces d\'au moins un membre.</string>
+    <string name="team_new_team_default_name">Nouvelle équipe</string>
+    <string name="team_remove_member_cd">Retirer %1$s de l\'équipe</string>
+    <string name="team_add_member_cd">Ajouter un Pokémon à votre équipe</string>
+    <string name="team_add_label">Ajouter</string>
+    <string name="team_suggestions_title">Suggestions</string>
+    <string name="team_suggestions_subtitle">Aiderait à la fois vos faiblesses partagées et vos lacunes de couverture.</string>
+    <string name="team_suggestions_tier_limited">Limité à %1$s et en dessous (Réglages).</string>
+    <string name="team_suggestions_swipe_all">Balayer pour voir les %1$d</string>
+    <string name="team_suggestion_bst">BST %1$d</string>
+    <string name="team_suggestion_resists_hits">Résiste à %1$s · Touche %2$s</string>
+    <string name="team_suggestion_not_as">Pas comme %1$s</string>
+    <string name="team_suggestion_add_cd">Ajouter %1$s à l\'équipe</string>
+
+    <!-- Compare screen (F35 continued) -->
+    <string name="compare_title">Comparer</string>
+    <string name="compare_back_cd">Retour</string>
+    <string name="compare_swap_cd">Inverser les côtés</string>
+    <string name="compare_load_error">Impossible de charger cette comparaison.</string>
+    <string name="compare_retry">Réessayer</string>
+    <string name="compare_with_title">Comparer avec…</string>
+    <string name="compare_base_stats">Statistiques de base</string>
+    <string name="compare_change">Changer</string>
+
+    <!-- Preset team dialog (F35 continued) -->
+    <string name="preset_trainer_teams_title">Équipes de dresseurs</string>
+    <string name="preset_close_cd">Fermer</string>
+    <string name="preset_load_confirm_title">Charger l\'équipe de %1$s ?</string>
+    <string name="preset_load_confirm_body">Votre équipe actuelle compte %1$d Pokémon. La remplacer par l\'équipe de %2$s, ou la charger dans une nouvelle équipe ?</string>
+    <string name="preset_replace">Remplacer</string>
+    <string name="preset_cancel">Annuler</string>
+    <string name="preset_new_team">Nouvelle équipe</string>
+
+    <!-- Team slots dialog (F35 continued) -->
+    <string name="teamslots_title">Vos équipes</string>
+    <string name="teamslots_active_cd">Équipe active</string>
+    <string name="teamslots_rename_cd">Renommer %1$s</string>
+    <string name="teamslots_delete_cd">Supprimer %1$s</string>
+    <string name="teamslots_new_team">Nouvelle équipe</string>
+    <string name="teamslots_close">Fermer</string>
+    <string name="teamslots_delete_confirm_title">Supprimer « %1$s » ?</string>
+    <string name="teamslots_delete_confirm_body">Cela retire les %1$d Pokémon de cette équipe. Cette action est irréversible.</string>
+    <string name="teamslots_delete">Supprimer</string>
+    <string name="teamslots_cancel">Annuler</string>
+    <string name="teamslots_rename_title">Renommer l\'équipe</string>
+    <string name="teamslots_save">Enregistrer</string>
 </resources>

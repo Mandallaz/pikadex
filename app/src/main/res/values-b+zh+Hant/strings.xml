@@ -178,4 +178,68 @@
     <string name="detail_recoil">反作用力為造成傷害的%1$d%%</string>
     <string name="detail_heals">恢復最大HP的%1$d%%</string>
     <string name="detail_flinch_chance">%1$d%%機率畏縮</string>
+
+    <!-- Team screen (F35 continued) -->
+    <string name="team_switch_team_cd">切換隊伍</string>
+    <string name="team_load_trainer_team_cd">載入訓練家的隊伍</string>
+    <string name="team_default_name">隊伍</string>
+    <string name="team_empty_message">你的隊伍是空的。從圖鑑中最多新增6隻寶可夢，查看隊伍對各屬性的抗性與弱點。</string>
+    <string name="team_browse_pokedex">瀏覽圖鑑</string>
+    <string name="team_or_load_trainer_team">或載入訓練家的隊伍</string>
+    <string name="team_retry">重試</string>
+    <string name="team_mode_defense_label">防禦</string>
+    <string name="team_mode_defense_caption">每位隊員受到該屬性攻擊時所受到的傷害。</string>
+    <string name="team_mode_offense_label">攻擊</string>
+    <string name="team_mode_offense_caption">每位隊員依據自身屬性與升級學會的招式，能對該屬性造成的最大傷害。</string>
+    <string name="team_weaknesses_title">隊伍共同弱點</string>
+    <string name="team_weaknesses_body">你的隊伍中至少一半成員對以下屬性弱：%1$s</string>
+    <string name="team_gaps_title">覆蓋缺口</string>
+    <string name="team_gaps_body">你的隊伍中沒有成員能對以下屬性造成超過×1的傷害：%1$s</string>
+    <string name="team_no_gaps_title">無覆蓋缺口</string>
+    <string name="team_no_gaps_body">每種屬性都至少有一名隊員能造成效果拔群的傷害。</string>
+    <string name="team_new_team_default_name">新隊伍</string>
+    <string name="team_remove_member_cd">將%1$s移出隊伍</string>
+    <string name="team_add_member_cd">將寶可夢新增至隊伍</string>
+    <string name="team_add_label">新增</string>
+    <string name="team_suggestions_title">建議</string>
+    <string name="team_suggestions_subtitle">可同時改善隊伍共同弱點與覆蓋缺口。</string>
+    <string name="team_suggestions_tier_limited">限制為%1$s及以下（設定）。</string>
+    <string name="team_suggestions_swipe_all">滑動查看全部%1$d個</string>
+    <string name="team_suggestion_bst">種族值總和 %1$d</string>
+    <string name="team_suggestion_resists_hits">抗性：%1$s · 命中：%2$s</string>
+    <string name="team_suggestion_not_as">以下形態不適用：%1$s</string>
+    <string name="team_suggestion_add_cd">將%1$s新增至隊伍</string>
+
+    <!-- Compare screen (F35 continued) -->
+    <string name="compare_title">比較</string>
+    <string name="compare_back_cd">返回</string>
+    <string name="compare_swap_cd">交換兩側</string>
+    <string name="compare_load_error">無法載入此比較。</string>
+    <string name="compare_retry">重試</string>
+    <string name="compare_with_title">與…比較</string>
+    <string name="compare_base_stats">基礎屬性值</string>
+    <string name="compare_change">更改</string>
+
+    <!-- Preset team dialog (F35 continued) -->
+    <string name="preset_trainer_teams_title">訓練家隊伍</string>
+    <string name="preset_close_cd">關閉</string>
+    <string name="preset_load_confirm_title">載入%1$s的隊伍？</string>
+    <string name="preset_load_confirm_body">你目前的隊伍有%1$d隻寶可夢。要替換為%2$s的隊伍，還是載入到一個新隊伍中？</string>
+    <string name="preset_replace">替換</string>
+    <string name="preset_cancel">取消</string>
+    <string name="preset_new_team">新隊伍</string>
+
+    <!-- Team slots dialog (F35 continued) -->
+    <string name="teamslots_title">你的隊伍</string>
+    <string name="teamslots_active_cd">目前隊伍</string>
+    <string name="teamslots_rename_cd">重新命名%1$s</string>
+    <string name="teamslots_delete_cd">刪除%1$s</string>
+    <string name="teamslots_new_team">新隊伍</string>
+    <string name="teamslots_close">關閉</string>
+    <string name="teamslots_delete_confirm_title">刪除「%1$s」？</string>
+    <string name="teamslots_delete_confirm_body">這會移除該隊伍中的全部%1$d隻寶可夢。此操作無法復原。</string>
+    <string name="teamslots_delete">刪除</string>
+    <string name="teamslots_cancel">取消</string>
+    <string name="teamslots_rename_title">重新命名隊伍</string>
+    <string name="teamslots_save">儲存</string>
 </resources>

@@ -36,10 +36,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
@@ -77,16 +79,16 @@ fun CompareScreen(
     Scaffold(
         topBar = {
             PikaDexTopBar(
-                title = { Text("Compare") },
+                title = { Text(stringResource(R.string.compare_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.compare_back_cd))
                     }
                 },
                 actions = {
                     if (uiState.left != null && uiState.right != null) {
                         IconButton(onClick = { onRecompare(rightName, leftName) }) {
-                            Icon(Icons.Filled.SwapHoriz, contentDescription = "Swap sides")
+                            Icon(Icons.Filled.SwapHoriz, contentDescription = stringResource(R.string.compare_swap_cd))
                         }
                     }
                 }
@@ -103,13 +105,13 @@ fun CompareScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = uiState.errorMessage ?: "Couldn't load this comparison.",
+                        text = uiState.errorMessage ?: stringResource(R.string.compare_load_error),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
                     if (uiState.errorMessage != null) {
                         Spacer(modifier = Modifier.size(16.dp))
-                        Button(onClick = { viewModel.load(leftName, rightName) }) { Text("Retry") }
+                        Button(onClick = { viewModel.load(leftName, rightName) }) { Text(stringResource(R.string.compare_retry)) }
                     }
                 }
                 else -> CompareContent(
@@ -126,7 +128,7 @@ fun CompareScreen(
 
     if (pickingSide != null) {
         SearchableListDialog(
-            title = "Compare with…",
+            title = stringResource(R.string.compare_with_title),
             options = uiState.candidateNames.filterNot { it == leftName || it == rightName },
             displayName = { it.localizedDisplayName(uiState.speciesNames, language) },
             onDismiss = { pickingSide = null },
@@ -172,7 +174,7 @@ private fun CompareContent(
                 Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Base Stats",
+                            stringResource(R.string.compare_base_stats),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -224,7 +226,7 @@ private fun CompareHeader(
                 TypeBadge(it.type.name, it.type.id ?: 0, height = 20.dp)
             }
         }
-        TextButton(onClick = onChange) { Text("Change") }
+        TextButton(onClick = onChange) { Text(stringResource(R.string.compare_change)) }
     }
 }
 

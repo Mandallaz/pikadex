@@ -28,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.TeamSlot
 
@@ -50,12 +52,23 @@ fun TeamSlotsDialog(
     var renaming by remember { mutableStateOf<TeamSlot?>(null) }
     var pendingDelete by remember { mutableStateOf<TeamSlot?>(null) }
 
+    // AlertDialog opens its own Window whose LocalContext re-resolves to the un-overridden one (see
+    // LocalizedContext's own doc) — unlike Dialog(), Material3's AlertDialog gives no content slot to
+    // wrap from the inside, so every string it needs is resolved here, in this composable's own
+    // (correctly-localized) scope, and passed down as a plain string. Same fix SettingsScreen's
+    // full-detail-warning AlertDialog already uses.
+    val slotsTitle = stringResource(R.string.teamslots_title)
+    val activeCd = stringResource(R.string.teamslots_active_cd)
+    val newTeamLabel = stringResource(R.string.teamslots_new_team)
+    val closeLabel = stringResource(R.string.teamslots_close)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Your teams") },
+        title = { Text(slotsTitle) },
         text = {
             LazyColumn {
                 items(teams, key = { it.id }) { slot ->
+                    val renameCd = stringResource(R.string.teamslots_rename_cd, slot.name)
+                    val deleteCd = stringResource(R.string.teamslots_delete_cd, slot.name)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -66,7 +79,7 @@ fun TeamSlotsDialog(
                         if (slot.id == activeTeamId) {
                             Icon(
                                 Icons.Filled.Check,
-                                contentDescription = "Active team",
+                                contentDescription = activeCd,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -88,7 +101,7 @@ fun TeamSlotsDialog(
                             )
                         }
                         IconButton(onClick = { renaming = slot }) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Rename ${slot.name}")
+                            Icon(Icons.Filled.Edit, contentDescription = renameCd)
                         }
                         // Deleting the last remaining team would leave the active-team pointer with
                         // nowhere to point — TeamRepository.deleteTeam already refuses this, hiding
@@ -96,7 +109,7 @@ fun TeamSlotsDialog(
                         // nothing.
                         if (teams.size > 1) {
                             IconButton(onClick = { pendingDelete = slot }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "Delete ${slot.name}")
+                                Icon(Icons.Filled.Delete, contentDescription = deleteCd)
                             }
                         }
                     }
@@ -105,10 +118,10 @@ fun TeamSlotsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onCreate) { Text("New team") }
+            TextButton(onClick = onCreate) { Text(newTeamLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(closeLabel) }
         }
     )
 
@@ -124,18 +137,22 @@ fun TeamSlotsDialog(
     }
 
     pendingDelete?.let { slot ->
+        val deleteTitle = stringResource(R.string.teamslots_delete_confirm_title, slot.name)
+        val deleteBody = stringResource(R.string.teamslots_delete_confirm_body, slot.size)
+        val deleteLabel = stringResource(R.string.teamslots_delete)
+        val cancelLabel = stringResource(R.string.teamslots_cancel)
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text("Delete \"${slot.name}\"?") },
-            text = { Text("This removes all ${slot.size} Pokémon on this team. This can't be undone.") },
+            title = { Text(deleteTitle) },
+            text = { Text(deleteBody) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete(slot.id)
                     pendingDelete = null
-                }) { Text("Delete") }
+                }) { Text(deleteLabel) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { pendingDelete = null }) { Text(cancelLabel) }
             }
         )
     }
@@ -144,19 +161,22 @@ fun TeamSlotsDialog(
 @Composable
 private fun RenameTeamDialog(initialName: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var name by remember { mutableStateOf(initialName) }
+    val renameTitle = stringResource(R.string.teamslots_rename_title)
+    val saveLabel = stringResource(R.string.teamslots_save)
+    val cancelLabel = stringResource(R.string.teamslots_cancel)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename team") },
+        title = { Text(renameTitle) },
         text = {
             OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true)
         },
         confirmButton = {
             TextButton(onClick = { if (name.isNotBlank()) onConfirm(name) }, enabled = name.isNotBlank()) {
-                Text("Save")
+                Text(saveLabel)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(cancelLabel) }
         }
     )
 }

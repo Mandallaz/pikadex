@@ -178,4 +178,68 @@
     <string name="detail_recoil">反作用力为造成伤害的%1$d%%</string>
     <string name="detail_heals">回复最大HP的%1$d%%</string>
     <string name="detail_flinch_chance">%1$d%%几率畏缩</string>
+
+    <!-- Team screen (F35 continued) -->
+    <string name="team_switch_team_cd">切换队伍</string>
+    <string name="team_load_trainer_team_cd">载入训练师的队伍</string>
+    <string name="team_default_name">队伍</string>
+    <string name="team_empty_message">你的队伍是空的。从图鉴中最多添加6只宝可梦，查看队伍对各属性的抗性和弱点。</string>
+    <string name="team_browse_pokedex">浏览图鉴</string>
+    <string name="team_or_load_trainer_team">或载入训练师的队伍</string>
+    <string name="team_retry">重试</string>
+    <string name="team_mode_defense_label">防御</string>
+    <string name="team_mode_defense_caption">每位队员受到该属性攻击时所受到的伤害。</string>
+    <string name="team_mode_offense_label">攻击</string>
+    <string name="team_mode_offense_caption">每位队员基于自身属性和升级学会的招式，能对该属性造成的最大伤害。</string>
+    <string name="team_weaknesses_title">队伍共同弱点</string>
+    <string name="team_weaknesses_body">你的队伍中至少一半成员对以下属性弱：%1$s</string>
+    <string name="team_gaps_title">覆盖缺口</string>
+    <string name="team_gaps_body">你的队伍中没有成员能对以下属性造成超过×1的伤害：%1$s</string>
+    <string name="team_no_gaps_title">无覆盖缺口</string>
+    <string name="team_no_gaps_body">每种属性都至少有一名队员能造成效果拔群的伤害。</string>
+    <string name="team_new_team_default_name">新队伍</string>
+    <string name="team_remove_member_cd">将%1$s移出队伍</string>
+    <string name="team_add_member_cd">将宝可梦添加到队伍</string>
+    <string name="team_add_label">添加</string>
+    <string name="team_suggestions_title">建议</string>
+    <string name="team_suggestions_subtitle">可同时改善队伍共同弱点和覆盖缺口。</string>
+    <string name="team_suggestions_tier_limited">限制为%1$s及以下（设置）。</string>
+    <string name="team_suggestions_swipe_all">滑动查看全部%1$d个</string>
+    <string name="team_suggestion_bst">种族值总和 %1$d</string>
+    <string name="team_suggestion_resists_hits">抗性：%1$s · 命中：%2$s</string>
+    <string name="team_suggestion_not_as">以下形态不适用：%1$s</string>
+    <string name="team_suggestion_add_cd">将%1$s添加到队伍</string>
+
+    <!-- Compare screen (F35 continued) -->
+    <string name="compare_title">对比</string>
+    <string name="compare_back_cd">返回</string>
+    <string name="compare_swap_cd">交换两侧</string>
+    <string name="compare_load_error">无法加载此对比。</string>
+    <string name="compare_retry">重试</string>
+    <string name="compare_with_title">与…对比</string>
+    <string name="compare_base_stats">基础属性值</string>
+    <string name="compare_change">更改</string>
+
+    <!-- Preset team dialog (F35 continued) -->
+    <string name="preset_trainer_teams_title">训练师队伍</string>
+    <string name="preset_close_cd">关闭</string>
+    <string name="preset_load_confirm_title">载入%1$s的队伍？</string>
+    <string name="preset_load_confirm_body">你当前的队伍有%1$d只宝可梦。是替换为%2$s的队伍，还是载入到一个新队伍中？</string>
+    <string name="preset_replace">替换</string>
+    <string name="preset_cancel">取消</string>
+    <string name="preset_new_team">新队伍</string>
+
+    <!-- Team slots dialog (F35 continued) -->
+    <string name="teamslots_title">你的队伍</string>
+    <string name="teamslots_active_cd">当前队伍</string>
+    <string name="teamslots_rename_cd">重命名%1$s</string>
+    <string name="teamslots_delete_cd">删除%1$s</string>
+    <string name="teamslots_new_team">新队伍</string>
+    <string name="teamslots_close">关闭</string>
+    <string name="teamslots_delete_confirm_title">删除"%1$s"？</string>
+    <string name="teamslots_delete_confirm_body">这将移除该队伍中的全部%1$d只宝可梦。此操作无法撤销。</string>
+    <string name="teamslots_delete">删除</string>
+    <string name="teamslots_cancel">取消</string>
+    <string name="teamslots_rename_title">重命名队伍</string>
+    <string name="teamslots_save">保存</string>
 </resources>

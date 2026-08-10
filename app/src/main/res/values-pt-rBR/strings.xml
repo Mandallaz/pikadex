@@ -178,4 +178,68 @@
     <string name="detail_recoil">Recuo %1$d%% do dano</string>
     <string name="detail_heals">Cura %1$d%% do HP máx.</string>
     <string name="detail_flinch_chance">%1$d%% de recuar (flinch)</string>
+
+    <!-- Team screen (F35 continued) -->
+    <string name="team_switch_team_cd">Trocar de time</string>
+    <string name="team_load_trainer_team_cd">Carregar o time de um treinador</string>
+    <string name="team_default_name">Time</string>
+    <string name="team_empty_message">Seu time está vazio. Adicione até 6 Pokémon da Pokédex para ver como o time resiste ou é fraco contra cada tipo.</string>
+    <string name="team_browse_pokedex">Explorar Pokédex</string>
+    <string name="team_or_load_trainer_team">Ou carregar o time de um treinador</string>
+    <string name="team_retry">Tentar novamente</string>
+    <string name="team_mode_defense_label">Defesa</string>
+    <string name="team_mode_defense_caption">Dano que cada membro sofre de um ataque desse tipo.</string>
+    <string name="team_mode_offense_label">Ataque</string>
+    <string name="team_mode_offense_caption">Melhor dano que cada membro pode causar a esse tipo, com base no seu próprio tipo e nos golpes que aprende ao subir de nível.</string>
+    <string name="team_weaknesses_title">Fraquezas do time</string>
+    <string name="team_weaknesses_body">Pelo menos metade do seu time é fraco contra: %1$s</string>
+    <string name="team_gaps_title">Lacunas de cobertura</string>
+    <string name="team_gaps_body">Nada no seu time acerta esses tipos com mais de ×1: %1$s</string>
+    <string name="team_no_gaps_title">Nenhuma lacuna de cobertura</string>
+    <string name="team_no_gaps_body">Todo tipo pode ser atingido com dano superefetivo por pelo menos um membro.</string>
+    <string name="team_new_team_default_name">Novo time</string>
+    <string name="team_remove_member_cd">Remover %1$s do time</string>
+    <string name="team_add_member_cd">Adicionar um Pokémon ao seu time</string>
+    <string name="team_add_label">Adicionar</string>
+    <string name="team_suggestions_title">Sugestões</string>
+    <string name="team_suggestions_subtitle">Ajudaria tanto as fraquezas do time quanto as lacunas de cobertura.</string>
+    <string name="team_suggestions_tier_limited">Limitado a %1$s e abaixo (Configurações).</string>
+    <string name="team_suggestions_swipe_all">Deslize para ver todos os %1$d</string>
+    <string name="team_suggestion_bst">BST %1$d</string>
+    <string name="team_suggestion_resists_hits">Resiste a %1$s · Acerta %2$s</string>
+    <string name="team_suggestion_not_as">Não como %1$s</string>
+    <string name="team_suggestion_add_cd">Adicionar %1$s ao time</string>
+
+    <!-- Compare screen (F35 continued) -->
+    <string name="compare_title">Comparar</string>
+    <string name="compare_back_cd">Voltar</string>
+    <string name="compare_swap_cd">Trocar lados</string>
+    <string name="compare_load_error">Não foi possível carregar essa comparação.</string>
+    <string name="compare_retry">Tentar novamente</string>
+    <string name="compare_with_title">Comparar com…</string>
+    <string name="compare_base_stats">Estatísticas base</string>
+    <string name="compare_change">Trocar</string>
+
+    <!-- Preset team dialog (F35 continued) -->
+    <string name="preset_trainer_teams_title">Times de treinadores</string>
+    <string name="preset_close_cd">Fechar</string>
+    <string name="preset_load_confirm_title">Carregar o time de %1$s?</string>
+    <string name="preset_load_confirm_body">Seu time atual tem %1$d Pokémon. Substituir pelo time de %2$s, ou carregar em um novo time?</string>
+    <string name="preset_replace">Substituir</string>
+    <string name="preset_cancel">Cancelar</string>
+    <string name="preset_new_team">Novo time</string>
+
+    <!-- Team slots dialog (F35 continued) -->
+    <string name="teamslots_title">Seus times</string>
+    <string name="teamslots_active_cd">Time ativo</string>
+    <string name="teamslots_rename_cd">Renomear %1$s</string>
+    <string name="teamslots_delete_cd">Excluir %1$s</string>
+    <string name="teamslots_new_team">Novo time</string>
+    <string name="teamslots_close">Fechar</string>
+    <string name="teamslots_delete_confirm_title">Excluir \"%1$s\"?</string>
+    <string name="teamslots_delete_confirm_body">Isso remove todos os %1$d Pokémon desse time. Essa ação não pode ser desfeita.</string>
+    <string name="teamslots_delete">Excluir</string>
+    <string name="teamslots_cancel">Cancelar</string>
+    <string name="teamslots_rename_title">Renomear time</string>
+    <string name="teamslots_save">Salvar</string>
 </resources>

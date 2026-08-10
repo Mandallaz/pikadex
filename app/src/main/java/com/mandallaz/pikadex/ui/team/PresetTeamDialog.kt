@@ -35,11 +35,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.mandallaz.pikadex.R
+import com.mandallaz.pikadex.ui.LocalizedContext
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.util.PresetRole
 import com.mandallaz.pikadex.util.PresetTeam
@@ -73,44 +76,48 @@ fun PresetTeamDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                contentWindowInsets = WindowInsets.systemBars,
-                topBar = {
-                    TopAppBar(
-                        title = { Text("Trainer teams") },
-                        actions = {
-                            IconButton(onClick = onDismiss) {
-                                Icon(Icons.Default.Close, contentDescription = "Close")
-                            }
-                        }
-                    )
-                }
-            ) { padding ->
-                LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
-                    PresetTeams.BY_GAME.forEach { (game, teams) ->
-                        item(key = "header-$game") {
-                            Text(
-                                game,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp, bottom = 4.dp)
-                            )
-                        }
-                        items(teams.size, key = { "$game-${teams[it].trainer}-${teams[it].role}" }) { index ->
-                            val team = teams[index]
-                            PresetTeamRow(
-                                team = team,
-                                spriteIds = spriteIds,
-                                speciesNames = speciesNames,
-                                language = language,
-                                onClick = {
-                                    if (currentTeamSize == 0) onSelect(team) else pendingConfirmation = team
+        // Dialog opens its own Window, whose LocalContext isn't the locale-overridden one MainActivity
+        // provides — see LocalizedContext's own doc (same fix as SmogonTierExplanationDialog/B8).
+        LocalizedContext {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    contentWindowInsets = WindowInsets.systemBars,
+                    topBar = {
+                        TopAppBar(
+                            title = { Text(stringResource(R.string.preset_trainer_teams_title)) },
+                            actions = {
+                                IconButton(onClick = onDismiss) {
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.preset_close_cd))
                                 }
-                            )
-                            HorizontalDivider()
+                            }
+                        )
+                    }
+                ) { padding ->
+                    LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
+                        PresetTeams.BY_GAME.forEach { (game, teams) ->
+                            item(key = "header-$game") {
+                                Text(
+                                    game,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp, bottom = 4.dp)
+                                )
+                            }
+                            items(teams.size, key = { "$game-${teams[it].trainer}-${teams[it].role}" }) { index ->
+                                val team = teams[index]
+                                PresetTeamRow(
+                                    team = team,
+                                    spriteIds = spriteIds,
+                                    speciesNames = speciesNames,
+                                    language = language,
+                                    onClick = {
+                                        if (currentTeamSize == 0) onSelect(team) else pendingConfirmation = team
+                                    }
+                                )
+                                HorizontalDivider()
+                            }
                         }
                     }
                 }
@@ -119,28 +126,33 @@ fun PresetTeamDialog(
     }
 
     pendingConfirmation?.let { team ->
+        // AlertDialog opens its own Window whose LocalContext re-resolves to the un-overridden one
+        // (see LocalizedContext's doc) — but unlike Dialog(), Material3's AlertDialog gives us no
+        // content slot to wrap in LocalizedContext from the inside. Resolved here instead, in this
+        // composable's own (correctly-localized) scope, and passed down as plain strings — same fix
+        // SettingsScreen's full-detail-warning AlertDialog already uses.
+        val confirmTitle = stringResource(R.string.preset_load_confirm_title, team.trainer)
+        val confirmBody = stringResource(R.string.preset_load_confirm_body, currentTeamSize, team.trainer)
+        val replaceLabel = stringResource(R.string.preset_replace)
+        val cancelLabel = stringResource(R.string.preset_cancel)
+        val newTeamLabel = stringResource(R.string.preset_new_team)
         AlertDialog(
             onDismissRequest = { pendingConfirmation = null },
-            title = { Text("Load ${team.trainer}'s team?") },
-            text = {
-                Text(
-                    "Your current team has $currentTeamSize Pokémon. Replace it with " +
-                        "${team.trainer}'s team, or load it into a new team instead?"
-                )
-            },
+            title = { Text(confirmTitle) },
+            text = { Text(confirmBody) },
             confirmButton = {
                 TextButton(onClick = {
                     pendingConfirmation = null
                     onSelect(team)
-                }) { Text("Replace") }
+                }) { Text(replaceLabel) }
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { pendingConfirmation = null }) { Text("Cancel") }
+                    TextButton(onClick = { pendingConfirmation = null }) { Text(cancelLabel) }
                     TextButton(onClick = {
                         pendingConfirmation = null
                         onSelectIntoNewTeam(team)
-                    }) { Text("New team") }
+                    }) { Text(newTeamLabel) }
                 }
             }
         )
