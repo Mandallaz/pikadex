@@ -44,6 +44,10 @@ class PokedexDetailViewModelLoadTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
+        // B35 — reset before, not just after: guards against a *different* test class touching
+        // this JVM-wide singleton and forgetting its own cleanup, which is exactly what let this
+        // bug regress once already (see the issue) despite this class's own @After already doing it.
+        LocalizedNames.clearForTest()
         repository = FakePokedexRepository()
         viewModel = PokedexDetailViewModel(repository)
     }

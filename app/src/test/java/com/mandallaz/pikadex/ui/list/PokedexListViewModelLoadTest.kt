@@ -1,6 +1,8 @@
 package com.mandallaz.pikadex.ui.list
 
 import com.mandallaz.pikadex.R
+import com.mandallaz.pikadex.data.LocalizedNames
+import com.mandallaz.pikadex.data.clearForTest
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.util.clearForTest
@@ -33,6 +35,10 @@ class PokedexListViewModelLoadTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
+        // B35 — reset before, not just after: guards against a *different* test class touching
+        // this JVM-wide singleton and forgetting its own cleanup — this class was itself the one
+        // missed by the original B35 fix, which is exactly the failure mode this guards against.
+        LocalizedNames.clearForTest()
         repository = FakePokedexRepository()
         // Constructed here, before each test sets its own repository fields — loadInitialData()
         // fires from init{} but its coroutine body doesn't actually run until the test advances
@@ -44,6 +50,11 @@ class PokedexListViewModelLoadTest {
     @After
     fun tearDown() {
         viewModel.clearForTest()
+        // B35 — LocalizedNames is a JVM-wide singleton this ViewModel's init{} warms via
+        // loadSpeciesNamesIfNeeded; every test class that touches it must reset it or the next
+        // test class sharing this worker inherits stale/wrong data (this class was the one
+        // missed by the original B35 fix, causing it to regress).
+        LocalizedNames.clearForTest()
         Dispatchers.resetMain()
     }
 

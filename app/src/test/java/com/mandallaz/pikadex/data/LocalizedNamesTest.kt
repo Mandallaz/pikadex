@@ -56,4 +56,31 @@ class LocalizedNamesTest {
         LocalizedNames.ensureLoaded(repository)
         assertEquals(mapOf("bulbasaur" to mapOf("fr" to "Bulbizarre")), LocalizedNames.speciesNames.value)
     }
+
+    // B35 (regression) — this is the exact mechanism that intermittently failed
+    // PokedexDetailViewModelLoadTest under the full suite, twice: one ViewModel's test class
+    // warms this JVM-wide singleton and forgets to reset it (PokedexListViewModelLoadTest was the
+    // one that slipped through the original B35 fix), so the next ViewModel-backed test class to
+    // run in the same JVM worker inherits that stale data instead of its own fake repository's,
+    // since `ensureLoaded` only ever fetches once. Every ViewModel test's `setUp()`/`@Before` now
+    // calls `clearForTest()` (not just its own `tearDown()`), specifically so it can't inherit a
+    // dirty cache regardless of what a preceding, unrelated test class left behind — this proves
+    // that reset is what makes a "next" caller unaffected by a leaky "previous" one.
+    @Test
+    fun `resetting before use is not affected by a dirty cache left by another test (B35)`() = runBlocking {
+        val leakyPreviousTest = FakePokedexRepository().apply {
+            allSpeciesNames = mapOf("bulbasaur" to mapOf("fr" to "Bulbizarre"))
+        }
+        LocalizedNames.ensureLoaded(leakyPreviousTest)
+        assertEquals(mapOf("bulbasaur" to mapOf("fr" to "Bulbizarre")), LocalizedNames.speciesNames.value)
+
+        // The reset every test's own setUp() now performs before building its repository/ViewModel.
+        LocalizedNames.clearForTest()
+
+        val thisTestsOwnRepository = FakePokedexRepository().apply {
+            allSpeciesNames = mapOf("charmander" to mapOf("fr" to "Salamèche"))
+        }
+        val result = LocalizedNames.await(thisTestsOwnRepository)
+        assertEquals(mapOf("charmander" to mapOf("fr" to "Salamèche")), result)
+    }
 }
