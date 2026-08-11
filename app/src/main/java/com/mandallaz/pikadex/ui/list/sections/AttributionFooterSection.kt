@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.ui.list.sections
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -18,7 +19,8 @@ import com.mandallaz.pikadex.util.openExternalLink
 
 @Composable
 internal fun AttributionFooter() {
-    val context = LocalContext.current
+    // B27 — see SmogonLinksSection.kt's identical comment / ExternalLinks.kt's doc.
+    val context = LocalActivity.current ?: LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()

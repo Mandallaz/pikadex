@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.ui.detail.sections
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -31,7 +32,13 @@ internal fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, for
         Smogon.linksFor(pokemonName, speciesGeneration, formVersionGroup)
     }
     if (links.isEmpty()) return
-    val context = LocalContext.current
+    // B27 — LocalActivity.current, not LocalContext.current: the latter is overridden by
+    // LocalizedContext with a Context that carries no Activity token, which broke Custom Tabs'
+    // own-task behavior when B22 worked around the resulting crash with FLAG_ACTIVITY_NEW_TASK.
+    // See ExternalLinks.kt's doc for the full story. Falls back to LocalContext defensively —
+    // no known call path reaches this composable outside MainActivity's LocalActivity provider.
+    val activity = LocalActivity.current
+    val context = activity ?: LocalContext.current
 
     // issue #15 — user feedback: this card took up too much visual space for what it shows (a
     // title plus a handful of link chips). The outer 16dp Card padding plus a second, separate 16dp
