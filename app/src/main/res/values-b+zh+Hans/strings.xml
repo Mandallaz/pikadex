@@ -257,6 +257,8 @@
     <string name="team_gaps_body">你的队伍中没有成员能对以下属性造成超过×1的伤害：%1$s</string>
     <string name="team_no_gaps_title">无覆盖缺口</string>
     <string name="team_no_gaps_body">每种属性都至少有一名队员能造成效果拔群的伤害。</string>
+    <string name="team_no_suggestions_title">暂无建议</string>
+    <string name="team_no_suggestions_body">推荐需要同时解决共同弱点和覆盖缺口，而你的队伍目前只存在其中一项。</string>
     <string name="team_new_team_default_name">新队伍</string>
     <string name="team_remove_member_cd">将%1$s移出队伍</string>
     <string name="team_add_member_cd">将宝可梦添加到队伍</string>

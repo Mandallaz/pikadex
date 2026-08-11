@@ -257,6 +257,8 @@
     <string name="team_gaps_body">你的隊伍中沒有成員能對以下屬性造成超過×1的傷害：%1$s</string>
     <string name="team_no_gaps_title">無覆蓋缺口</string>
     <string name="team_no_gaps_body">每種屬性都至少有一名隊員能造成效果拔群的傷害。</string>
+    <string name="team_no_suggestions_title">暫無建議</string>
+    <string name="team_no_suggestions_body">推薦需要同時解決共同弱點和覆蓋缺口，而你的隊伍目前只存在其中一項。</string>
     <string name="team_new_team_default_name">新隊伍</string>
     <string name="team_remove_member_cd">將%1$s移出隊伍</string>
     <string name="team_add_member_cd">將寶可夢新增至隊伍</string>

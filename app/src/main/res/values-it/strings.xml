@@ -257,6 +257,8 @@
     <string name="team_gaps_body">Niente nella tua squadra colpisce questi tipi per più di ×1: %1$s</string>
     <string name="team_no_gaps_title">Nessuna lacuna di copertura</string>
     <string name="team_no_gaps_body">Ogni tipo può essere colpito con danno superefficace da almeno un membro.</string>
+    <string name="team_no_suggestions_title">Nessun suggerimento al momento</string>
+    <string name="team_no_suggestions_body">Una scelta dovrebbe correggere sia una debolezza condivisa sia una lacuna di copertura, e la tua squadra attualmente ne ha solo una delle due.</string>
     <string name="team_new_team_default_name">Nuova squadra</string>
     <string name="team_remove_member_cd">Rimuovi %1$s dalla squadra</string>
     <string name="team_add_member_cd">Aggiungi un Pokémon alla tua squadra</string>

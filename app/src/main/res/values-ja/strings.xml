@@ -257,6 +257,8 @@
     <string name="team_gaps_body">チームの誰もこれらのタイプに×1を超えるダメージを与えられません: %1$s</string>
     <string name="team_no_gaps_title">カバー範囲に穴なし</string>
     <string name="team_no_gaps_body">すべてのタイプに対して、少なくとも1匹が効果抜群のダメージを与えられます。</string>
+    <string name="team_no_suggestions_title">現在提案はありません</string>
+    <string name="team_no_suggestions_body">候補は共通の弱点とカバー範囲の穴の両方を同時に解消する必要がありますが、現在のチームはどちらか一方しかありません。</string>
     <string name="team_new_team_default_name">新しいチーム</string>
     <string name="team_remove_member_cd">%1$sをチームから外す</string>
     <string name="team_add_member_cd">ポケモンをチームに追加</string>

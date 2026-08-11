@@ -88,6 +88,16 @@ data class TeamUiState(
             if (members.isEmpty() || isMatrixStale) return emptyList()
             return coverageGaps(offensiveMatrix, members.map { it.name })
         }
+
+    /** B36 — true when exactly one of [sharedWeaknesses]/[coverageGaps] is non-empty, so
+     *  [loadSuggestions]'s dual-fix gate can never find a candidate (it requires both). Without
+     *  this, the Suggestions card just vanishes with no explanation even while a weaknesses/gaps
+     *  callout is still visibly telling the user something is wrong — this powers a small
+     *  explanatory message in its place for that specific case. Deliberately false when *both*
+     *  lists are non-empty but suggestions still came back empty (e.g. tier filter too
+     *  restrictive) — that's a different, out-of-scope case per the issue. */
+    val hasUnfixableSingleAxisIssue: Boolean
+        get() = sharedWeaknesses.isNotEmpty() != coverageGaps.isNotEmpty()
 }
 
 class TeamViewModel @JvmOverloads constructor(

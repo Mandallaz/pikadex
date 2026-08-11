@@ -257,6 +257,8 @@
     <string name="team_gaps_body">Nichts in deinem Team trifft diese mit mehr als ×1: %1$s</string>
     <string name="team_no_gaps_title">Keine Abdeckungslücken</string>
     <string name="team_no_gaps_body">Jeder Typ kann von mindestens einem Mitglied mit überdurchschnittlichem Schaden getroffen werden.</string>
+    <string name="team_no_suggestions_title">Momentan keine Vorschläge</string>
+    <string name="team_no_suggestions_body">Eine Wahl müsste sowohl eine geteilte Schwäche als auch eine Abdeckungslücke beheben, und dein Team hat derzeit nur eines von beidem.</string>
     <string name="team_new_team_default_name">Neues Team</string>
     <string name="team_remove_member_cd">%1$s aus dem Team entfernen</string>
     <string name="team_add_member_cd">Ein Pokémon zu deinem Team hinzufügen</string>

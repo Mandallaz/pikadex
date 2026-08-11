@@ -329,6 +329,23 @@ fun TeamScreen(
                         onAdd = viewModel::addSuggestion,
                         onPokemonClick = onPokemonClick
                     )
+                } else if (
+                    uiState.members.size < TeamRepository.MAX_SIZE &&
+                    !uiState.isSuggestionsLoading &&
+                    !uiState.isLoading &&
+                    !uiState.isMatrixStale &&
+                    uiState.hasUnfixableSingleAxisIssue
+                ) {
+                    // B36 — the card above only ever suggests a pick that fixes both a shared
+                    // weakness and a coverage gap at once (TeamViewModel.loadSuggestions), so it
+                    // has nothing to show when the team only has one of the two — without this,
+                    // that reads as a silent, unexplained disappearance right under a still-visible
+                    // weaknesses/gaps callout.
+                    MatrixCallout(
+                        title = stringResource(R.string.team_no_suggestions_title),
+                        body = stringResource(R.string.team_no_suggestions_body),
+                        isWarning = false
+                    )
                 }
 
                 Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(horizontal = 16.dp)) {

@@ -257,6 +257,8 @@
     <string name="team_gaps_body">Nada no seu time acerta esses tipos com mais de ×1: %1$s</string>
     <string name="team_no_gaps_title">Nenhuma lacuna de cobertura</string>
     <string name="team_no_gaps_body">Todo tipo pode ser atingido com dano superefetivo por pelo menos um membro.</string>
+    <string name="team_no_suggestions_title">Nenhuma sugestão no momento</string>
+    <string name="team_no_suggestions_body">Uma escolha precisaria corrigir tanto uma fraqueza compartilhada quanto uma lacuna de cobertura, e sua equipe atualmente só tem uma das duas.</string>
     <string name="team_new_team_default_name">Novo time</string>
     <string name="team_remove_member_cd">Remover %1$s do time</string>
     <string name="team_add_member_cd">Adicionar um Pokémon ao seu time</string>
