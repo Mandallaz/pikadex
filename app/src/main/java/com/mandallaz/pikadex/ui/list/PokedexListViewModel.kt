@@ -333,6 +333,12 @@ class PokedexListViewModel @JvmOverloads constructor(
                     val types = typesDeferred.await()
                     _uiState.update { it.copy(allPokemon = pokemonList, typeOptions = types, isLoading = false) }
                 }
+            } catch (e: CancellationException) {
+                // B34 — every other coroutine body in this file (and its sibling ViewModels)
+                // rethrows cancellation before the generic handler below; this was the one that
+                // didn't, so a cancellation (e.g. this ViewModel being cleared) used to be caught
+                // as a normal Exception and turned into a bogus "couldn't load the Pokédex" error.
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isLoading = false, errorMessage = UiText(R.string.list_error_load_pokedex))

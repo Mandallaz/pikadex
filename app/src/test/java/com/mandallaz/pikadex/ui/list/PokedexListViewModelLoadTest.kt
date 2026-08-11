@@ -104,6 +104,26 @@ class PokedexListViewModelLoadTest {
         assertEquals(1, state.allPokemon.size)
     }
 
+    // B34 — loadInitialData was the one coroutine body in this file that didn't rethrow
+    // CancellationException before its generic catch, so a cancellation (e.g. this ViewModel
+    // being cleared mid-load) used to be caught as a normal Exception and turned into a bogus
+    // "couldn't load the Pokédex" error. clearForTest() cancels viewModelScope the same way a real
+    // ViewModelStore does when the screen goes away.
+    @Test
+    fun `clearing the ViewModel mid-load does not surface a load error`() = runTest(dispatcher) {
+        val gate = CompletableDeferred<Unit>()
+        repository.gate = gate
+
+        dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isLoading)
+
+        viewModel.clearForTest()
+        gate.complete(Unit)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.errorMessage)
+    }
+
     @Test
     fun `selecting a type filter applies the fetched intersection`() = runTest(dispatcher) {
         dispatcher.scheduler.advanceUntilIdle() // let the initial load finish first

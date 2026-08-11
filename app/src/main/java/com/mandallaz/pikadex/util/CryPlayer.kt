@@ -53,12 +53,22 @@ class CryPlayer {
         mediaPlayer = MediaPlayer().apply {
             setAudioAttributes(audioAttributes)
             setOnPreparedListener { it.start() }
-            setOnCompletionListener { _isPlaying.value = false }
+            // B31 — abandons focus here too, not just from release(): without this, focus stayed
+            // held (ducking any other app's audio, e.g. music) for as long as this CryPlayer
+            // instance lived — i.e. while the user kept browsing the detail screen — instead of
+            // being released right after the ~1s cry actually finished.
+            setOnCompletionListener {
+                _isPlaying.value = false
+                abandonAudioFocus()
+            }
             setOnErrorListener { _, _, _ ->
                 if (fallbackSource != null) {
+                    // Not abandoned here — play(fallbackSource) immediately re-enters and calls
+                    // release() (which abandons focus) then requestAudioFocus() again itself.
                     mainHandler.post { play(context, fallbackSource) }
                 } else {
                     _isPlaying.value = false
+                    abandonAudioFocus()
                 }
                 true
             }
