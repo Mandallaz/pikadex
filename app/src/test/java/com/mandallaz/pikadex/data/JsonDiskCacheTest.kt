@@ -78,4 +78,21 @@ class JsonDiskCacheTest {
         assertEquals(null, result)
         assertFalse(File(dir, "key.json.gz").exists())
     }
+
+    // B29 — readStale is the stale-on-failure fallback PokedexRepository.diskCached reaches for
+    // when a network refresh fails: an entry past its TTL must still be readable through it.
+    @Test
+    fun `readStale returns a value past its maxAge, unlike read`() = runBlocking {
+        JsonDiskCache.write("key", mapOf("a" to 1))
+        val file = File(dir, "key.json.gz")
+        file.setLastModified(System.currentTimeMillis() - 60_000)
+
+        assertEquals(null, JsonDiskCache.read<Map<String, Int>>("key", mapType, maxAgeMillis = 1_000))
+        assertEquals(mapOf("a" to 1), JsonDiskCache.readStale<Map<String, Int>>("key", mapType))
+    }
+
+    @Test
+    fun `readStale returns null when nothing was ever written`() = runBlocking {
+        assertEquals(null, JsonDiskCache.readStale<Map<String, Int>>("never-written", mapType))
+    }
 }

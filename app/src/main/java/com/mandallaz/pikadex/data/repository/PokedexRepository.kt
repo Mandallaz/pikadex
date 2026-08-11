@@ -20,6 +20,7 @@ import com.mandallaz.pikadex.util.localizedOrEnglish
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.TypeIds
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 
 data class PokemonDetailBundle(
@@ -193,11 +194,22 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
     override suspend fun getAllBaseStats(): Map<String, Map<String, Int>> = getAllBasics().mapValues { it.value.stats }
 
     /** Serves [key] from the disk cache if it's still fresh, otherwise runs [fetch] and persists the
-     *  result. [fetch] throwing propagates without writing anything, so a failed request can never
-     *  persist a placeholder (an empty map, say) for the whole TTL. */
-    private suspend fun <T : Any> diskCached(key: String, type: java.lang.reflect.Type, fetch: suspend () -> T): T =
-        JsonDiskCache.read<T>(key, type, DISK_CACHE_MAX_AGE_MILLIS)
-            ?: fetch().also { JsonDiskCache.write(key, it) }
+     *  result. [fetch] failing never persists a placeholder (an empty map, say) for the whole TTL —
+     *  but before propagating that failure, B29's stale-on-failure fallback tries a cached entry
+     *  past its TTL: this data "only changes when a new game generation ships" (see
+     *  [JsonDiskCache]'s own doc), so serving it stale on a failed refresh is strictly better than
+     *  an offline device getting nothing. Only reached when [fetch] actually throws — a normal
+     *  within-TTL hit never touches this path. */
+    private suspend fun <T : Any> diskCached(key: String, type: java.lang.reflect.Type, fetch: suspend () -> T): T {
+        JsonDiskCache.read<T>(key, type, DISK_CACHE_MAX_AGE_MILLIS)?.let { return it }
+        return try {
+            fetch().also { JsonDiskCache.write(key, it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            JsonDiskCache.readStale<T>(key, type) ?: throw e
+        }
+    }
 
     /** moveName -> (type, damage class, power, accuracy), fetched once in bulk via GraphQL and
      *  reused for every pokemon's move lists (Level Up / TM-HM / Breeding / Tutor). Persisted to
@@ -264,18 +276,28 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         return lo
     }
 
-    override suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle {
-        val pokemon = pokemonDetailCache.get(nameOrId) { fetchPokemonResolvingDefaultVariety(nameOrId) }
-        // Alternate forms (mega/gmax/regional/gender/cosmetic...) have a pokemon.id in the 10000+
-        // range that does NOT match any pokemon-species id — the species must be looked up via the
-        // "species" reference embedded in the pokemon payload instead (e.g. basculegion-female,
-        // pokemon id 10248, belongs to species "basculegion", id 902).
-        val speciesKey = pokemon.species.id ?: pokemon.id
-        val species = speciesCache.get(speciesKey) { api.getPokemonSpecies(pokemon.species.name) }
-        val chainId = species.evolutionChain?.id
-        val chain = chainId?.let { id -> evolutionChainCache.get(id) { api.getEvolutionChain(id) } }
-        return PokemonDetailBundle(pokemon, species, chain)
-    }
+    // B23 — the three REST calls behind a detail bundle (~100-300KB each, ~1300 of them for the
+    // Full Detail prefetch tier) used to be persisted only in the 200-entry in-memory caches above
+    // and AppContainer's 20MB HTTP cache, so a full prefetch's ~250-400MB round-trip mostly
+    // evicted itself before it finished: opening an early-dex Pokémon offline after "completing"
+    // the prefetch still hit "check your connection". Persisted through JsonDiskCache the same way
+    // the bulk GraphQL fetches already are — gzipped, no size cap (proportional to what the user
+    // actually prefetched, not an arbitrary ceiling), and already counted in
+    // [com.mandallaz.pikadex.ui.settings.SettingsViewModel.measureStorage]'s storage readout since
+    // that already sums [JsonDiskCache.sizeBytes].
+    override suspend fun getPokemonDetailBundle(nameOrId: String): PokemonDetailBundle =
+        diskCached("detail_bundle_v1_$nameOrId", POKEMON_DETAIL_BUNDLE_TYPE) {
+            val pokemon = pokemonDetailCache.get(nameOrId) { fetchPokemonResolvingDefaultVariety(nameOrId) }
+            // Alternate forms (mega/gmax/regional/gender/cosmetic...) have a pokemon.id in the
+            // 10000+ range that does NOT match any pokemon-species id — the species must be
+            // looked up via the "species" reference embedded in the pokemon payload instead (e.g.
+            // basculegion-female, pokemon id 10248, belongs to species "basculegion", id 902).
+            val speciesKey = pokemon.species.id ?: pokemon.id
+            val species = speciesCache.get(speciesKey) { api.getPokemonSpecies(pokemon.species.name) }
+            val chainId = species.evolutionChain?.id
+            val chain = chainId?.let { id -> evolutionChainCache.get(id) { api.getEvolutionChain(id) } }
+            PokemonDetailBundle(pokemon, species, chain)
+        }
 
     /**
      * issue #18 — [nameOrId] resolves directly for almost every call site, but a species
@@ -314,7 +336,12 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         const val SPECIES_NAMES_CACHE_KEY = "species_names_v1"
         const val MOVE_NAMES_CACHE_KEY = "move_names_v1"
         const val ABILITY_NAMES_CACHE_KEY = "ability_names_v1"
-        val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(7)
+        // B29 — was 7 days, which contradicted JsonDiskCache's own doc ("a generous TTL (weeks)")
+        // and meant the ESSENTIALS prefetch tier's whole offline promise silently expired a week
+        // after the user ran it. This data only changes when a new game generation ships (every
+        // few years), so 180 days is still a safety net, not a real staleness signal — and
+        // diskCached's stale-on-failure fallback (see that function) covers the rest.
+        val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(180)
 
         val BASICS_TYPE: java.lang.reflect.Type =
             object : TypeToken<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>() {}.type
@@ -322,5 +349,7 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
             object : TypeToken<Map<String, PokeApiGraphQLDataSource.MoveInfo>>() {}.type
         val SPECIES_NAMES_TYPE: java.lang.reflect.Type =
             object : TypeToken<Map<String, Map<String, String>>>() {}.type
+        val POKEMON_DETAIL_BUNDLE_TYPE: java.lang.reflect.Type =
+            object : TypeToken<PokemonDetailBundle>() {}.type
     }
 }

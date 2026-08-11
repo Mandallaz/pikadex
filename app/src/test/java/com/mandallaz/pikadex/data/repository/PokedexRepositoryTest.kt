@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.data.repository
 
+import com.mandallaz.pikadex.data.JsonDiskCache
 import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.dto.AbilityDetailDto
 import com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto
@@ -12,9 +13,13 @@ import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSprites
 import com.mandallaz.pikadex.data.remote.dto.SpeciesVariety
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
+import java.io.File
+import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.runBlocking
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
@@ -26,6 +31,26 @@ import retrofit2.Response
  * tapping Urshifu in Kubfu's Evolution card silently did nothing before the fix.
  */
 class PokedexRepositoryTest {
+
+    // B23 — getPokemonDetailBundle is now disk-cached (see PokedexRepository's own doc on that
+    // function), so every test in this file that calls it touches JsonDiskCache.cacheDir, a
+    // lateinit field normally set by JsonDiskCache.init(context) — never called in a plain JVM
+    // test. Swapped to a real temp dir here, same Context-free reflection technique
+    // JsonDiskCacheTest uses for its own tests.
+    private lateinit var diskCacheDir: File
+
+    @Before
+    fun setUpDiskCache() {
+        diskCacheDir = createTempDirectory(prefix = "pokedex-repository-test").toFile()
+        val field = JsonDiskCache::class.java.getDeclaredField("cacheDir")
+        field.isAccessible = true
+        field.set(JsonDiskCache, diskCacheDir)
+    }
+
+    @After
+    fun tearDownDiskCache() {
+        diskCacheDir.deleteRecursively()
+    }
 
     private fun pokemon(name: String, id: Int, speciesName: String = name) = PokemonDto(
         id = id,
@@ -138,6 +163,11 @@ class PokedexRepositoryTest {
         repeat(201) { i -> repository.getPokemonDetailBundle("species-$i") }
         assertEquals(1, speciesFetchCount["species-0"])
 
+        // B23 — getPokemonDetailBundle is now also disk-cached, and a disk hit would serve
+        // "species-0" without ever touching speciesCache or the API, masking the in-memory LRU
+        // eviction this test exists to prove. Clearing the disk cache isolates that behavior.
+        JsonDiskCache.clear()
+
         repository.getPokemonDetailBundle("species-0")
         assertEquals(2, speciesFetchCount["species-0"])
     }
@@ -155,5 +185,28 @@ class PokedexRepositoryTest {
         } catch (e: HttpException) {
             assertEquals(404, e.code())
         }
+    }
+
+    // B23 — getPokemonDetailBundle used to be persisted only in a 200-entry in-memory cache, dying
+    // with the process; a fresh PokedexRepository instance (a cold start, or the ~1300th distinct
+    // Pokémon in a session evicting the 1st from the bounded in-memory cache) had to re-fetch from
+    // network even for data the Full Detail prefetch tier had already downloaded.
+    @Test
+    fun `a detail bundle survives a fresh repository instance via the disk cache`() = runBlocking {
+        val firstApi = object : UnexpectedApi() {
+            override suspend fun getPokemon(nameOrId: String): PokemonDto = pokemon("bulbasaur", 1)
+            override suspend fun getPokemonSpecies(nameOrId: String): PokemonSpeciesDto = species("bulbasaur", 1, varieties = null)
+        }
+        val firstRepository = PokedexRepository(firstApi)
+        val original = firstRepository.getPokemonDetailBundle("bulbasaur")
+
+        // A second, fresh repository instance has empty in-memory caches — an API call here would
+        // fail loudly (UnexpectedApi), proving the disk cache (not the in-memory one) is what
+        // served this.
+        val secondRepository = PokedexRepository(UnexpectedApi())
+        val cached = secondRepository.getPokemonDetailBundle("bulbasaur")
+
+        assertEquals(original.pokemon.name, cached.pokemon.name)
+        assertEquals(original.species.id, cached.species.id)
     }
 }

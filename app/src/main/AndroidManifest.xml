@@ -9,11 +9,14 @@
          is a normal, non-dangerous permission). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- B28 — PRIVACY_POLICY.md states favorites/teams/settings "stay on your device only" and are
+         "deleted if you uninstall the app"; Android Auto Backup with allowBackup="true" (and the
+         unedited backup_rules.xml/data_extraction_rules.xml templates, since removed) would have
+         silently uploaded that SharedPreferences data to the user's Google Drive and let it
+         survive an uninstall, contradicting the policy. -->
     <application
         android:name=".PikaDexApplication"
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

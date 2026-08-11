@@ -38,14 +38,29 @@ object JsonDiskCache {
             if (!file.exists()) return@withContext null
             val age = System.currentTimeMillis() - file.lastModified()
             if (age > maxAgeMillis) return@withContext null
-            try {
-                GZIPInputStream(file.inputStream()).bufferedReader().use { gson.fromJson<T>(it, type) }
-            } catch (e: Exception) {
-                // A corrupt/truncated file would otherwise sit here and be re-read and re-fail on
-                // every cold start until maxAgeMillis expires it — delete it so the next write wins.
-                file.delete()
-                null
-            }
+            readFile(file, type)
+        }
+
+    /** B29 — reads [key] regardless of age, ignoring the TTL entirely. Used only as a
+     *  stale-on-failure fallback when the network fetch that would otherwise refresh the entry
+     *  throws (see [com.mandallaz.pikadex.data.repository.PokedexRepository]'s `diskCached`):
+     *  data that's merely past its (already generous) TTL is still better than no data at all
+     *  when the alternative is a failed offline load. */
+    suspend fun <T> readStale(key: String, type: java.lang.reflect.Type): T? =
+        withContext(Dispatchers.IO) {
+            val file = File(cacheDir, "$key.json.gz")
+            if (!file.exists()) return@withContext null
+            readFile(file, type)
+        }
+
+    private fun <T> readFile(file: File, type: java.lang.reflect.Type): T? =
+        try {
+            GZIPInputStream(file.inputStream()).bufferedReader().use { gson.fromJson<T>(it, type) }
+        } catch (e: Exception) {
+            // A corrupt/truncated file would otherwise sit here and be re-read and re-fail on
+            // every cold start until maxAgeMillis expires it — delete it so the next write wins.
+            file.delete()
+            null
         }
 
     /** Writes to a `.tmp` file and renames it over the real one only once it's fully written —
