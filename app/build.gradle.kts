@@ -14,6 +14,19 @@ val keystoreProperties = Properties().apply {
         keystorePropertiesFile.inputStream().use { load(it) }
     }
 }
+val hasReleaseSigningKey = keystorePropertiesFile.exists()
+
+// F68 — the debug-signing fallback below (see `signingConfig` in buildTypes.release) is silent
+// otherwise: a release build on a machine with no keystore looks identical to a real one at a
+// glance. Fail loud at configuration time and mark the output so it can't be mistaken for a
+// Play-Store-ready artifact.
+if (!hasReleaseSigningKey) {
+    logger.warn(
+        "WARNING: keystore.properties not found — the 'release' build type will be signed with " +
+            "the DEBUG key (versionName gets a '-debugsigned' suffix). This build is NOT suitable " +
+            "for distribution."
+    )
+}
 
 android {
     namespace = "com.mandallaz.pikadex"
@@ -55,10 +68,15 @@ android {
             // otherwise falls back to debug-signed so the release variant still installs and is
             // runtime-verifiable (R8 breaking Gson reflection would otherwise go unnoticed until
             // an actual release) on a machine without the real signing key.
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (hasReleaseSigningKey) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
+            }
+            // F68 — self-identifying versionName so a debug-signed release build can't be mistaken
+            // for a distributable one (see the configuration-time logger.warn above).
+            if (!hasReleaseSigningKey) {
+                versionNameSuffix = "-debugsigned"
             }
         }
     }
