@@ -1,5 +1,7 @@
 package com.mandallaz.pikadex.ui.compare
 
+import com.mandallaz.pikadex.data.LocalizedNames
+import com.mandallaz.pikadex.data.clearForTest
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,6 +32,9 @@ class CompareViewModelTest {
 
     @After
     fun tearDown() {
+        // B35 — reset the shared LocalizedNames cache this test's own species-name assertion
+        // warms, or it stays stale for every other test class sharing this JVM worker.
+        LocalizedNames.clearForTest()
         Dispatchers.resetMain()
     }
 

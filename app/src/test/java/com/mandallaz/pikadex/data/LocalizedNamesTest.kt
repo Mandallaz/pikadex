@@ -1,7 +1,6 @@
 package com.mandallaz.pikadex.data
 
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -17,19 +16,12 @@ import org.junit.Test
  */
 class LocalizedNamesTest {
 
-    @Suppress("UNCHECKED_CAST")
-    private fun reset() {
-        val field = LocalizedNames::class.java.getDeclaredField("_speciesNames")
-        field.isAccessible = true
-        (field.get(LocalizedNames) as MutableStateFlow<Map<String, Map<String, String>>>).value = emptyMap()
-    }
-
     @After
-    fun tearDown() = reset()
+    fun tearDown() = LocalizedNames.clearForTest()
 
     @Test
     fun `await fetches once and caches for later calls`() = runBlocking {
-        reset()
+        LocalizedNames.clearForTest()
         val repository = FakePokedexRepository().apply {
             allSpeciesNames = mapOf("bulbasaur" to mapOf("fr" to "Bulbizarre"))
         }
@@ -47,7 +39,7 @@ class LocalizedNamesTest {
 
     @Test
     fun `a failed fetch leaves the cache empty rather than throwing`() = runBlocking {
-        reset()
+        LocalizedNames.clearForTest()
         val repository = FakePokedexRepository().apply {
             failWith = RuntimeException("network error")
         }
@@ -57,7 +49,7 @@ class LocalizedNamesTest {
 
     @Test
     fun `ensureLoaded populates the shared state flow`() = runBlocking {
-        reset()
+        LocalizedNames.clearForTest()
         val repository = FakePokedexRepository().apply {
             allSpeciesNames = mapOf("bulbasaur" to mapOf("fr" to "Bulbizarre"))
         }

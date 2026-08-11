@@ -1,6 +1,8 @@
 package com.mandallaz.pikadex.ui.detail
 
+import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.TeamRepository
+import com.mandallaz.pikadex.data.clearForTest
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.PokemonDetailBundle
@@ -52,8 +54,9 @@ class PokedexDetailViewModelLoadTest {
         // avoids waking a dead collector on an already-reset Main dispatcher.
         viewModel.clearForTest()
         // Global singleton state — reset so other test classes in the same JVM worker don't
-        // inherit whatever team this test left behind.
+        // inherit whatever team/species-name cache this test left behind (B35 for the latter).
         TeamRepository.replaceAll(emptyList())
+        LocalizedNames.clearForTest()
         Dispatchers.resetMain()
     }
 

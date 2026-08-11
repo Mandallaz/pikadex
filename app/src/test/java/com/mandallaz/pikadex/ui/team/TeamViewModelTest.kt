@@ -1,6 +1,8 @@
 package com.mandallaz.pikadex.ui.team
 
+import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.TeamRepository
+import com.mandallaz.pikadex.data.clearForTest
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.fakeTypeDetailDto
@@ -51,6 +53,10 @@ class TeamViewModelTest {
         // (see clearForTest's doc) or leak that collector into a later, unrelated test.
         viewModel.clearForTest()
         TeamRepository.replaceAll(emptyList())
+        // B35 — LocalizedNames is a JVM-wide singleton whose cache, once warmed by this test's
+        // own `species names load into state...` test, would otherwise stay stale for every other
+        // test class sharing this worker.
+        LocalizedNames.clearForTest()
         Dispatchers.resetMain()
     }
 
