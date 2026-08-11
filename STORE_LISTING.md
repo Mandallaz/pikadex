@@ -43,6 +43,10 @@ no analytics and no ads. The only things it writes are on-device and stay there:
 favorites/team in SharedPreferences, plus a cache of the public game data and
 images already downloaded.
 
+On-device cache size, worst case (everything prefetched): up to ~450 MB total —
+~30 MB base stats/game data, ~400 MB images and animated sprites, ~22 MB cry
+audio.
+
 ## Privacy policy URL
 Host PRIVACY_POLICY.md somewhere public (GitHub Pages, a Gist raw link, Google
 Sites, etc.) and paste that URL into Play Console's "Privacy policy" field —
