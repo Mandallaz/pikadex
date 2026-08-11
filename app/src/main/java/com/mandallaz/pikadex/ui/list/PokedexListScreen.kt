@@ -260,7 +260,7 @@ fun PokedexListScreen(
                         // read as if it were itself a filter value, not what it's actually sorting by.
                         label = {
                             Text(
-                                uiState.sortStat?.let { stringResource(R.string.list_sort_label_with_stat, it.label) }
+                                uiState.sortStat?.let { stringResource(R.string.list_sort_label_with_stat, it.localizedLabel()) }
                                     ?: stringResource(R.string.list_sort_label)
                             )
                         }
@@ -508,7 +508,7 @@ fun PokedexListScreen(
             OptionsDialog(
                 title = stringResource(R.string.list_sort_by_title),
                 options = listOf<SortStat?>(null) + SortStat.entries,
-                labelFor = { it?.label ?: noSorting },
+                labelFor = { it?.localizedLabel() ?: noSorting },
                 selected = uiState.sortStat,
                 onDismiss = { activeDialog = ActiveDialog.NONE },
                 onSelect = { stat ->

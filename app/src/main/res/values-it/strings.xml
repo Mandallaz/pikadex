@@ -214,6 +214,7 @@
 
     <string name="detail_ailment_always">Sempre</string>
     <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_stat_change_chance">%1$d%% di probabilità: </string>
     <string name="detail_crit_rate">Tasso crit. +%1$d</string>
     <string name="detail_drains">Assorbe il %1$d%% del danno</string>
     <string name="detail_recoil">Contraccolpo %1$d%% del danno</string>
@@ -340,6 +341,15 @@
     <string name="list_any_tier">Qualsiasi tier</string>
     <string name="list_sort_by_title">Ordina per</string>
     <string name="list_no_sorting">Nessun ordinamento</string>
+    <string name="sort_dex_number">Numero Pokédex</string>
+    <string name="sort_name">Nome (A-Z)</string>
+    <string name="sort_hp">PS</string>
+    <string name="sort_attack">Attacco</string>
+    <string name="sort_defense">Difesa</string>
+    <string name="sort_special_attack">Att. Spec.</string>
+    <string name="sort_special_defense">Dif. Spec.</string>
+    <string name="sort_speed">Velocità</string>
+    <string name="sort_total">Totale</string>
     <string name="list_rarity_title">Rarità</string>
     <string name="list_any_rarity">Qualsiasi rarità</string>
     <string name="list_type_section">Tipo</string>

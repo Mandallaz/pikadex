@@ -214,6 +214,7 @@
 
     <string name="detail_ailment_always">必ず</string>
     <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_stat_change_chance">%1$d%%の確率で</string>
     <string name="detail_crit_rate">急所率 +%1$d</string>
     <string name="detail_drains">与えたダメージの%1$d%%を吸収</string>
     <string name="detail_recoil">与えたダメージの%1$d%%の反動</string>
@@ -340,6 +341,15 @@
     <string name="list_any_tier">すべてのティア</string>
     <string name="list_sort_by_title">並び替え基準</string>
     <string name="list_no_sorting">並び替えなし</string>
+    <string name="sort_dex_number">図鑑番号</string>
+    <string name="sort_name">名前 (A–Z)</string>
+    <string name="sort_hp">HP</string>
+    <string name="sort_attack">こうげき</string>
+    <string name="sort_defense">ぼうぎょ</string>
+    <string name="sort_special_attack">とくこう</string>
+    <string name="sort_special_defense">とくぼう</string>
+    <string name="sort_speed">すばやさ</string>
+    <string name="sort_total">合計</string>
     <string name="list_rarity_title">レア度</string>
     <string name="list_any_rarity">すべてのレア度</string>
     <string name="list_type_section">タイプ</string>

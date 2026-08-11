@@ -219,6 +219,7 @@
 
     <string name="detail_ailment_always">Always</string>
     <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_stat_change_chance">%1$d%% chance: </string>
     <string name="detail_crit_rate">Crit rate +%1$d</string>
     <string name="detail_drains">Drains %1$d%% dealt</string>
     <string name="detail_recoil">Recoil %1$d%% dealt</string>
@@ -353,6 +354,16 @@
     <string name="list_any_tier">Any tier</string>
     <string name="list_sort_by_title">Sort by</string>
     <string name="list_no_sorting">No sorting</string>
+
+    <string name="sort_dex_number">Dex number</string>
+    <string name="sort_name">Name (A–Z)</string>
+    <string name="sort_hp">HP</string>
+    <string name="sort_attack">Attack</string>
+    <string name="sort_defense">Defense</string>
+    <string name="sort_special_attack">Sp. Atk</string>
+    <string name="sort_special_defense">Sp. Def</string>
+    <string name="sort_speed">Speed</string>
+    <string name="sort_total">Total</string>
     <string name="list_rarity_title">Rarity</string>
     <string name="list_any_rarity">Any rarity</string>
     <string name="list_type_section">Type</string>

@@ -160,7 +160,7 @@ internal fun FilterSheetContent(
             SortStat.entries.mapNotNull { stat -> stat.apiName?.let { stat to it } }.forEach { (stat, apiName) ->
                 val minimum = uiState.statMinimums[apiName] ?: 0
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stat.label, modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodyMedium)
+                    Text(stat.localizedLabel(), modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodyMedium)
                     Slider(
                         value = minimum.toFloat(),
                         onValueChange = { onStatMinimumChanged(apiName, it.toInt()) },
@@ -181,7 +181,7 @@ internal fun FilterSheetContent(
             // for — see STAT_KEY_TOTAL's KDoc.
             val totalMinimum = uiState.statMinimums[STAT_KEY_TOTAL] ?: 0
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(SortStat.TOTAL.label, modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodyMedium)
+                Text(SortStat.TOTAL.localizedLabel(), modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodyMedium)
                 Slider(
                     value = totalMinimum.toFloat(),
                     onValueChange = { onStatMinimumChanged(STAT_KEY_TOTAL, it.toInt()) },

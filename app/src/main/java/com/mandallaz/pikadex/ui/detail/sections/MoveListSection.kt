@@ -26,10 +26,13 @@ import androidx.compose.ui.unit.dp
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.ui.components.TypeBadge
+import com.mandallaz.pikadex.ui.components.localizedLabel
+import com.mandallaz.pikadex.ui.detail.MoveLabels
 import com.mandallaz.pikadex.ui.detail.moveMetaLabel
 import com.mandallaz.pikadex.ui.detail.moveStatsLabel
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.MoveCategory
+import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.localizedDisplayName
 
@@ -127,6 +130,31 @@ private fun MoveCategory.localizedLabel(): String = stringResource(
     }
 )
 
+/** B30 — resolves [MoveLabels]' full set of strings/templates from resources; [MoveLabels]' own
+ *  field defaults exist only for pure-function callers (unit tests), never used here. These
+ *  particular resources (`detail_damage_class_*`, `detail_move_stats_line*`, `detail_ailment_*`,
+ *  `detail_crit_rate`/`detail_drains`/`detail_recoil`/`detail_heals`/`detail_flinch_chance`)
+ *  already existed, already translated into all 11 locales — apparently prepared for exactly this
+ *  fix and then never wired up. Only `detail_stat_change_chance` needed adding fresh. */
+@Composable
+private fun moveLabels(): MoveLabels = MoveLabels(
+    physical = stringResource(R.string.detail_damage_class_physical),
+    special = stringResource(R.string.detail_damage_class_special),
+    status = stringResource(R.string.detail_damage_class_status),
+    dash = stringResource(R.string.detail_dash_placeholder),
+    line = stringResource(R.string.detail_move_stats_line),
+    lineWithPriority = stringResource(R.string.detail_move_stats_line_with_priority),
+    always = stringResource(R.string.detail_ailment_always),
+    ailmentChance = stringResource(R.string.detail_ailment_chance),
+    statChangeChance = stringResource(R.string.detail_stat_change_chance),
+    critRate = stringResource(R.string.detail_crit_rate),
+    drains = stringResource(R.string.detail_drains),
+    recoil = stringResource(R.string.detail_recoil),
+    heals = stringResource(R.string.detail_heals),
+    flinchChance = stringResource(R.string.detail_flinch_chance),
+    statNames = SortStat.entries.filter { it.apiName != null }.associate { it.apiName!! to it.localizedLabel() }
+)
+
 @Composable
 private fun MoveRow(
     move: LearnedMove,
@@ -155,6 +183,10 @@ private fun MoveRow(
         }
     }
     moveInfo[move.moveName]?.let { info ->
+        // B30 — resolved here, once per row, and threaded into the two pure functions below rather
+        // than having them read stringResource() themselves (they aren't @Composable, so existing
+        // unit tests can keep calling them directly — same reasoning as MoveLabels' own doc).
+        val labels = moveLabels()
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -162,14 +194,14 @@ private fun MoveRow(
         ) {
             TypeBadge(info.type, TypeIds.idOrNull(info.type), height = 18.dp)
             Text(
-                text = moveStatsLabel(info),
+                text = moveStatsLabel(info, labels),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         // F37: a second line only when there's genuinely competitive info to show (see
         // moveMetaLabel's own doc on why null means "render nothing" here, not an empty Text).
-        moveMetaLabel(info)?.let { metaText ->
+        moveMetaLabel(info, labels)?.let { metaText ->
             Text(
                 text = metaText,
                 style = MaterialTheme.typography.bodySmall,

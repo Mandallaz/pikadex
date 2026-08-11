@@ -27,6 +27,7 @@ import com.mandallaz.pikadex.ui.LocalizedContext
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.SmogonLink
 import com.mandallaz.pikadex.util.SmogonTierLabels
+import com.mandallaz.pikadex.util.SortStat
 
 /** issue #71 (B21) — [SmogonGen.labelRes] resolved at render time, same @StringRes-then-render
  *  pattern as [MoveCategory]'s own `localizedLabel()` extension in `PokedexDetailScreen.kt`. */
@@ -45,6 +46,10 @@ fun SmogonLink.localizedLabel(): String = stringResource(labelRes)
 fun localizedTierLabel(tierCode: String): String =
     SmogonTierLabels.labelResFor(tierCode)?.let { stringResource(it) } ?: tierCode
 
+/** B30 — same pattern as [SmogonGen.localizedLabel] above. */
+@Composable
+fun SortStat.localizedLabel(): String = stringResource(labelRes)
+
 /** Small picker dialog for short, fixed option lists (a handful of items) — no search field,
  * unlike [SearchableListDialog] which is for the hundreds of moves/abilities.
  *
@@ -55,9 +60,10 @@ fun localizedTierLabel(tierCode: String): String =
  * (Gen 9 in the Format dialog) on shorter devices while leaving unused space on taller ones.
  *
  * [labelFor] is a @Composable lambda (B21) — needed so callers can resolve a @StringRes-backed
- * label (e.g. [SmogonGen.localizedLabel]) via stringResource() from inside it, not just return an
- * already-hardcoded String like [com.mandallaz.pikadex.util.SortStat.label]/
- * [com.mandallaz.pikadex.util.RarityFilter.label] still do. */
+ * label (e.g. [SmogonGen.localizedLabel], [SortStat.localizedLabel]) via stringResource() from
+ * inside it, not just return an already-hardcoded String like
+ * [com.mandallaz.pikadex.util.RarityFilter.label] still does (out of scope for B30 — not part of
+ * the review finding that prompted [SortStat]'s own fix). */
 @Composable
 fun <T> OptionsDialog(
     title: String,

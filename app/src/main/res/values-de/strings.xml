@@ -214,6 +214,7 @@
 
     <string name="detail_ailment_always">Immer</string>
     <string name="detail_ailment_chance">%1$d %%</string>
+    <string name="detail_stat_change_chance">%1$d %% Chance: </string>
     <string name="detail_crit_rate">Krit-Rate +%1$d</string>
     <string name="detail_drains">Entzieht %1$d %% des Schadens</string>
     <string name="detail_recoil">Rückstoß %1$d %% des Schadens</string>
@@ -340,6 +341,15 @@
     <string name="list_any_tier">Beliebiges Tier</string>
     <string name="list_sort_by_title">Sortieren nach</string>
     <string name="list_no_sorting">Keine Sortierung</string>
+    <string name="sort_dex_number">Pokédex-Nummer</string>
+    <string name="sort_name">Name (A–Z)</string>
+    <string name="sort_hp">KP</string>
+    <string name="sort_attack">Angriff</string>
+    <string name="sort_defense">Verteidigung</string>
+    <string name="sort_special_attack">Sp. Ang.</string>
+    <string name="sort_special_defense">Sp. Vert.</string>
+    <string name="sort_speed">Initiative</string>
+    <string name="sort_total">Gesamt</string>
     <string name="list_rarity_title">Seltenheit</string>
     <string name="list_any_rarity">Beliebige Seltenheit</string>
     <string name="list_type_section">Typ</string>

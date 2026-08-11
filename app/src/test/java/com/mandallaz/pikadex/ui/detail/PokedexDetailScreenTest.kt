@@ -86,6 +86,48 @@ class PokedexDetailScreenTest {
         assertEquals("Status · Power — · Accuracy — · PP 5 · Priority -7", moveStatsLabel(info))
     }
 
+    // --- moveStatsLabel/moveMetaLabel localization (B30) ---------------------------------
+    // Not just "defaults are unchanged" (covered above/below) — proves the MoveLabels bundle
+    // actually gets substituted into the output, the mechanism the real (Compose) call site
+    // relies on. Uses French-shaped fake labels/templates rather than the real string resources,
+    // since these are plain (non-@Composable) functions with no Context to resolve resources from.
+
+    private val frenchLikeLabels = MoveLabels(
+        physical = "Physique",
+        special = "Spéciale",
+        status = "Statut",
+        dash = "—",
+        line = "%1\$s · Puissance %2\$s · Précision %3\$s · PP %4\$s",
+        lineWithPriority = "%1\$s · Puissance %2\$s · Précision %3\$s · PP %4\$s · Priorité %5\$s",
+        always = "Toujours",
+        ailmentChance = "%1\$d %%",
+        statChangeChance = "%1\$d %% de chances : ",
+        critRate = "Taux crit. +%1\$d",
+        drains = "Draine %1\$d %% des dégâts",
+        recoil = "Contrecoup %1\$d %% des dégâts",
+        heals = "Soigne %1\$d %% des PV max",
+        flinchChance = "%1\$d %% de rétivité",
+        statNames = mapOf("attack" to "Attaque", "special-defense" to "Déf. Spé.")
+    )
+
+    @Test
+    fun `moveStatsLabel substitutes a non-default labels bundle into the template`() {
+        val info = MoveInfo(type = "fire", damageClass = "physical", power = 40, accuracy = 100, pp = 25, priority = 1)
+        assertEquals(
+            "Physique · Puissance 40 · Précision 100% · PP 25 · Priorité +1",
+            moveStatsLabel(info, frenchLikeLabels)
+        )
+    }
+
+    @Test
+    fun `moveMetaLabel substitutes a non-default labels bundle, including stat names`() {
+        val info = MoveInfo(
+            type = "normal", damageClass = "status", power = null, accuracy = null, pp = null,
+            statChanges = listOf(MoveStatChange("special-defense", -1)), statChangeChance = 10
+        )
+        assertEquals("10 % de chances : -1 Déf. Spé.", moveMetaLabel(info, frenchLikeLabels))
+    }
+
     // --- moveMetaLabel (F37) -------------------------------------------------------------
 
     private fun baseMoveInfo(

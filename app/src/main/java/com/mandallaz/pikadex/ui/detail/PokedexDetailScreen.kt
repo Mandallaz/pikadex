@@ -561,20 +561,68 @@ internal fun DetailContent(
     }
 }
 
-internal fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
+/** "attack" -> "Attack", "special-defense" -> "Sp. Def" — matches [SortStat]'s own labels (the
+ *  Pokédex sort dialog) rather than a second lookup table for the same six stat names; the real
+ *  call site passes [SortStat]'s actual localized labels in, this is only the pure-function/test
+ *  default. */
+private val defaultStatNames = mapOf(
+    "hp" to "HP", "attack" to "Attack", "defense" to "Defense",
+    "special-attack" to "Sp. Atk", "special-defense" to "Sp. Def", "speed" to "Speed"
+)
+
+/** B30 — every localized string/template [moveStatsLabel]/[moveMetaLabel] need, gathered once by
+ *  the composable call site ([com.mandallaz.pikadex.ui.detail.sections.MoveRow]) via
+ *  `stringResource` and threaded through as data — same "pass localized strings as parameters
+ *  with English defaults" pattern B11 used for [eggGroupDisplayName], so these stay plain
+ *  (non-`@Composable`) functions the existing unit tests call directly; the defaults below
+ *  reproduce the exact English text this file used to hardcode, so those tests keep passing
+ *  unchanged. Templates use `%1$s`/`%1$d`-style positional placeholders (resolved via
+ *  [String.format], same convention Android string resources use) rather than word-by-word
+ *  fragments, so a translation can reorder a whole phrase naturally instead of being constrained
+ *  to English word order — e.g. `detail_drains`'s French translation is "Draine %1$d %% des
+ *  dégâts", not a literal "Drains"-then-number-then-"dealt" concatenation.
+ *
+ *  Move ailment names ([PokeApiGraphQLDataSource.MoveInfo.ailment], e.g. "paralysis") are
+ *  deliberately NOT covered here: translating that would mean a second, much larger open-ended
+ *  lookup table (~20 ailment values) — a different shape of problem than this bundle's fixed set
+ *  of templates — so they stay English API tokens for now, consistent with other raw API category
+ *  names this app already shows untranslated (e.g. egg group names like "Monster"/"Water1", not
+ *  covered by [eggGroupDisplayName] either). */
+internal data class MoveLabels(
+    val physical: String = "Physical",
+    val special: String = "Special",
+    val status: String = "Status",
+    val dash: String = "—",
+    val line: String = "%1\$s · Power %2\$s · Accuracy %3\$s · PP %4\$s",
+    val lineWithPriority: String = "%1\$s · Power %2\$s · Accuracy %3\$s · PP %4\$s · Priority %5\$s",
+    val always: String = "Always",
+    val ailmentChance: String = "%1\$d%%",
+    val statChangeChance: String = "%1\$d%% chance: ",
+    val critRate: String = "Crit rate +%1\$d",
+    val drains: String = "Drains %1\$d%% dealt",
+    val recoil: String = "Recoil %1\$d%% dealt",
+    val heals: String = "Heals %1\$d%% max HP",
+    val flinchChance: String = "%1\$d%% Flinch",
+    val statNames: Map<String, String> = defaultStatNames
+)
+
+internal fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo, labels: MoveLabels = MoveLabels()): String {
     val category = when (info.damageClass) {
-        "physical" -> "Physical"
-        "special" -> "Special"
-        else -> "Status"
+        "physical" -> labels.physical
+        "special" -> labels.special
+        else -> labels.status
     }
-    val power = info.power?.toString() ?: "—"
-    val accuracy = info.accuracy?.let { "$it%" } ?: "—"
-    val pp = info.pp?.toString() ?: "—"
-    val base = "$category · Power $power · Accuracy $accuracy · PP $pp"
+    val power = info.power?.toString() ?: labels.dash
+    val accuracy = info.accuracy?.let { "$it%" } ?: labels.dash
+    val pp = info.pp?.toString() ?: labels.dash
     // Priority 0 is the overwhelming majority of moves (turn order follows Speed alone) — worth
     // calling out only when it actually changes turn order, same "don't show a default" reasoning
     // as moveMetaLabel below.
-    return if (info.priority != 0) "$base · Priority ${signed(info.priority)}" else base
+    return if (info.priority != 0) {
+        String.format(labels.lineWithPriority, category, power, accuracy, pp, signed(info.priority))
+    } else {
+        String.format(labels.line, category, power, accuracy, pp)
+    }
 }
 
 /** F37: a compact line of competitive info PokeAPI's `movemeta`/`movemetastatchanges` carries but
@@ -583,32 +631,30 @@ internal fun moveStatsLabel(info: PokeApiGraphQLDataSource.MoveInfo): String {
  *  nothing) when a move has none of these, which is most moves — MoveInfo's 0/"none" defaults mean
  *  "no effect" (see its own doc), so a wall of "0% chance, 0 drain..." would be actively misleading
  *  filler on the common case rather than useful density. */
-internal fun moveMetaLabel(info: PokeApiGraphQLDataSource.MoveInfo): String? {
+internal fun moveMetaLabel(info: PokeApiGraphQLDataSource.MoveInfo, labels: MoveLabels = MoveLabels()): String? {
     val parts = buildList {
         if (info.ailment != "none") {
-            val chance = if (info.ailmentChance > 0) "${info.ailmentChance}%" else "Always"
+            val chance = if (info.ailmentChance > 0) String.format(labels.ailmentChance, info.ailmentChance) else labels.always
             add("$chance ${info.ailment.toDisplayName()}")
         }
         if (info.statChanges.isNotEmpty()) {
-            val chance = if (info.statChangeChance > 0) "${info.statChangeChance}% chance: " else ""
+            val chance = if (info.statChangeChance > 0) String.format(labels.statChangeChance, info.statChangeChance) else ""
             val changes = info.statChanges.joinToString(", ") { (stat, change) ->
-                "${signed(change)} ${statDisplayName(stat)}"
+                "${signed(change)} ${statDisplayName(stat, labels.statNames)}"
             }
             add("$chance$changes")
         }
-        if (info.critRate > 0) add("Crit rate +${info.critRate}")
-        if (info.drain > 0) add("Drains ${info.drain}% dealt")
-        if (info.drain < 0) add("Recoil ${-info.drain}% dealt")
-        if (info.healing > 0) add("Heals ${info.healing}% max HP")
-        if (info.flinchChance > 0) add("${info.flinchChance}% Flinch")
+        if (info.critRate > 0) add(String.format(labels.critRate, info.critRate))
+        if (info.drain > 0) add(String.format(labels.drains, info.drain))
+        if (info.drain < 0) add(String.format(labels.recoil, -info.drain))
+        if (info.healing > 0) add(String.format(labels.heals, info.healing))
+        if (info.flinchChance > 0) add(String.format(labels.flinchChance, info.flinchChance))
     }
     return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
-/** "attack" -> "Attack", "special-defense" -> "Sp. Def" — reuses SortStat's existing labels (the
- *  Pokédex sort dialog) rather than a second lookup table for the same six stat names. */
-private fun statDisplayName(apiName: String): String =
-    SortStat.entries.firstOrNull { it.apiName == apiName }?.label ?: apiName.toDisplayName()
+private fun statDisplayName(apiName: String, statNames: Map<String, String>): String =
+    statNames[apiName] ?: apiName.toDisplayName()
 
 private fun signed(value: Int): String = if (value > 0) "+$value" else value.toString()
 

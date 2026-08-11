@@ -214,6 +214,7 @@
 
     <string name="detail_ailment_always">항상</string>
     <string name="detail_ailment_chance">%1$d%%</string>
+    <string name="detail_stat_change_chance">%1$d%% 확률: </string>
     <string name="detail_crit_rate">급소율 +%1$d</string>
     <string name="detail_drains">가한 피해의 %1$d%% 흡수</string>
     <string name="detail_recoil">가한 피해의 %1$d%% 반동</string>
@@ -340,6 +341,15 @@
     <string name="list_any_tier">모든 티어</string>
     <string name="list_sort_by_title">정렬 기준</string>
     <string name="list_no_sorting">정렬 없음</string>
+    <string name="sort_dex_number">도감 번호</string>
+    <string name="sort_name">이름 (A–Z)</string>
+    <string name="sort_hp">HP</string>
+    <string name="sort_attack">공격</string>
+    <string name="sort_defense">방어</string>
+    <string name="sort_special_attack">특수공격</string>
+    <string name="sort_special_defense">특수방어</string>
+    <string name="sort_speed">스피드</string>
+    <string name="sort_total">합계</string>
     <string name="list_rarity_title">희귀도</string>
     <string name="list_any_rarity">모든 희귀도</string>
     <string name="list_type_section">타입</string>
