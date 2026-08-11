@@ -26,6 +26,15 @@ jobs:
       - name: Run lint
         run: ./gradlew lintDebug
 
+      # F62 — the debug variant has minification off, so it never exercises the ProGuard/Gson
+      # risk documented in proguard-rules.pro (R8 stripping a DTO field or a TypeToken generic
+      # signature). No keystore is available in CI, so this debug-signs per the fallback in
+      # app/build.gradle.kts (F68) — still exercises R8, just not the real release signing.
+      # (AGP only generates unit test tasks for the configured testBuildType — debug here — so
+      # there's no testReleaseUnitTest to run; assembleRelease alone still runs R8/ProGuard.)
+      - name: Build release variant
+        run: ./gradlew assembleRelease
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
