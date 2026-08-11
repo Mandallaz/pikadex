@@ -26,8 +26,10 @@ import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
+import com.mandallaz.pikadex.ui.components.PokemonFrontBackArtwork
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.ui.detail.hasAnimatedSprite
+import com.mandallaz.pikadex.ui.detail.selectShowdownBackUrl
 import com.mandallaz.pikadex.ui.detail.selectShowdownUrl
 import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.localizedOrEnglish
@@ -43,6 +45,7 @@ internal fun DetailHeaderSection(
     gameDataLanguage: String,
     shiny: Boolean,
     animated: Boolean,
+    frontBackSpritesEnabled: Boolean,
     onToggleShiny: () -> Unit,
     onToggleAnimated: () -> Unit,
     isCryPlaying: Boolean,
@@ -100,16 +103,29 @@ internal fun DetailHeaderSection(
                 )
             }
         }
-        PokemonArtwork(
-            id = pokemon.id,
-            contentDescription = pokemon.name,
-            // Exact here, no name-based guessing: the payload already names this form's species.
-            baseSpeciesId = pokemon.species.id,
-            modifier = Modifier.size(200.dp),
-            shiny = shiny,
-            animated = animated,
-            showdownUrl = selectShowdownUrl(shiny, pokemon.sprites.other?.showdown)
-        )
+        if (frontBackSpritesEnabled) {
+            PokemonFrontBackArtwork(
+                id = pokemon.id,
+                contentDescription = pokemon.name,
+                baseSpeciesId = pokemon.species.id,
+                modifier = Modifier.size(width = 360.dp, height = 180.dp),
+                shiny = shiny,
+                animated = animated,
+                showdownFrontUrl = selectShowdownUrl(shiny, pokemon.sprites.other?.showdown),
+                showdownBackUrl = selectShowdownBackUrl(shiny, pokemon.sprites.other?.showdown)
+            )
+        } else {
+            PokemonArtwork(
+                id = pokemon.id,
+                contentDescription = pokemon.name,
+                // Exact here, no name-based guessing: the payload already names this form's species.
+                baseSpeciesId = pokemon.species.id,
+                modifier = Modifier.size(200.dp),
+                shiny = shiny,
+                animated = animated,
+                showdownUrl = selectShowdownUrl(shiny, pokemon.sprites.other?.showdown)
+            )
+        }
         Text(
             text = "#${pokemon.id.toString().padStart(4, '0')}",
             style = MaterialTheme.typography.labelLarge,

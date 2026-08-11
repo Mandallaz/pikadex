@@ -200,7 +200,7 @@ class PokedexDetailScreenTest {
 
     // --- selectShowdownUrl (F38) -------------------------------------------------------
 
-    private val bothVariants = ShowdownSprites(frontDefault = "default.gif", frontShiny = "shiny.gif")
+    private val bothVariants = ShowdownSprites(frontDefault = "default.gif", frontShiny = "shiny.gif", backDefault = null, backShiny = null)
 
     @Test
     fun `regular coloring picks the default animated sprite`() {
@@ -216,13 +216,39 @@ class PokedexDetailScreenTest {
     // animated sprite rather than showing nothing while the shiny toggle is on.
     @Test
     fun `shiny coloring falls back to the default animated sprite when no shiny variant exists`() {
-        val defaultOnly = ShowdownSprites(frontDefault = "default.gif", frontShiny = null)
+        val defaultOnly = ShowdownSprites(frontDefault = "default.gif", frontShiny = null, backDefault = null, backShiny = null)
         assertEquals("default.gif", selectShowdownUrl(shiny = true, showdown = defaultOnly))
     }
 
     @Test
     fun `no Showdown sprite data at all returns null`() {
         assertNull(selectShowdownUrl(shiny = false, showdown = null))
+    }
+
+    // --- selectShowdownBackUrl (F76) ----------------------------------------------------
+
+    private val bothBackVariants =
+        ShowdownSprites(frontDefault = null, frontShiny = null, backDefault = "back.gif", backShiny = "back-shiny.gif")
+
+    @Test
+    fun `regular coloring picks the default back animated sprite`() {
+        assertEquals("back.gif", selectShowdownBackUrl(shiny = false, showdown = bothBackVariants))
+    }
+
+    @Test
+    fun `shiny coloring picks the shiny back animated sprite when it exists`() {
+        assertEquals("back-shiny.gif", selectShowdownBackUrl(shiny = true, showdown = bothBackVariants))
+    }
+
+    @Test
+    fun `shiny coloring falls back to the default back animated sprite when no back shiny variant exists`() {
+        val backDefaultOnly = ShowdownSprites(frontDefault = null, frontShiny = null, backDefault = "back.gif", backShiny = null)
+        assertEquals("back.gif", selectShowdownBackUrl(shiny = true, showdown = backDefaultOnly))
+    }
+
+    @Test
+    fun `no Showdown sprite data at all returns null for the back sprite too`() {
+        assertNull(selectShowdownBackUrl(shiny = false, showdown = null))
     }
 
     // --- hasAnimatedSprite (B38) --------------------------------------------------------
@@ -234,7 +260,7 @@ class PokedexDetailScreenTest {
 
     @Test
     fun `a Pokemon with only a shiny animated sprite still has none to toggle to by default`() {
-        val shinyOnly = ShowdownSprites(frontDefault = null, frontShiny = "shiny.gif")
+        val shinyOnly = ShowdownSprites(frontDefault = null, frontShiny = "shiny.gif", backDefault = null, backShiny = null)
         assertFalse(hasAnimatedSprite(shinyOnly))
     }
 

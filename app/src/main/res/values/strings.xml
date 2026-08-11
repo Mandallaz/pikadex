@@ -55,6 +55,8 @@
     <string name="settings_display_section">Display</string>
     <string name="settings_amoled_title">AMOLED black</string>
     <string name="settings_amoled_subtitle">Forces dark mode with a true black background, to save battery on AMOLED screens.</string>
+    <string name="settings_front_back_sprites_title">Front and back sprites</string>
+    <string name="settings_front_back_sprites_subtitle">Shows the Pokémon detail screen\'s front and back sprites side by side, instead of just the front artwork.</string>
 
     <string name="settings_suggestions_section">Team suggestions</string>
     <string name="settings_suggestions_help_content_description">What are competitive tiers?</string>

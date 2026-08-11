@@ -53,6 +53,8 @@
     <string name="settings_display_section">Anzeige</string>
     <string name="settings_amoled_title">AMOLED-Schwarz</string>
     <string name="settings_amoled_subtitle">Erzwingt den Dunkelmodus mit echtem Schwarz, um bei AMOLED-Bildschirmen Akku zu sparen.</string>
+    <string name="settings_front_back_sprites_title">Vorder- und Rückansicht</string>
+    <string name="settings_front_back_sprites_subtitle">Zeigt auf der Pokémon-Detailseite Vorder- und Rückansicht nebeneinander, statt nur der Vorderseiten-Illustration.</string>
 
     <string name="settings_suggestions_section">Team-Vorschläge</string>
     <string name="settings_suggestions_help_content_description">Was sind Wettkampf-Tiers?</string>

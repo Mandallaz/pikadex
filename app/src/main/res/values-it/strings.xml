@@ -53,6 +53,8 @@
     <string name="settings_display_section">Schermo</string>
     <string name="settings_amoled_title">Nero AMOLED</string>
     <string name="settings_amoled_subtitle">Forza la modalità scura con uno sfondo veramente nero, per risparmiare batteria sugli schermi AMOLED.</string>
+    <string name="settings_front_back_sprites_title">Sprite fronte e retro</string>
+    <string name="settings_front_back_sprites_subtitle">Mostra gli sprite fronte e retro affiancati nella scheda del Pokémon, invece della sola illustrazione frontale.</string>
 
     <string name="settings_suggestions_section">Suggerimenti squadra</string>
     <string name="settings_suggestions_help_content_description">Cosa sono i tier competitivi?</string>

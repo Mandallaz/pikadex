@@ -53,6 +53,8 @@
     <string name="settings_display_section">Pantalla</string>
     <string name="settings_amoled_title">Negro AMOLED</string>
     <string name="settings_amoled_subtitle">Fuerza el modo oscuro con un fondo verdaderamente negro, para ahorrar batería en pantallas AMOLED.</string>
+    <string name="settings_front_back_sprites_title">Sprites de frente y espalda</string>
+    <string name="settings_front_back_sprites_subtitle">Muestra los sprites de frente y espalda uno junto al otro en la ficha del Pokémon, en lugar de solo la ilustración frontal.</string>
 
     <string name="settings_suggestions_section">Sugerencias de equipo</string>
     <string name="settings_suggestions_help_content_description">¿Qué son los tiers competitivos?</string>

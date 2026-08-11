@@ -53,6 +53,8 @@
     <string name="settings_display_section">화면</string>
     <string name="settings_amoled_title">AMOLED 블랙</string>
     <string name="settings_amoled_subtitle">AMOLED 화면에서 배터리를 절약하기 위해 완전한 검정 배경의 다크 모드를 강제 적용합니다.</string>
+    <string name="settings_front_back_sprites_title">앞면과 뒷면 스프라이트</string>
+    <string name="settings_front_back_sprites_subtitle">포켓몬 상세 화면에서 정면 아트워크 대신 앞면과 뒷면 스프라이트를 나란히 표시합니다.</string>
 
     <string name="settings_suggestions_section">파티 추천</string>
     <string name="settings_suggestions_help_content_description">대전 티어란 무엇인가요?</string>

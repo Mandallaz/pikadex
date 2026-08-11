@@ -68,10 +68,14 @@ data class OfficialArtworkSprites(
     @SerializedName("front_shiny") val frontShiny: String?
 )
 
-/** Front-only, matching the rest of the app: no back sprites are shown anywhere today (the
- *  existing shiny toggle on [PokemonSprites] is front-only too), so [back_default]/[back_shiny]
- *  aren't read here. */
+/** F76 — back_default/back_shiny read alongside the front pair, for the front+back side-by-side
+ *  display option; used the same way as the front fields (authoritative existence check from the
+ *  actual fetched DTO, with [com.mandallaz.pikadex.util.Sprites.showdownBackGifUrl]/
+ *  [com.mandallaz.pikadex.util.Sprites.shinyShowdownBackGifUrl] as the convention-based fallback
+ *  where no DTO is available, e.g. a prefetch tier). */
 data class ShowdownSprites(
     @SerializedName("front_default") val frontDefault: String?,
-    @SerializedName("front_shiny") val frontShiny: String?
+    @SerializedName("front_shiny") val frontShiny: String?,
+    @SerializedName("back_default") val backDefault: String?,
+    @SerializedName("back_shiny") val backShiny: String?
 )

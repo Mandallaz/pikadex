@@ -57,6 +57,8 @@ data class SettingsUiState(
     val suggestionTierOptions: List<String> = emptyList(),
     /** True-black dark theme variant for AMOLED screens (issue #4). */
     val amoledEnabled: Boolean = false,
+    /** F76 — front+back sprites side by side on the Pokémon detail screen. */
+    val frontBackSpritesEnabled: Boolean = false,
     /** F35 — drives both the UI chrome locale and which language game data (species/move/ability
      *  text) is read in. Defaults to English regardless of device locale, per that ticket's spec. */
     val currentLanguage: AppLanguage = SupportedLanguages.ALL.first { it.code == SupportedLanguages.DEFAULT_CODE }
@@ -87,6 +89,7 @@ class SettingsViewModel @JvmOverloads constructor(
         viewModelScope.launch { PrefetchSettings.wifiOnlyEnabled.collect { v -> _uiState.update { it.copy(wifiOnlyEnabled = v) } } }
         viewModelScope.launch { SuggestionSettings.maxTier.collect { v -> _uiState.update { it.copy(maxSuggestionTier = v) } } }
         viewModelScope.launch { DisplaySettings.amoledEnabled.collect { v -> _uiState.update { it.copy(amoledEnabled = v) } } }
+        viewModelScope.launch { DisplaySettings.frontBackSpritesEnabled.collect { v -> _uiState.update { it.copy(frontBackSpritesEnabled = v) } } }
         viewModelScope.launch {
             LanguageSettings.currentLanguage.collect { code ->
                 val language = SupportedLanguages.ALL.firstOrNull { it.code == code }
@@ -106,6 +109,7 @@ class SettingsViewModel @JvmOverloads constructor(
     fun setWifiOnlyEnabled(enabled: Boolean) = PrefetchSettings.setWifiOnlyEnabled(enabled)
     fun setMaxSuggestionTier(tier: String?) = SuggestionSettings.setMaxTier(tier)
     fun setAmoledEnabled(enabled: Boolean) = DisplaySettings.setAmoledEnabled(enabled)
+    fun setFrontBackSpritesEnabled(enabled: Boolean) = DisplaySettings.setFrontBackSpritesEnabled(enabled)
     fun setLanguage(code: String) = LanguageSettings.setLanguage(code)
 
     /** Best-effort, same as every other filter-option fetch in this app (e.g. the Pokédex list's

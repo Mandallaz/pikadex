@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.R
+import com.mandallaz.pikadex.data.DisplaySettings
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
@@ -410,6 +411,8 @@ internal fun DetailContent(
     // F35 — game-data axis: genus/flavor text below read whichever language this resolves to,
     // falling back to English wherever the chosen language's entry is missing.
     val gameDataLanguage by LanguageSettings.currentLanguage.collectAsState()
+    // F76 — global Settings toggle, same direct-read pattern as gameDataLanguage above.
+    val frontBackSpritesEnabled by DisplaySettings.frontBackSpritesEnabled.collectAsState()
 
     // Each category's moves are computed once per load, off the main thread, in the ViewModel
     // (see PokedexDetailUiState.groupedMoves) rather than here — this is the exact same
@@ -443,6 +446,7 @@ internal fun DetailContent(
                 gameDataLanguage = gameDataLanguage,
                 shiny = shiny,
                 animated = animated,
+                frontBackSpritesEnabled = frontBackSpritesEnabled,
                 onToggleShiny = onToggleShiny,
                 onToggleAnimated = onToggleAnimated,
                 isCryPlaying = isCryPlaying,
@@ -674,6 +678,10 @@ internal fun shouldShowTeamImpactCard(team: List<NamedApiResource>, isInTeam: Bo
  *  there's no Showdown sprite at all so the caller's own static-artwork fallback chain takes over. */
 internal fun selectShowdownUrl(shiny: Boolean, showdown: ShowdownSprites?): String? =
     showdown?.let { if (shiny) it.frontShiny ?: it.frontDefault else it.frontDefault }
+
+/** F76 — back-facing counterpart of [selectShowdownUrl], same shiny-falls-back-to-default rule. */
+internal fun selectShowdownBackUrl(shiny: Boolean, showdown: ShowdownSprites?): String? =
+    showdown?.let { if (shiny) it.backShiny ?: it.backDefault else it.backDefault }
 
 /** Whether the animated-sprite toggle has anything to show — gates [DetailHeaderSection]'s
  *  toggle button so it isn't offered for Pokémon with no animated sprite at all (B38), where

@@ -1,5 +1,7 @@
 package com.mandallaz.pikadex.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -7,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mandallaz.pikadex.util.Sprites
 
@@ -52,6 +55,53 @@ fun PokemonArtwork(
         contentScale = contentScale,
         modifier = modifier
     )
+}
+
+/**
+ * F76 — front+back sprites side by side, shown instead of [PokemonArtwork] when the Settings
+ * toggle is on. Front switches from the (front-only) official artwork to the in-game sprite here,
+ * matching the back sprite's own style — official artwork has no back angle in PokeAPI at all, so
+ * it can't participate in this layout. Each side degrades independently through [FallbackImage];
+ * a Pokémon missing a back sprite just renders an empty slot on that side rather than duplicating
+ * the front image or blocking the whole row.
+ */
+@Composable
+fun PokemonFrontBackArtwork(
+    id: Int,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    baseSpeciesId: Int? = null,
+    contentScale: ContentScale = ContentScale.Fit,
+    shiny: Boolean = false,
+    animated: Boolean = false,
+    showdownFrontUrl: String? = null,
+    showdownBackUrl: String? = null
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FallbackImage(
+            candidates = listOfNotNull(
+                if (animated) showdownFrontUrl else null,
+                if (shiny) Sprites.shinySpriteUrl(id) else null,
+                Sprites.defaultSpriteUrl(id),
+                Sprites.officialArtworkUrl(id),
+                baseSpeciesId?.let { Sprites.defaultSpriteUrl(it) }
+            ),
+            contentDescription = contentDescription,
+            contentScale = contentScale,
+            modifier = Modifier.weight(1f)
+        )
+        FallbackImage(
+            candidates = listOfNotNull(
+                if (animated) showdownBackUrl else null,
+                if (shiny) Sprites.shinyBackSpriteUrl(id) else null,
+                Sprites.backSpriteUrl(id),
+                baseSpeciesId?.let { Sprites.backSpriteUrl(it) }
+            ),
+            contentDescription = contentDescription,
+            contentScale = contentScale,
+            modifier = Modifier.weight(1f)
+        )
+    }
 }
 
 /** The small in-game sprite, with the same fallbacks as [PokemonArtwork] in the other order — used
