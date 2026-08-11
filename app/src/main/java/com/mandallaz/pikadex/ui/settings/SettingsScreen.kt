@@ -33,12 +33,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.AppLanguage
+import com.mandallaz.pikadex.data.PrefetchManager
 import com.mandallaz.pikadex.data.PrefetchState
 import com.mandallaz.pikadex.data.SupportedLanguages
 import com.mandallaz.pikadex.ui.components.OptionsDialog
@@ -336,10 +338,32 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         val confirmTitle = stringResource(R.string.settings_prefetch_confirm_title)
         val downloadLabel = stringResource(R.string.settings_prefetch_now)
         val cancelLabel = stringResource(R.string.settings_cancel)
+        // F70 — isMeteredNetworkBlocked() previously only ran inside startPrefetch() itself, so
+        // this dialog showed a plain "Download" button even when the tap was about to be refused
+        // (Wi-Fi only on, off Wi-Fi) or would spend mobile data with no warning at all (Wi-Fi only
+        // off, off Wi-Fi). Checked here too so the dialog reflects reality before the user commits.
+        val meteredWarning = if (viewModel.isMeteredNetworkBlocked()) {
+            stringResource(R.string.settings_prefetch_confirm_wifi_required_warning)
+        } else if (PrefetchManager.isActiveNetworkMetered(LocalContext.current)) {
+            stringResource(R.string.settings_prefetch_confirm_metered_warning)
+        } else {
+            null
+        }
         AlertDialog(
             onDismissRequest = { showPrefetchConfirm = false },
             title = { Text(confirmTitle) },
-            text = { Text(estimateLines.joinToString("\n\n")) },
+            text = {
+                Column {
+                    Text(estimateLines.joinToString("\n\n"))
+                    if (meteredWarning != null) {
+                        Text(
+                            meteredWarning,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 12.dp)
+                        )
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
                     showPrefetchConfirm = false

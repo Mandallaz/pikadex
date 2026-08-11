@@ -39,6 +39,8 @@
     <string name="settings_prefetch_error_network">사전 로드 중 네트워크 오류가 발생했습니다. 연결을 확인해 주세요.</string>
     <string name="settings_prefetch_error_wifi_required">\"Wi-Fi 전용\"이 활성화되어 있지만 Wi-Fi에 연결되어 있지 않습니다. Wi-Fi에 연결하거나 \"Wi-Fi 전용\"을 꺼서 다시 시도해 주세요.</string>
     <string name="settings_prefetch_confirm_title">다운로드를 시작할까요?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">\"Wi-Fi 전용\"이 활성화되어 있지만 Wi-Fi에 연결되어 있지 않습니다. 다운로드가 실패합니다 — Wi-Fi에 연결하거나 \"Wi-Fi 전용\"을 꺼주세요.</string>
+    <string name="settings_prefetch_confirm_metered_warning">Wi-Fi에 연결되어 있지 않습니다. 모바일 데이터를 사용하게 됩니다.</string>
 
     <string name="settings_storage_section">저장 공간</string>
     <string name="settings_storage_total">전체: %1$s</string>

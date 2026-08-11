@@ -39,6 +39,8 @@
     <string name="settings_prefetch_error_network">Error de red durante la precarga. Comprueba tu conexión.</string>
     <string name="settings_prefetch_error_wifi_required">\"Solo Wi-Fi\" está activado y no estás conectado a una red Wi-Fi. Conéctate a una red Wi-Fi, o desactiva \"Solo Wi-Fi\", y vuelve a intentarlo.</string>
     <string name="settings_prefetch_confirm_title">¿Iniciar descarga?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">\"Solo Wi-Fi\" está activado y no estás conectado a una red Wi-Fi. La descarga fallará — conéctate a una red Wi-Fi, o desactiva \"Solo Wi-Fi\".</string>
+    <string name="settings_prefetch_confirm_metered_warning">No estás conectado a una red Wi-Fi. Esto usará datos móviles.</string>
 
     <string name="settings_storage_section">Almacenamiento</string>
     <string name="settings_storage_total">Total: %1$s</string>

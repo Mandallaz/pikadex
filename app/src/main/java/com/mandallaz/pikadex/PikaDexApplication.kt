@@ -68,7 +68,12 @@ class PikaDexApplication : Application(), ImageLoaderFactory {
         .diskCache {
             DiskCache.Builder()
                 .directory(cacheDir.resolve("image_cache"))
-                .maxSizeBytes(250L * 1024 * 1024)
+                // B24 — Sprites alone is documented at 50-150MB (settings_tier_sprites_subtitle);
+                // Sprites-extra "roughly doubles" that (settings_tier_sprites_extra_subtitle), so
+                // both tiers enabled can approach 300MB. 250MB was smaller than that combined
+                // total, so Coil's own LRU eviction was silently undoing part of the prefetch
+                // while it was still running. 400MB covers both tiers with headroom.
+                .maxSizeBytes(400L * 1024 * 1024)
                 .build()
         }
         .build()

@@ -41,6 +41,8 @@
     <string name="settings_prefetch_error_network">Erreur réseau pendant le préchargement. Vérifiez votre connexion.</string>
     <string name="settings_prefetch_error_wifi_required">Le mode Wi-Fi uniquement est activé et vous n\'êtes pas connecté au Wi-Fi. Connectez-vous au Wi-Fi, ou désactivez le mode Wi-Fi uniquement, puis réessayez.</string>
     <string name="settings_prefetch_confirm_title">Démarrer le téléchargement ?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">Le mode Wi-Fi uniquement est activé et vous n\'êtes pas connecté au Wi-Fi. Le téléchargement échouera — connectez-vous au Wi-Fi, ou désactivez le mode Wi-Fi uniquement.</string>
+    <string name="settings_prefetch_confirm_metered_warning">Vous n\'êtes pas connecté au Wi-Fi. Cela utilisera vos données mobiles.</string>
 
     <string name="settings_storage_section">Stockage</string>
     <string name="settings_storage_total">Total : %1$s</string>

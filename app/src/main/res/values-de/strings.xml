@@ -39,6 +39,8 @@
     <string name="settings_prefetch_error_network">Netzwerkfehler beim Vorabladen. Überprüfe deine Verbindung.</string>
     <string name="settings_prefetch_error_wifi_required">\"Nur WLAN\" ist aktiviert und du bist nicht im WLAN. Verbinde dich mit dem WLAN oder deaktiviere \"Nur WLAN\" und versuche es erneut.</string>
     <string name="settings_prefetch_confirm_title">Download starten?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">„Nur WLAN\" ist aktiviert und du bist nicht im WLAN. Der Download wird fehlschlagen — verbinde dich mit dem WLAN oder deaktiviere „Nur WLAN\".</string>
+    <string name="settings_prefetch_confirm_metered_warning">Du bist nicht im WLAN. Dies verwendet mobile Daten.</string>
 
     <string name="settings_storage_section">Speicher</string>
     <string name="settings_storage_total">Gesamt: %1$s</string>

@@ -18,7 +18,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,6 +66,18 @@ object PrefetchManager {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var job: Job? = null
 
+    // B25 — every state update below is tagged with the run id active when its coroutine started
+    // and checked against the current one before publishing. Two races this closes:
+    //  1. Without it, a unit that finishes right as cancel() runs could still call onProgress
+    //     after cancel() already published Idle, making the screen show a stale Running(...) with
+    //     a Cancel button for a run that no longer exists.
+    //  2. It also makes it safe for start() to cancel the previous job *synchronously*, in its own
+    //     body rather than from inside the new coroutine (see start()'s own doc) — even if the two
+    //     jobs' cancellation/dispatch interleave unexpectedly, only the run whose id still matches
+    //     currentRunId is allowed to touch [_state].
+    private val currentRunId = AtomicInteger(0)
+    private fun isCurrentRun(runId: Int) = runId == currentRunId.get()
+
     private val _state = MutableStateFlow<PrefetchState>(PrefetchState.Idle)
     val state: StateFlow<PrefetchState> = _state.asStateFlow()
 
@@ -74,38 +85,71 @@ object PrefetchManager {
      *  supersedes an in-flight one rather than queuing behind it — same "latest request wins"
      *  behavior as every other tracked job in this codebase.
      *
-     *  The previous job is joined (not just cancelled) before this one starts its own work: a plain
-     *  `cancel()` lets the old coroutine's in-flight `_state.update { Running(...) }` land after this
-     *  job has already published its own state, which briefly shows the old tier's stale progress. */
+     *  The previous job is cancelled synchronously, here, before this function returns — not from
+     *  inside the new coroutine's own body. If it were cancelled from in there instead, a `cancel()`
+     *  call landing between `start()` returning and the new coroutine actually being dispatched
+     *  would cancel the *new* job before it ever got a chance to cancel the old one, orphaning the
+     *  old download with nothing left able to stop it. The new coroutine still joins the old one
+     *  (waits for it to actually finish unwinding) before starting its own work, so the old
+     *  coroutine's in-flight `_state.update { Running(...) }` can't land after this job has already
+     *  published its own state. */
     fun start(context: Context, repository: PokedexRepositoryApi, tiers: List<PrefetchTier>) {
         val previousJob = job
+        previousJob?.cancel()
+        val runId = currentRunId.incrementAndGet()
         if (tiers.isEmpty()) {
-            previousJob?.cancel()
+            job = null
             return
         }
         val appContext = context.applicationContext
         job = scope.launch {
-            previousJob?.cancelAndJoin()
+            previousJob?.join()
             try {
                 var totalFailed = 0
                 tiers.forEach { tier ->
+                    if (!isCurrentRun(runId)) return@launch
+                    if (abortIfWentMetered(appContext, runId)) return@launch
                     _state.update { PrefetchState.Running(done = 0, total = 0, phaseRes = tier.labelRes) }
                     val units = buildUnits(tier, appContext, repository)
+                    if (!isCurrentRun(runId)) return@launch
                     _state.update { PrefetchState.Running(done = 0, total = units.size, phaseRes = tier.labelRes) }
                     totalFailed += runPrefetchBatch(units, PREFETCH_CONCURRENCY) { done ->
-                        _state.update { PrefetchState.Running(done = done, total = units.size, phaseRes = tier.labelRes) }
+                        if (isCurrentRun(runId)) {
+                            if (!abortIfWentMetered(appContext, runId)) {
+                                _state.update { PrefetchState.Running(done = done, total = units.size, phaseRes = tier.labelRes) }
+                            }
+                        }
                     }
                 }
-                _state.update { PrefetchState.Finished(totalFailed) }
+                if (isCurrentRun(runId)) _state.update { PrefetchState.Finished(totalFailed) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { PrefetchState.Failed(R.string.settings_prefetch_error_network) }
+                if (isCurrentRun(runId)) _state.update { PrefetchState.Failed(R.string.settings_prefetch_error_network) }
             }
         }
     }
 
+    /** B26 — the Wi-Fi-only guard used to be checked once, at the moment the user tapped
+     *  "Prefetch now"; walking out of Wi-Fi range mid-run silently kept going over cellular, which
+     *  is exactly what [PrefetchSettings.wifiOnlyEnabled]'s own description promises won't happen.
+     *  Called once per tier boundary and once per completed unit (from the `onProgress` callback
+     *  below) — a reasonable polling granularity for a run that can take minutes, without adding a
+     *  full `ConnectivityManager.NetworkCallback` registration/lifecycle. Publishes the same
+     *  [PrefetchState.Failed] path [SettingsViewModel.startPrefetch]'s own pre-flight check uses,
+     *  then self-cancels: the surrounding `catch (e: CancellationException) { throw e }` rethrows
+     *  without touching `_state` again, so the message set here survives. */
+    private fun abortIfWentMetered(context: Context, runId: Int): Boolean {
+        if (!PrefetchSettings.wifiOnlyEnabled.value) return false
+        if (!isActiveNetworkMetered(context)) return false
+        if (!isCurrentRun(runId)) return false
+        _state.update { PrefetchState.Failed(R.string.settings_prefetch_error_wifi_required) }
+        job?.cancel()
+        return true
+    }
+
     fun cancel() {
+        currentRunId.incrementAndGet()
         job?.cancel()
         _state.update { PrefetchState.Idle }
     }
@@ -121,11 +165,15 @@ object PrefetchManager {
      *  per [PrefetchSettings.wifiOnlyEnabled]) rather than silently spending mobile data on what
      *  can be a 50-300MB+ run. `isActiveNetworkMetered` covers both cellular and a metered hotspot
      *  — a plain "is this Wi-Fi" check would miss the latter. */
-    fun isActiveNetworkMetered(context: Context): Boolean {
+    fun isActiveNetworkMetered(context: Context): Boolean = meteredCheck(context)
+
+    /** F72 — the real check, swappable so tests (e.g. [SettingsViewModel]'s own) can simulate a
+     *  metered/unmetered network without a real [ConnectivityManager] — there's no lightweight JVM
+     *  test double for one otherwise. */
+    internal var meteredCheck: (Context) -> Boolean = { context ->
         val connectivityManager = context.applicationContext
             .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            ?: return false
-        return connectivityManager.isActiveNetworkMetered
+        connectivityManager?.isActiveNetworkMetered ?: false
     }
 
     private suspend fun buildUnits(
@@ -138,6 +186,13 @@ object PrefetchManager {
             add { repository.getAllMoveInfo() }
             TypeIds.standardTypeNames.forEach { type -> add { repository.getTypeDetail(type) } }
             Smogon.ALL_GENERATIONS.forEach { gen -> add { repository.getSmogonTiers(gen.code) } }
+            // B33 — TypeBadge renders these on every screen (detail header, matchup cards,
+            // suggestion tiles, team chips) via Coil, but no tier ever fetched them, so a fully
+            // offline device showed blank badges for any type not yet viewed. Bundled with
+            // Essentials since it's the same "small, always-useful" spirit as the rest of this
+            // tier, not a separate opt-in.
+            val typeIconUrls = TypeIds.standardTypeNames.map { type -> Sprites.typeIconUrl(TypeIds.of(type)) }
+            addAll(imagePrefetchUnits(context, typeIconUrls))
         }
         PrefetchTier.SPRITES -> {
             val ids = repository.getMasterList().mapNotNull { it.id }
@@ -149,7 +204,11 @@ object PrefetchManager {
             val ids = repository.getMasterList().mapNotNull { it.id }
             imagePrefetchUnits(context, ids.flatMap { id ->
                 listOf(
-                    Sprites.shinySpriteUrl(id),
+                    // B32 — shinySpriteUrl dropped: no composable ever requests it.
+                    // PokemonArtwork's shiny chain is showdownUrl -> shinyOfficialArtworkUrl ->
+                    // officialArtworkUrl -> defaultSpriteUrl, and PokemonSprite (evolution/team
+                    // thumbnails) has no shiny mode at all — this URL was pure wasted bandwidth
+                    // and wasted Coil cache space.
                     Sprites.shinyOfficialArtworkUrl(id),
                     Sprites.showdownGifUrl(id),
                     Sprites.shinyShowdownGifUrl(id)

@@ -39,6 +39,8 @@
     <string name="settings_prefetch_error_network">事前読み込み中にネットワークエラーが発生しました。接続を確認してください。</string>
     <string name="settings_prefetch_error_wifi_required">「Wi-Fiのみ」が有効になっていますが、Wi-Fiに接続されていません。Wi-Fiに接続するか、「Wi-Fiのみ」をオフにしてから再試行してください。</string>
     <string name="settings_prefetch_confirm_title">ダウンロードを開始しますか?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">「Wi-Fiのみ」が有効になっていますが、Wi-Fiに接続されていません。ダウンロードは失敗します。Wi-Fiに接続するか、「Wi-Fiのみ」をオフにしてください。</string>
+    <string name="settings_prefetch_confirm_metered_warning">Wi-Fiに接続されていません。モバイルデータを使用します。</string>
 
     <string name="settings_storage_section">ストレージ</string>
     <string name="settings_storage_total">合計: %1$s</string>

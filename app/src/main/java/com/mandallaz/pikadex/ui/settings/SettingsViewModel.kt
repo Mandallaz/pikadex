@@ -131,25 +131,42 @@ class SettingsViewModel @JvmOverloads constructor(
      *  re-checked here in [startPrefetch] as the actual guard: the UI's own check is only ever a
      *  hint for which dialog to show, not something [startPrefetch] should trust blindly. */
     fun isMeteredNetworkBlocked(): Boolean =
-        _uiState.value.wifiOnlyEnabled && PrefetchManager.isActiveNetworkMetered(getApplication())
+        isBlocked(_uiState.value.wifiOnlyEnabled, PrefetchManager.isActiveNetworkMetered(getApplication()))
 
     fun startPrefetch() {
         if (isMeteredNetworkBlocked()) {
             PrefetchManager.reportWifiRequired()
             return
         }
-        val state = _uiState.value
-        val tiers = buildList {
+        PrefetchManager.start(getApplication(), AppContainer.repository, selectedTiers(_uiState.value))
+    }
+
+    fun cancelPrefetch() = PrefetchManager.cancel()
+
+    companion object {
+        /** F72 — pure guard decision, pulled out of [isMeteredNetworkBlocked] so it's directly
+         *  unit-testable without constructing a real [SettingsViewModel] at all: this class is an
+         *  `AndroidViewModel` whose `init` unconditionally calls [measureStorage], which reaches
+         *  real `Dispatchers.IO` background work ([AppContainer.sharedOkHttpClient], Coil's
+         *  `Context.imageLoader`, [com.mandallaz.pikadex.data.CryCache]) — there's no lightweight
+         *  JVM double for any of that, and letting it run against a bare test `Application` throws
+         *  asynchronously on a real thread, outside the test's own dispatcher control, surfacing
+         *  as a flaky failure attributed to whatever unrelated test happens to be running when it
+         *  lands. Keeping the actual decision logic pure sidesteps needing an instance for it. */
+        internal fun isBlocked(wifiOnlyEnabled: Boolean, metered: Boolean): Boolean = wifiOnlyEnabled && metered
+
+        /** F72 — pure tier-selection mapping, pulled out of [startPrefetch] so it's directly
+         *  unit-testable: [startPrefetch] itself can't be, since [PrefetchManager.start] needs a
+         *  real `Context.imageLoader` for every tier (see [PrefetchManagerCancelRaceTest]'s own
+         *  doc for why). */
+        internal fun selectedTiers(state: SettingsUiState): List<PrefetchTier> = buildList {
             if (state.essentialsEnabled) add(PrefetchTier.ESSENTIALS)
             if (state.spritesEnabled) add(PrefetchTier.SPRITES)
             if (state.spritesExtraEnabled) add(PrefetchTier.SPRITES_EXTRA)
             if (state.fullDetailEnabled) add(PrefetchTier.FULL_DETAIL)
             if (state.criesEnabled) add(PrefetchTier.CRIES)
         }
-        PrefetchManager.start(getApplication(), AppContainer.repository, tiers)
     }
-
-    fun cancelPrefetch() = PrefetchManager.cancel()
 
     // DiskCache.size and DiskCache.clear() are still @ExperimentalCoilApi in coil-compose 2.7.0
     // (Coil hasn't stabilized a non-experimental accessor for them yet) — opted in deliberately

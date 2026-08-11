@@ -41,6 +41,8 @@
     <string name="settings_prefetch_error_network">Network error during prefetch. Check your connection.</string>
     <string name="settings_prefetch_error_wifi_required">Wi-Fi only is enabled and you\'re not on Wi-Fi. Connect to Wi-Fi, or turn off Wi-Fi only, then retry.</string>
     <string name="settings_prefetch_confirm_title">Start download?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">Wi-Fi only is enabled and you\'re not on Wi-Fi. Downloading now will fail — connect to Wi-Fi first, or turn off Wi-Fi only.</string>
+    <string name="settings_prefetch_confirm_metered_warning">You\'re not on Wi-Fi. This will use mobile data.</string>
 
     <string name="settings_storage_section">Storage</string>
     <string name="settings_storage_total">Total: %1$s</string>

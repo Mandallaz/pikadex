@@ -39,6 +39,8 @@
     <string name="settings_prefetch_error_network">Errore di rete durante il precaricamento. Controlla la tua connessione.</string>
     <string name="settings_prefetch_error_wifi_required">\"Solo Wi-Fi\" è attivo e non sei connesso al Wi-Fi. Connettiti al Wi-Fi, oppure disattiva \"Solo Wi-Fi\", quindi riprova.</string>
     <string name="settings_prefetch_confirm_title">Avviare il download?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">\"Solo Wi-Fi\" è attivo e non sei connesso al Wi-Fi. Il download fallirà — connettiti al Wi-Fi, oppure disattiva \"Solo Wi-Fi\".</string>
+    <string name="settings_prefetch_confirm_metered_warning">Non sei connesso al Wi-Fi. Questo utilizzerà i dati mobili.</string>
 
     <string name="settings_storage_section">Archiviazione</string>
     <string name="settings_storage_total">Totale: %1$s</string>

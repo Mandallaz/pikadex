@@ -39,6 +39,8 @@
     <string name="settings_prefetch_error_network">Erro de rede durante o pré-carregamento. Verifique sua conexão.</string>
     <string name="settings_prefetch_error_wifi_required">\"Somente Wi-Fi\" está ativado e você não está conectado ao Wi-Fi. Conecte-se ao Wi-Fi ou desative \"Somente Wi-Fi\" e tente novamente.</string>
     <string name="settings_prefetch_confirm_title">Iniciar download?</string>
+    <string name="settings_prefetch_confirm_wifi_required_warning">\"Somente Wi-Fi\" está ativado e você não está conectado ao Wi-Fi. O download vai falhar — conecte-se ao Wi-Fi, ou desative \"Somente Wi-Fi\".</string>
+    <string name="settings_prefetch_confirm_metered_warning">Você não está conectado ao Wi-Fi. Isso usará dados móveis.</string>
 
     <string name="settings_storage_section">Armazenamento</string>
     <string name="settings_storage_total">Total: %1$s</string>
