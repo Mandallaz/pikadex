@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.AppContainer
+import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.SuggestionSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.TeamSlot
@@ -117,20 +118,12 @@ class TeamViewModel @JvmOverloads constructor(
         loadSpeciesNamesIfNeeded()
     }
 
-    /** B9 follow-up — see [PokedexListUiState.speciesNames]'s doc for the full rationale; same
-     *  best-effort, fetch-once-and-cache bulk fetch, duplicated here rather than shared because
-     *  each screen's ViewModel owns its own UiState. */
+    /** F66 — collects the shared [LocalizedNames] cache into this screen's own UiState; see
+     *  [LocalizedNames]'s doc for the full rationale. */
     private fun loadSpeciesNamesIfNeeded() {
-        if (_uiState.value.speciesNames.isNotEmpty()) return
+        viewModelScope.launch { LocalizedNames.ensureLoaded(repository) }
         viewModelScope.launch {
-            try {
-                val names = repository.getAllSpeciesNames()
-                _uiState.update { it.copy(speciesNames = names) }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Best-effort: falls back to the English-formatted raw name, same as before B9.
-            }
+            LocalizedNames.speciesNames.collect { names -> _uiState.update { it.copy(speciesNames = names) } }
         }
     }
 

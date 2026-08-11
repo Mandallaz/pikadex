@@ -7,6 +7,7 @@ import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.CryCache
 import com.mandallaz.pikadex.data.FavoritesRepository
+import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.PokedexListContext
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
@@ -166,7 +167,10 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     // a genuine 3-step dependency chain and can't be parallelized further).
                     val moveInfoDeferred = async { repository.getAllMoveInfo() }
                     val allStatsDeferred = async { repository.getAllBaseStats() }
-                    val speciesNamesDeferred = async { repository.getAllSpeciesNames() }
+                    // F66 — reads the shared LocalizedNames cache (warmed by whichever screen the
+                    // user opened first) instead of its own repository.getAllSpeciesNames() call;
+                    // same await-later concurrency with the other bulk fetches below.
+                    val speciesNamesDeferred = async { LocalizedNames.await(repository) }
                     val moveLocalizedNamesDeferred = async { repository.getAllMoveLocalizedNames() }
                     val abilityLocalizedNamesDeferred = async { repository.getAllAbilityLocalizedNames() }
 
