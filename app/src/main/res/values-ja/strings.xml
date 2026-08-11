@@ -192,6 +192,7 @@
     <string name="detail_best_counter_to">このタイプは次の三角関係の最良のカウンターです:</string>
     <string name="detail_triangle_perfect_suffix">（完全）</string>
     <string name="detail_triangle_imperfect_suffix">（不完全）</string>
+    <string name="detail_partial_counter_to">このタイプは次の三角関係を部分的にカウンターします:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon戦略ずかん</string>
 

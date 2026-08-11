@@ -194,6 +194,7 @@
     <string name="detail_best_counter_to">Ce typage est le meilleur contre pour :</string>
     <string name="detail_triangle_perfect_suffix">(Parfait)</string>
     <string name="detail_triangle_imperfect_suffix">(Imparfait)</string>
+    <string name="detail_partial_counter_to">Ce typage contre partiellement :</string>
 
     <string name="detail_smogon_strategy_dex_title">Dex stratégique Smogon</string>
 

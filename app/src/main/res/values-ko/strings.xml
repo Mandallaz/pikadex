@@ -192,6 +192,7 @@
     <string name="detail_best_counter_to">이 타입은 다음의 최고의 카운터입니다:</string>
     <string name="detail_triangle_perfect_suffix">(완전)</string>
     <string name="detail_triangle_imperfect_suffix">(불완전)</string>
+    <string name="detail_partial_counter_to">이 타입은 다음을 부분적으로 카운터합니다:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon 전략 도감</string>
 

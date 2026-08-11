@@ -197,6 +197,7 @@
     <string name="detail_best_counter_to">This typing is the best counter to:</string>
     <string name="detail_triangle_perfect_suffix">(Perfect)</string>
     <string name="detail_triangle_imperfect_suffix">(Imperfect)</string>
+    <string name="detail_partial_counter_to">This typing partially counters:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon Strategy Dex</string>
 

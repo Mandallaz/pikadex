@@ -34,12 +34,14 @@ import com.mandallaz.pikadex.util.TypeTriangle
  * ([TypeTriangles.counteredBy]). With only ever a couple of counter matches at most (each
  * triangle's counter typing is fixed, and no typing counters many at once), the collapse/expand
  * complexity the old member list needed no longer earns its keep either — dropped alongside it.
- * The caller hides this card entirely when [counteredTriangles] is empty, so every call here has
- * at least one row to show.
+ * The caller hides this card entirely when both [counteredTriangles] and
+ * [partiallyCounteredTriangles] are empty, so at least one of the two sections below always has a
+ * row to show.
  */
 @Composable
 internal fun TypeTrianglesCard(
     counteredTriangles: List<TypeTriangle>,
+    partiallyCounteredTriangles: List<TypeTriangle>,
     onViewTypeTriangles: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -64,16 +66,38 @@ internal fun TypeTrianglesCard(
                 }
             }
 
-            Text(
-                stringResource(R.string.detail_best_counter_to),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
-            )
-            counteredTriangles.forEachIndexed { index, triangle ->
-                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                TriangleRow(triangle)
+            if (counteredTriangles.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.detail_best_counter_to),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+                )
+                counteredTriangles.forEachIndexed { index, triangle ->
+                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                    TriangleRow(triangle)
+                }
+            }
+
+            // F69 — a second, visually distinct section for typings that only share one of the
+            // two counter types (TypeTriangles.partiallyCounteredBy), never overlapping the exact
+            // matches above.
+            if (partiallyCounteredTriangles.isNotEmpty()) {
+                if (counteredTriangles.isNotEmpty()) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                }
+                Text(
+                    stringResource(R.string.detail_partial_counter_to),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+                )
+                partiallyCounteredTriangles.forEachIndexed { index, triangle ->
+                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                    TriangleRow(triangle)
+                }
             }
         }
     }

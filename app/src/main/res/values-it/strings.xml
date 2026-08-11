@@ -192,6 +192,7 @@
     <string name="detail_best_counter_to">Questa combinazione di tipi è il miglior contro per:</string>
     <string name="detail_triangle_perfect_suffix">(Perfetto)</string>
     <string name="detail_triangle_imperfect_suffix">(Imperfetto)</string>
+    <string name="detail_partial_counter_to">Questa combinazione di tipi contrasta parzialmente:</string>
 
     <string name="detail_smogon_strategy_dex_title">Dex strategico Smogon</string>
 

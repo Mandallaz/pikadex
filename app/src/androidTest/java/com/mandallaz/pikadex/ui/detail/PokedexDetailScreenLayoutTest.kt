@@ -60,6 +60,7 @@ class PokedexDetailScreenLayoutTest {
                 typeMatchups = emptyMap(),
                 abilityDescriptions = emptyMap(),
                 counteredTriangles = emptyList(),
+                partiallyCounteredTriangles = emptyList(),
                 moveInfo = emptyMap(),
                 statPercentiles = emptyMap(),
                 formVersionGroup = null,

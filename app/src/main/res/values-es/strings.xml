@@ -192,6 +192,7 @@
     <string name="detail_best_counter_to">Este tipado es el mejor contrincante para:</string>
     <string name="detail_triangle_perfect_suffix">(Perfecto)</string>
     <string name="detail_triangle_imperfect_suffix">(Imperfecto)</string>
+    <string name="detail_partial_counter_to">Este tipado contrarresta parcialmente a:</string>
 
     <string name="detail_smogon_strategy_dex_title">Dex estratégico de Smogon</string>
 

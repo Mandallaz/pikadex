@@ -192,6 +192,7 @@
     <string name="detail_best_counter_to">此属性组合是以下三角关系的最佳克制方：</string>
     <string name="detail_triangle_perfect_suffix">（完美）</string>
     <string name="detail_triangle_imperfect_suffix">（不完美）</string>
+    <string name="detail_partial_counter_to">此属性组合部分克制以下三角关系：</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon战略图鉴</string>
 

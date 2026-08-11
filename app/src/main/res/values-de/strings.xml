@@ -192,6 +192,7 @@
     <string name="detail_best_counter_to">Dieser Typ ist der beste Konter für:</string>
     <string name="detail_triangle_perfect_suffix">(Perfekt)</string>
     <string name="detail_triangle_imperfect_suffix">(Unvollständig)</string>
+    <string name="detail_partial_counter_to">Dieser Typ kontert teilweise:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon Strategie-Dex</string>
 

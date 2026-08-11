@@ -62,6 +62,11 @@ data class PokedexDetailUiState(
      *  merely being *part of* a triangle (the pre-F26 `memberTriangles`) was dropped as too weak a
      *  signal to be worth a callout on its own. */
     val counteredTriangles: List<TypeTriangle> = emptyList(),
+    /** issue #72 (F69) — triangles this Pokémon's typing partially breaks (shares one of the two
+     *  types in [TypeTriangles.TypeCounter.types] without matching it exactly; see
+     *  [TypeTriangles.partiallyCounteredBy]). Shown as a second, visually distinct section on the
+     *  same card that reads [counteredTriangles], never overlapping it. */
+    val partiallyCounteredTriangles: List<TypeTriangle> = emptyList(),
     val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap(),
     /** Learned moves grouped and sorted per [MoveCategory] — used to be recomputed by the screen
      *  itself on every recomposition-surviving `remember(pokemon)`, which for a pokemon with a
@@ -186,6 +191,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     val matchups = computeDefensiveMultipliers(typeDetails)
                     val pokemonTypes = bundle.pokemon.types.orEmpty().map { it.type.name }
                     val counteredTriangles = TypeTriangles.counteredBy(pokemonTypes)
+                    val partiallyCounteredTriangles = TypeTriangles.partiallyCounteredBy(pokemonTypes)
                     val abilityNames = bundle.pokemon.abilities.orEmpty().map { it.ability.name }
                     val descriptionsDeferred = async {
                         abilityNames
@@ -248,6 +254,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             typeMatchups = matchups,
                             abilityDescriptions = descriptions,
                             counteredTriangles = counteredTriangles,
+                            partiallyCounteredTriangles = partiallyCounteredTriangles,
                             moveInfo = moveInfo,
                             statPercentiles = percentiles,
                             formVersionGroup = formVersionGroup,

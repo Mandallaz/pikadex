@@ -25,4 +25,23 @@ class TypeTrianglesTest {
     fun `isPerfectCounter is false for a typing that is a triangle member, not its counter`() {
         assertFalse(TypeTriangles.isPerfectCounter(listOf("fire", "grass")))
     }
+
+    @Test
+    fun `partiallyCounteredBy matches a typing sharing exactly one counter type`() {
+        // Fire/Steel/Rock's counter is Water/Fighting — mono-Water shares one type without matching.
+        val triangles = TypeTriangles.partiallyCounteredBy(listOf("water"))
+        assertTrue(triangles.any { it.title == "Fire / Steel / Rock" })
+    }
+
+    @Test
+    fun `partiallyCounteredBy excludes exact counter matches`() {
+        // Fire/Flying is the exact counter to Fire/Grass/Ground — an exact match, not a partial one.
+        val triangles = TypeTriangles.partiallyCounteredBy(listOf("fire", "flying"))
+        assertFalse(triangles.any { it.title == "Fire / Grass / Ground" })
+    }
+
+    @Test
+    fun `partiallyCounteredBy is empty for a typing sharing no counter type`() {
+        assertTrue(TypeTriangles.partiallyCounteredBy(listOf("normal")).isEmpty())
+    }
 }

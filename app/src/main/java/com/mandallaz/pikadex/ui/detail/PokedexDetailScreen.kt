@@ -289,6 +289,7 @@ fun PokedexDetailScreen(
                     typeMatchups = uiState.typeMatchups,
                     abilityDescriptions = uiState.abilityDescriptions,
                     counteredTriangles = uiState.counteredTriangles,
+                    partiallyCounteredTriangles = uiState.partiallyCounteredTriangles,
                     moveInfo = uiState.moveInfo,
                     statPercentiles = uiState.statPercentiles,
                     formVersionGroup = uiState.formVersionGroup,
@@ -381,6 +382,7 @@ internal fun DetailContent(
     typeMatchups: Map<String, Double>,
     abilityDescriptions: Map<String, String>,
     counteredTriangles: List<TypeTriangle>,
+    partiallyCounteredTriangles: List<TypeTriangle>,
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     statPercentiles: Map<String, Double>,
     formVersionGroup: String?,
@@ -522,9 +524,9 @@ internal fun DetailContent(
             }
         }
 
-        if (counteredTriangles.isNotEmpty()) {
+        if (counteredTriangles.isNotEmpty() || partiallyCounteredTriangles.isNotEmpty()) {
             item {
-                TypeTrianglesCard(counteredTriangles, onViewTypeTriangles)
+                TypeTrianglesCard(counteredTriangles, partiallyCounteredTriangles, onViewTypeTriangles)
             }
         }
 

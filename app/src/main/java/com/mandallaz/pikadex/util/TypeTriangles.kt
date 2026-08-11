@@ -269,4 +269,18 @@ object TypeTriangles {
      *  the detail screen's Type Triangles card already runs via [counteredBy] to decide whether it
      *  has anything to show for a given Pokémon. */
     fun isPerfectCounter(types: Collection<String>): Boolean = counteredBy(types).isNotEmpty()
+
+    /** Every triangle whose best-counter typing [types] merely *shares* a type with (F69) — at
+     *  least one of the two types in the triangle's [TypeCounter.types], without matching it
+     *  exactly (those exact matches are [counteredBy]'s job, and the two are mutually exclusive by
+     *  construction). Deliberately narrower than "resists at least one leg of the loop", which
+     *  would flag far more typings for a much weaker signal — see the comment at
+     *  `PokedexDetailScreen.kt` on why the old "member of a triangle" callout was dropped. */
+    fun partiallyCounteredBy(types: Collection<String>): List<TypeTriangle> {
+        val typeSet = types.toSet()
+        return ALL.filter { triangle ->
+            val counterSet = triangle.counter.types.toSet()
+            typeSet != counterSet && typeSet.any { it in counterSet }
+        }
+    }
 }

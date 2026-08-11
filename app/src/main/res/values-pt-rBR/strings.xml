@@ -192,6 +192,7 @@
     <string name="detail_best_counter_to">Esta tipagem é a melhor contra para:</string>
     <string name="detail_triangle_perfect_suffix">(Perfeito)</string>
     <string name="detail_triangle_imperfect_suffix">(Imperfeito)</string>
+    <string name="detail_partial_counter_to">Esta tipagem contra parcialmente:</string>
 
     <string name="detail_smogon_strategy_dex_title">Dex estratégico Smogon</string>
 
