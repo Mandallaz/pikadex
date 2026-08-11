@@ -230,7 +230,8 @@ fun TeamScreen(
                             member,
                             uiState.speciesNames,
                             language,
-                            onRemove = { viewModel.removeFromTeam(member) }
+                            onRemove = { viewModel.removeFromTeam(member) },
+                            onSpriteClick = { onPokemonClick(member.name) }
                         )
                     }
                     // There used to be no way to add a member from this screen at all — only Back,
@@ -359,7 +360,7 @@ fun TeamScreen(
                                 PokemonSprite(
                                         id = member.id ?: 0,
                                         contentDescription = member.name,
-                                        modifier = Modifier.size(48.dp)
+                                        modifier = Modifier.size(48.dp).clickable { onPokemonClick(member.name) }
                                     )
                             }
                         }
