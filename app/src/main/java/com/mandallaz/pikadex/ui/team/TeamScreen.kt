@@ -11,29 +11,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,25 +43,22 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
-import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
-import com.mandallaz.pikadex.ui.components.localizedTierLabel
+import com.mandallaz.pikadex.ui.team.sections.AddMemberChip
+import com.mandallaz.pikadex.ui.team.sections.MatrixCallout
+import com.mandallaz.pikadex.ui.team.sections.SuggestionsCard
+import com.mandallaz.pikadex.ui.team.sections.TeamMemberChip
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.isCompactMatrixLayout
-import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
-import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.toDisplayName
 
 private val TYPE_COLUMN_WIDTH = 88.dp
@@ -474,56 +463,6 @@ fun TeamScreen(
     }
 }
 
-@Composable
-private fun TeamMemberChip(
-    member: NamedApiResource,
-    speciesNames: Map<String, Map<String, String>>,
-    language: String,
-    onRemove: () -> Unit
-) {
-    // The remove button used to be a 20dp IconButton — well under the 48dp minimum touch target
-    // and overlapping the sprite. It's now a full 48dp target, offset to peek outside the chip's
-    // top-right corner (a standard "close badge" placement) so it doesn't crowd the sprite/name,
-    // with extra top padding on the Box to give it room and extra Row spacing (in the caller) so
-    // neighboring chips' peeking buttons don't collide.
-    Box(modifier = Modifier.padding(top = 12.dp, end = 8.dp)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            PokemonSprite(
-                id = member.id ?: 0,
-                contentDescription = member.name,
-                modifier = Modifier.size(56.dp)
-            )
-            Text(member.name.localizedDisplayName(speciesNames, language), style = MaterialTheme.typography.bodyMedium)
-        }
-        IconButton(
-            onClick = onRemove,
-            // No explicit .size() override — IconButton's own default (48dp) is the actual touch
-            // target; only the icon glyph itself is shrunk, below.
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = 8.dp, y = (-12).dp)
-        ) {
-            Icon(
-                Icons.Filled.Close,
-                contentDescription = stringResource(R.string.team_remove_member_cd, member.name.localizedDisplayName(speciesNames, language)),
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun AddMemberChip(onClick: () -> Unit) {
-    Box(modifier = Modifier.padding(top = 12.dp, end = 8.dp)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            OutlinedIconButton(onClick = onClick, modifier = Modifier.size(56.dp)) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.team_add_member_cd))
-            }
-            Text(stringResource(R.string.team_add_label), style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
 private fun multiplierLabel(multiplier: Double): String = when (multiplier) {
     4.0 -> "×4"
     2.0 -> "×2"
@@ -559,200 +498,5 @@ private fun multiplierColors(multiplier: Double, isOffense: Boolean = false): Pa
         multiplier == 0.0 -> if (isOffense) bad else immune
         multiplier > 1.0 -> if (isOffense) good else bad
         else -> if (isOffense) bad else good
-    }
-}
-
-/** Candidates that would fix both a shared weakness and a coverage gap at once — see
- *  [TeamViewModel.loadSuggestions]/issue #11. Sorted by total impact (weaknesses resisted
- *  plus gaps hit) descending, stat total ascending as a tiebreak, so the most useful, least
- *  overpowering options lead the row. */
-@Composable
-private fun SuggestionsCard(
-    suggestions: List<TeamSuggestion>,
-    spriteIds: Map<String, Int>,
-    tierCeiling: String?,
-    speciesNames: Map<String, Map<String, String>>,
-    language: String,
-    onAdd: (String) -> Unit,
-    onPokemonClick: (String) -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(stringResource(R.string.team_suggestions_title), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
-            Text(
-                stringResource(R.string.team_suggestions_subtitle),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-            // The ceiling itself lives in Settings, out of sight from this card — without this
-            // line, a shorter-than-expected list here (or one that suddenly changed) had no
-            // visible cause.
-            if (tierCeiling != null) {
-                Text(
-                    stringResource(R.string.team_suggestions_tier_limited, localizedTierLabel(tierCeiling)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-            // More than fit on a portrait phone in one glance — the row scrolls, but nothing about
-            // a plain horizontalScroll Row hints that on its own, so a bare "4 shown, 6 more
-            // offscreen" used to read as "only 4 suggestions" with no reason to swipe further.
-            if (suggestions.size > 4) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-                    Text(
-                        stringResource(R.string.team_suggestions_swipe_all, suggestions.size),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Icon(
-                        Icons.Filled.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .padding(top = if (suggestions.size > 4) 0.dp else 8.dp)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                suggestions.forEach { suggestion ->
-                    SuggestionTile(
-                        suggestion = suggestion,
-                        spriteId = spriteIds[suggestion.name] ?: 0,
-                        speciesNames = speciesNames,
-                        language = language,
-                        onAdd = { onAdd(suggestion.name) },
-                        onSpriteClick = { onPokemonClick(suggestion.name) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SuggestionTile(
-    suggestion: TeamSuggestion,
-    spriteId: Int,
-    speciesNames: Map<String, Map<String, String>>,
-    language: String,
-    onAdd: () -> Unit,
-    // issue #17 — sprite-only tap target, not the whole tile: the "+" IconButton already
-    // claims its own tap area, and the ask specifically named "the sprite", read narrowly.
-    onSpriteClick: () -> Unit
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(96.dp)) {
-        PokemonSprite(
-            id = spriteId,
-            contentDescription = suggestion.name,
-            modifier = Modifier.size(48.dp).clickable(onClick = onSpriteClick)
-        )
-        Text(
-            suggestion.name.localizedDisplayName(speciesNames, language),
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            stringResource(R.string.team_suggestion_bst, suggestion.statTotal),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 2.dp)
-        ) {
-            suggestion.types.forEach { type ->
-                TypeBadge(type, TypeIds.idOrNull(type), height = 14.dp)
-            }
-        }
-        // The "why" behind this specific suggestion — without it the reasoning in the card's own
-        // subtitle ("would help both...") never ties back to any one tile, and the user has to
-        // work it out by eye from the type badges above. Also what [rankSuggestions] sorts by, so
-        // it doubles as an explanation for the tile's position in the row.
-        Text(
-            stringResource(
-                R.string.team_suggestion_resists_hits,
-                suggestion.weaknessesResisted.joinToString(", ") { it.toDisplayName() },
-                suggestion.gapsHit.joinToString(", ") { it.toDisplayName() }
-            ),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 2.dp)
-        )
-        // The suggestion was scored on this species' base typing only — a mega/gmax/regional form
-        // that changes the typing can silently stop qualifying, so name exactly which ones not to
-        // pick. Stripped of the shared "<species>-" prefix ("charizard-mega-x" -> "Mega X") to fit
-        // this tile's width.
-        if (suggestion.conflictingForms.isNotEmpty()) {
-            Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(top = 2.dp)) {
-                Icon(
-                    Icons.Filled.WarningAmber,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(12.dp).padding(top = 1.dp)
-                )
-                Text(
-                    stringResource(
-                        R.string.team_suggestion_not_as,
-                        suggestion.conflictingForms.joinToString(", ") {
-                            it.removePrefix("${suggestion.name}-").toDisplayName()
-                        }
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 2.dp)
-                )
-            }
-        }
-        IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = stringResource(R.string.team_suggestion_add_cd, suggestion.name.localizedDisplayName(speciesNames, language)),
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
-
-/** The banner above the matrix. Shared by both modes so the two read as the same kind of summary;
- *  [isWarning] is what separates "here is a problem" from "here is a clean bill of health". */
-@Composable
-private fun MatrixCallout(title: String, body: String, isWarning: Boolean = true) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = if (isWarning) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = if (isWarning) Icons.Filled.WarningAmber else Icons.Filled.Check,
-                    contentDescription = null
-                )
-                Text(
-                    " $title",
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-            Text(body, modifier = Modifier.padding(top = 4.dp))
-        }
     }
 }

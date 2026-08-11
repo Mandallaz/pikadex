@@ -1,17 +1,9 @@
 package com.mandallaz.pikadex.ui.detail
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,35 +11,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
-import androidx.compose.material.icons.filled.Animation
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -57,7 +34,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -71,17 +47,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
@@ -93,27 +65,26 @@ import com.mandallaz.pikadex.data.remote.dto.ShowdownSprites
 import com.mandallaz.pikadex.ui.UiText
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
-import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.SearchableListDialog
-import com.mandallaz.pikadex.ui.components.StatBar
-import com.mandallaz.pikadex.ui.components.localizedLabel
-import com.mandallaz.pikadex.ui.components.TypeBadge
+import com.mandallaz.pikadex.ui.detail.sections.AbilitiesCard
+import com.mandallaz.pikadex.ui.detail.sections.BaseStatsCard
+import com.mandallaz.pikadex.ui.detail.sections.DetailHeaderSection
+import com.mandallaz.pikadex.ui.detail.sections.DetailLoadingSkeleton
+import com.mandallaz.pikadex.ui.detail.sections.EvolutionCard
+import com.mandallaz.pikadex.ui.detail.sections.SmogonLinksCard
+import com.mandallaz.pikadex.ui.detail.sections.TeamImpactCard
+import com.mandallaz.pikadex.ui.detail.sections.TypeMatchupsCard
+import com.mandallaz.pikadex.ui.detail.sections.TypeTrianglesCard
+import com.mandallaz.pikadex.ui.detail.sections.moveSection
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.Smogon
-import com.mandallaz.pikadex.util.Sprites
-import com.mandallaz.pikadex.util.StatColors
-import com.mandallaz.pikadex.util.TypeColors
-import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.TypeTriangle
-import com.mandallaz.pikadex.util.evolutionPaths
 import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.localizedOrEnglish
-import com.mandallaz.pikadex.util.openExternalLink
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.TeamImpactSummary
 import com.mandallaz.pikadex.util.toDisplayName
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 /**
@@ -400,43 +371,6 @@ fun PokedexDetailScreen(
 
 }
 
-/** Placeholder that echoes [DetailContent]'s actual layout (artwork circle, name/genus bars, a
- *  handful of stat rows) instead of a bare spinner — sets the right expectation for what's about
- *  to load in, and reads as faster even at an identical real load time. A gentle alpha pulse (not
- *  a full shimmer sweep) is enough to read as "loading" rather than "static/broken". */
-@Composable
-private fun DetailLoadingSkeleton() {
-    val transition = rememberInfiniteTransition(label = "detail-skeleton")
-    val alpha by transition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(animation = tween(700), repeatMode = RepeatMode.Reverse),
-        label = "detail-skeleton-alpha"
-    )
-    val placeholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha * 0.12f)
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(modifier = Modifier.size(160.dp).background(placeholderColor, CircleShape))
-        Spacer(modifier = Modifier.height(16.dp))
-        Box(modifier = Modifier.width(80.dp).height(16.dp).background(placeholderColor, RoundedCornerShape(8.dp)))
-        Spacer(modifier = Modifier.height(8.dp))
-        Box(modifier = Modifier.width(160.dp).height(24.dp).background(placeholderColor, RoundedCornerShape(8.dp)))
-        Spacer(modifier = Modifier.height(24.dp))
-        repeat(6) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-                    .height(20.dp)
-                    .background(placeholderColor, RoundedCornerShape(8.dp))
-            )
-        }
-    }
-}
-
 // Internal rather than private: instrumented tests render this directly with fake DTOs, rather
 // than driving the whole screen through a real ViewModel/network fetch.
 @Composable
@@ -471,8 +405,6 @@ internal fun DetailContent(
     moveLocalizedNames: Map<String, Map<String, String>> = emptyMap(),
     abilityLocalizedNames: Map<String, Map<String, String>> = emptyMap()
 ) {
-    val primaryType = pokemon.types.orEmpty().minByOrNull { it.slot }?.type?.name ?: "normal"
-    val primaryColor = TypeColors.of(primaryType)
     // F35 — game-data axis: genus/flavor text below read whichever language this resolves to,
     // falling back to English wherever the chosen language's entry is missing.
     val gameDataLanguage by LanguageSettings.currentLanguage.collectAsState()
@@ -502,101 +434,18 @@ internal fun DetailContent(
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(primaryColor.copy(alpha = 0.15f))
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Shiny/animated/cry live right above the sprite they affect (issue #50), not in
-                // the top bar — grouped with what they act on rather than with unrelated actions
-                // like Back and add-to-team.
-                Row(horizontalArrangement = Arrangement.Center) {
-                    IconButton(onClick = onToggleShiny) {
-                        Icon(
-                            imageVector = Icons.Filled.AutoAwesome,
-                            contentDescription = if (shiny) {
-                                stringResource(R.string.detail_show_normal_coloring)
-                            } else {
-                                stringResource(R.string.detail_show_shiny_coloring)
-                            },
-                            tint = if (shiny) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                        )
-                    }
-                    IconButton(onClick = onToggleAnimated) {
-                        Icon(
-                            imageVector = Icons.Filled.Animation,
-                            contentDescription = if (animated) {
-                                stringResource(R.string.detail_show_static_artwork)
-                            } else {
-                                stringResource(R.string.detail_show_animated_sprite)
-                            },
-                            tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                        )
-                    }
-                    // F34: a one-shot action, not a toggle like shiny/animated above — disabled
-                    // rather than hidden while a cry is already playing, so tapping it twice fast
-                    // can't overlap two MediaPlayer instances.
-                    IconButton(onClick = onPlayCry, enabled = !isCryPlaying) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = stringResource(R.string.detail_play_cry),
-                            tint = if (isCryPlaying) {
-                                LocalContentColor.current.copy(alpha = 0.38f)
-                            } else {
-                                LocalContentColor.current
-                            }
-                        )
-                    }
-                }
-                PokemonArtwork(
-                    id = pokemon.id,
-                    contentDescription = pokemon.name,
-                    // Exact here, no name-based guessing: the payload already names this form's species.
-                    baseSpeciesId = pokemon.species.id,
-                    modifier = Modifier.size(200.dp),
-                    shiny = shiny,
-                    animated = animated,
-                    showdownUrl = selectShowdownUrl(shiny, pokemon.sprites.other?.showdown)
-                )
-                Text(
-                    text = "#${pokemon.id.toString().padStart(4, '0')}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = pokemon.name.localizedDisplayName(speciesNames, gameDataLanguage),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                val genus = species.genera.localizedOrEnglish(gameDataLanguage) { it.language.name }?.genus
-                if (genus != null) {
-                    Text(text = genus, style = MaterialTheme.typography.bodyMedium)
-                }
-                // Both can be true at once in PokeAPI's data (there's no species where they are,
-                // today, but nothing rules it out), so this shows both rather than picking one.
-                if (species.isLegendary || species.isMythical) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        if (species.isLegendary) {
-                            AssistChip(onClick = {}, label = { Text(stringResource(R.string.detail_legendary)) })
-                        }
-                        if (species.isMythical) {
-                            AssistChip(onClick = {}, label = { Text(stringResource(R.string.detail_mythical)) })
-                        }
-                    }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    pokemon.types.orEmpty().sortedBy { it.slot }.forEach {
-                        TypeBadge(it.type.name, it.type.id ?: 0, height = 28.dp)
-                    }
-                }
-            }
+            DetailHeaderSection(
+                pokemon = pokemon,
+                species = species,
+                speciesNames = speciesNames,
+                gameDataLanguage = gameDataLanguage,
+                shiny = shiny,
+                animated = animated,
+                onToggleShiny = onToggleShiny,
+                onToggleAnimated = onToggleAnimated,
+                isCryPlaying = isCryPlaying,
+                onPlayCry = onPlayCry
+            )
         }
 
         item {
@@ -639,79 +488,11 @@ internal fun DetailContent(
         }
 
         item {
-            Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.detail_base_stats_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        stringResource(R.string.detail_base_stats_subtitle, com.mandallaz.pikadex.ui.components.STAT_BAR_SCALE_MAX.toInt()),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    pokemon.stats.orEmpty().forEach { stat ->
-                        val percentile = statPercentiles[stat.stat.name] ?: 0.5
-                        StatBar(statName = stat.stat.name, value = stat.baseStat, color = StatColors.forPercentile(percentile))
-                    }
-                    val total = pokemon.stats.orEmpty().sumOf { it.baseStat }
-                    Text(
-                        stringResource(R.string.detail_stat_total, total),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    // Every individual stat gets a percentile-colored bar, but the total — the one
-                    // number people actually compare Pokémon by — was a bare figure with nothing to
-                    // judge it against, even though its percentile was already being computed and
-                    // then thrown away.
-                    statPercentiles["total"]?.let { percentile ->
-                        Text(
-                            stringResource(R.string.detail_stronger_than, (percentile * 100).roundToInt()),
-                            style = MaterialTheme.typography.bodySmall,
-                            // Deliberately not StatColors.forPercentile: those hues are tuned to be
-                            // read as a filled bar against the surface, and are nowhere near enough
-                            // contrast for small text on either theme's background.
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            BaseStatsCard(pokemon, statPercentiles)
         }
 
         item {
-            // Every other card on this screen pads all 4 sides (16dp) for an even gap above/below;
-            // this one only padded horizontally, so it sat flush against the Base Stats card above
-            // and Type Matchups below it — the one place on the page with no breathing room.
-            Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.detail_abilities_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    val hiddenSuffix = stringResource(R.string.detail_ability_hidden_suffix)
-                    pokemon.abilities.orEmpty().sortedBy { it.slot }.forEach { slot ->
-                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                            Text(
-                                text = slot.ability.name.localizedDisplayName(abilityLocalizedNames, gameDataLanguage) +
-                                    if (slot.isHidden) " $hiddenSuffix" else "",
-                                fontWeight = FontWeight.Medium
-                            )
-                            abilityDescriptions[slot.ability.name]?.let { description ->
-                                Text(
-                                    text = description,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            AbilitiesCard(pokemon, abilityDescriptions, abilityLocalizedNames, gameDataLanguage)
         }
 
         item {
@@ -727,94 +508,7 @@ internal fun DetailContent(
         val otherForms = species.otherForms
         if (evolutionChain != null || otherForms.isNotEmpty()) {
             item {
-                Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            stringResource(R.string.detail_evolution_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        val paths = remember(evolutionChain) {
-                            evolutionChain?.let { evolutionPaths(it.chain) }.orEmpty()
-                        }
-                        if (paths.all { it.size <= 1 }) {
-                            Text(
-                                stringResource(R.string.detail_no_evolution),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            paths.forEach { path ->
-                                // FlowRow, not a horizontalScroll Row: a 3-stage chain (the most
-                                // common case) didn't fit on one line and had no scroll affordance,
-                                // so the last stage just looked clipped off — wrapping to a second
-                                // line means every stage stays visible instead of silently hidden.
-                                // Grouping "arrow + its destination stage" as one FlowRow child (not
-                                // stage-by-stage) means wrapping never splits an arrow from what it
-                                // points to.
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                ) {
-                                    path.forEachIndexed { index, stage ->
-                                        if (index > 0) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Column(
-                                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                                ) {
-                                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
-                                                    stage.conditionLabel?.let {
-                                                        Text(it.resolve(), style = MaterialTheme.typography.bodyMedium)
-                                                    }
-                                                }
-                                                EvolutionStageBox(stage, pokemon, onPokemonClick, speciesNames, gameDataLanguage)
-                                            }
-                                        } else {
-                                            EvolutionStageBox(stage, pokemon, onPokemonClick, speciesNames, gameDataLanguage)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (otherForms.isNotEmpty()) {
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                            Text(
-                                stringResource(R.string.detail_other_forms_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            // Deliberately doesn't say *how* each is obtained — PokeAPI's
-                            // evolution-chain data doesn't cover these at all (Mega/Gigantamax are
-                            // battle-only forms, not evolutions; one-off forms like Ursaluna
-                            // Bloodmoon come from a species-specific in-game method the API has no
-                            // field for), so this only confirms the form exists rather than
-                            // guessing or fabricating an acquisition method.
-                            Text(
-                                stringResource(R.string.detail_other_forms_subtitle),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                otherForms.forEach { variety ->
-                                    PokemonSpriteTile(
-                                        displayName = variety.pokemon.name.localizedDisplayName(speciesNames, gameDataLanguage),
-                                        id = variety.pokemon.id ?: 0,
-                                        isCurrent = variety.pokemon.name == pokemon.name,
-                                        onClick = { onPokemonClick(variety.pokemon.name) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                EvolutionCard(pokemon, species, evolutionChain, onPokemonClick, speciesNames, gameDataLanguage)
             }
         }
 
@@ -864,454 +558,6 @@ internal fun DetailContent(
         ) { toggle(MoveCategory.TUTOR) }
 
         item { Spacer(modifier = Modifier.size(24.dp)) }
-    }
-}
-
-@Composable
-private fun EvolutionStageBox(
-    stage: com.mandallaz.pikadex.util.EvolutionStage,
-    pokemon: PokemonDto,
-    onPokemonClick: (String) -> Unit,
-    speciesNames: Map<String, Map<String, String>>,
-    language: String
-) {
-    PokemonSpriteTile(
-        displayName = stage.speciesName.localizedDisplayName(speciesNames, language),
-        id = stage.id,
-        isCurrent = stage.speciesName == pokemon.name,
-        onClick = { onPokemonClick(stage.speciesName) }
-    )
-}
-
-/** A tappable sprite + name, highlighted when it's the Pokémon already on screen. Shared by the
- *  evolution chain and the Mega Evolution list so the two read as the same kind of link. B9: the
- *  caller resolves [displayName] (same "hoist to the caller" pattern as PokemonCard), since both
- *  call sites already have `speciesNames`/the current language in scope. */
-@Composable
-private fun PokemonSpriteTile(
-    displayName: String,
-    id: Int,
-    isCurrent: Boolean,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .padding(horizontal = 4.dp)
-            .background(
-                if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent,
-                RoundedCornerShape(12.dp)
-            )
-            // Excludes the current Pokémon too, not just the placeholder id=0 case — tapping the
-            // highlighted "you are here" stage in its own chain used to push a duplicate detail
-            // screen of the page already on screen.
-            .clickable(enabled = id != 0 && !isCurrent, onClick = onClick)
-            .padding(8.dp)
-    ) {
-        PokemonSprite(
-            id = id,
-            contentDescription = displayName,
-            modifier = Modifier.size(64.dp)
-        )
-        Text(
-            displayName,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            softWrap = false
-        )
-    }
-}
-
-/** issue #2's "team coverage impact" — what adding this Pokémon to the active team would
- *  change about its shared weaknesses and coverage gaps. Only ever composed while
- *  [PokedexDetailScreen]'s showTeamImpactCard condition holds, so there's always a real team to
- *  preview against; the three states below (loading/error/result) cover everything that condition
- *  leaves open. */
-@Composable
-private fun TeamImpactCard(
-    isLoading: Boolean,
-    error: UiText?,
-    impact: TeamImpactSummary?
-) {
-    // A loaded result with all 7 categories empty means this Pokémon genuinely wouldn't change
-    // anything about the team's coverage — worth saying explicitly ("Nothing.") rather than leaving
-    // the generic subtitle as the only text on an otherwise-blank card, which read as if the card
-    // just hadn't finished loading.
-    val hasNoImpact = impact != null &&
-        impact.weaknessesFixed.isEmpty() && impact.weaknessesIntroduced.isEmpty() &&
-        impact.gapsClosed.isEmpty() && impact.gapsOpened.isEmpty() &&
-        impact.immunitiesGained.isEmpty() && impact.quadWeaknessesGained.isEmpty() &&
-        impact.resistancesGained.isEmpty()
-
-    Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                stringResource(R.string.detail_team_impact_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Text(
-                if (hasNoImpact) {
-                    stringResource(R.string.detail_team_impact_nothing)
-                } else {
-                    stringResource(R.string.detail_team_impact_subtitle)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            when {
-                isLoading -> Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
-                error != null -> Text(error.resolve(), color = MaterialTheme.colorScheme.error)
-                impact != null && !hasNoImpact -> TeamImpactSummaryText(impact)
-            }
-        }
-    }
-}
-
-/** The delta summary for issue #2 (revised 2026-08-09 twice more — user feedback: only show
- *  what actually changes, with type badges instead of plain type names, and grouped so it's clear
- *  which half is this Pokémon's defensive contribution (shared weaknesses, from [computeDefensiveMultipliers]-
- *  derived data) versus its offensive one (coverage gaps, from the offensive matrix) rather than 4
- *  same-looking rows a reader has to parse individually. A row (and its parent section, if both of
- *  its rows are empty) is omitted entirely rather than spelled out as "no new..." — a Pokémon that
- *  changes nothing on either side shows no text at all here (see [TeamImpactCard]'s "Nothing." case
- *  for when *both* sections are empty). */
-@Composable
-private fun TeamImpactSummaryText(impact: TeamImpactSummary) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ImpactSection(
-            stringResource(R.string.detail_defensively),
-            stringResource(R.string.detail_fixes_weaknesses) to impact.weaknessesFixed,
-            stringResource(R.string.detail_introduces_weaknesses) to impact.weaknessesIntroduced,
-            stringResource(R.string.detail_adds_immunity) to impact.immunitiesGained,
-            stringResource(R.string.detail_adds_resistance) to impact.resistancesGained,
-            stringResource(R.string.detail_adds_quad_weakness) to impact.quadWeaknessesGained
-        )
-        ImpactSection(
-            stringResource(R.string.detail_offensively),
-            stringResource(R.string.detail_closes_gaps) to impact.gapsClosed,
-            stringResource(R.string.detail_opens_gaps) to impact.gapsOpened
-        )
-    }
-}
-
-/** One half (defensive or offensive) of the summary — a heading over its rows, omitted entirely
- *  when both of [rows] are empty rather than showing a heading over nothing. */
-@Composable
-private fun ImpactSection(heading: String, vararg rows: Pair<String, List<String>>) {
-    if (rows.all { (_, types) -> types.isEmpty() }) return
-    Column {
-        Text(heading, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-            rows.forEach { (label, types) -> ImpactTypeRow(label, types) }
-        }
-    }
-}
-
-/** One impact category — omits itself (no label, no row) when [types] is empty, rather than the
- *  section above having to special-case which of its rows actually render. */
-@Composable
-private fun ImpactTypeRow(label: String, types: List<String>) {
-    if (types.isEmpty()) return
-    Column {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(top = 4.dp)
-        ) {
-            types.forEach { type -> TypeBadge(type, TypeIds.idOrNull(type), height = 20.dp) }
-        }
-    }
-}
-
-@Composable
-private fun TypeMatchupsCard(typeMatchups: Map<String, Double>) {
-    Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                stringResource(R.string.detail_type_matchups_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            com.mandallaz.pikadex.ui.components.TypeMatchupGroups(typeMatchups)
-        }
-    }
-}
-
-/**
- * issue #16 (simplified 2026-08-09) — used to also list every triangle this Pokémon's typing
- * is merely a *member* of (`TypeTriangles.containing`, since removed as unused), collapsed behind
- * a "show all" past a small limit. Dropped per user feedback: sharing a type with one leg of a
- * triangle isn't a meaningful callout on its own, unlike being the loop's exact best counter
- * ([TypeTriangles.counteredBy]). With only ever a couple of counter matches at most (each
- * triangle's counter typing is fixed, and no typing counters many at once), the collapse/expand
- * complexity the old member list needed no longer earns its keep either — dropped alongside it.
- * The caller hides this card entirely when [counteredTriangles] is empty, so every call here has
- * at least one row to show.
- */
-@Composable
-private fun TypeTrianglesCard(
-    counteredTriangles: List<TypeTriangle>,
-    onViewTypeTriangles: () -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    stringResource(R.string.detail_type_triangles_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                TextButton(onClick = onViewTypeTriangles) {
-                    Text(stringResource(R.string.detail_view_chart))
-                    Icon(
-                        Icons.AutoMirrored.Filled.OpenInNew,
-                        contentDescription = null,
-                        modifier = Modifier.padding(start = 4.dp).size(16.dp)
-                    )
-                }
-            }
-
-            Text(
-                stringResource(R.string.detail_best_counter_to),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
-            )
-            counteredTriangles.forEachIndexed { index, triangle ->
-                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                TriangleRow(triangle)
-            }
-        }
-    }
-}
-
-@Composable
-private fun TriangleRow(triangle: TypeTriangle) {
-    Column {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            triangle.types.forEach { type -> TypeBadge(type, TypeIds.idOrNull(type)) }
-        }
-        Text(
-            // triangle.title itself is data-level (from util/TypeTriangles), out of this pass's
-            // scope — same boundary as ViewModel error messages; only the suffix is screen chrome.
-            text = triangle.title + " " + if (triangle.isPerfect) {
-                stringResource(R.string.detail_triangle_perfect_suffix)
-            } else {
-                stringResource(R.string.detail_triangle_imperfect_suffix)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 6.dp)
-        )
-    }
-}
-
-@Composable
-private fun SmogonLinksCard(pokemonName: String, speciesGeneration: String, formVersionGroup: String?) {
-    val links = remember(pokemonName, speciesGeneration, formVersionGroup) {
-        Smogon.linksFor(pokemonName, speciesGeneration, formVersionGroup)
-    }
-    if (links.isEmpty()) return
-    val context = LocalContext.current
-
-    // issue #15 — user feedback: this card took up too much visual space for what it shows (a
-    // title plus a handful of link chips). The outer 16dp Card padding plus a second, separate 16dp
-    // inner Column padding (every other card on this page has that exact same double-16dp — worth
-    // revisiting more broadly later, but out of scope here) was the single biggest lever: shrunk to
-    // 12dp inner padding just for this card. Title's bottom gap and the chip grid's own spacing
-    // tightened to match (8dp -> 6dp each). Chip height is left at Material3's own default (32dp)
-    // rather than forced smaller — AssistChip's internal padding assumes that height, and shrinking
-    // it risked clipping the label/icon rather than actually saving visible space.
-    Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                stringResource(R.string.detail_smogon_strategy_dex_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                links.forEach { link ->
-                    AssistChip(
-                        onClick = { context.openExternalLink(link.url) },
-                        label = { Text(link.localizedLabel(), style = MaterialTheme.typography.labelMedium) },
-                        trailingIcon = {
-                            Icon(
-                                Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Renders one move category as real [LazyListScope] items (a header, then — only while expanded —
- * one item per move) instead of a header wrapping a plain [Column] of all rows. A pokemon like Mew
- * has ~250 TM/HM entries; composing all of them in one non-lazy Column the instant the section
- * expands was a multi-hundred-millisecond hitch. As real lazy items, only the rows actually on or
- * near screen get composed, the same as the rest of this pokemon detail page's own LazyColumn.
- *
- * The header and rows share one rounded-corner "card" look across separate list items: the header
- * is flat-bottomed while expanded, the last row is rounded-bottomed, and both share the same
- * surface color, so it still reads as a single grouped section rather than a stack of independent
- * cards.
- */
-private fun LazyListScope.moveSection(
-    category: MoveCategory,
-    moves: List<LearnedMove>,
-    moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
-    expanded: Boolean,
-    moveLocalizedNames: Map<String, Map<String, String>>,
-    language: String,
-    onToggleExpanded: () -> Unit
-) {
-    // An empty category (e.g. no Egg moves for a legendary) used to render as a normal expandable
-    // header with a chevron inviting a tap, only to reveal a single "No moves in this category."
-    // line — every empty section cost the user a tap for nothing. It's now flat, non-clickable, and
-    // visibly dimmed instead, so "there's nothing here" is obvious without expanding it.
-    item(key = "movesection-header-${category.name}") {
-        Surface(
-            onClick = onToggleExpanded,
-            enabled = moves.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp),
-            shape = if (expanded && moves.isNotEmpty()) {
-                RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-            } else {
-                RoundedCornerShape(16.dp)
-            },
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    stringResource(R.string.detail_move_category_header, category.localizedLabel(), moves.size),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (moves.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else Color.Unspecified
-                )
-                if (moves.isNotEmpty()) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (expanded) {
-                            stringResource(R.string.detail_collapse)
-                        } else {
-                            stringResource(R.string.detail_expand)
-                        }
-                    )
-                }
-            }
-        }
-    }
-
-    if (!expanded || moves.isEmpty()) return
-
-    itemsIndexed(
-        moves,
-        key = { _, move -> "movesection-${category.name}-${move.moveName}-${move.level}" }
-    ) { index, move ->
-        val isLast = index == moves.lastIndex
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            shape = if (isLast) RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp) else RoundedCornerShape(0.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-                if (index > 0) HorizontalDivider(modifier = Modifier.padding(bottom = 6.dp))
-                MoveRow(move, category, moveInfo, moveLocalizedNames, language)
-            }
-        }
-    }
-}
-
-/** B11 — a `when` over [MoveCategory], not a field on the enum itself: [MoveCategory] lives in
- *  `util/MoveGrouping.kt`, which has no Compose dependency and shouldn't gain one just for this. */
-@Composable
-private fun MoveCategory.localizedLabel(): String = stringResource(
-    when (this) {
-        MoveCategory.LEVEL_UP -> R.string.detail_move_category_level_up
-        MoveCategory.MACHINE -> R.string.detail_move_category_machine
-        MoveCategory.EGG -> R.string.detail_move_category_egg
-        MoveCategory.TUTOR -> R.string.detail_move_category_tutor
-    }
-)
-
-@Composable
-private fun MoveRow(
-    move: LearnedMove,
-    category: MoveCategory,
-    moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
-    moveLocalizedNames: Map<String, Map<String, String>>,
-    language: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            move.moveName.localizedDisplayName(moveLocalizedNames, language),
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
-        )
-        if (category == MoveCategory.LEVEL_UP) {
-            Text(
-                if (move.level > 0) {
-                    stringResource(R.string.detail_move_level, move.level)
-                } else {
-                    stringResource(R.string.detail_move_evolution)
-                }
-            )
-        }
-    }
-    moveInfo[move.moveName]?.let { info ->
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 4.dp)
-        ) {
-            TypeBadge(info.type, TypeIds.idOrNull(info.type), height = 18.dp)
-            Text(
-                text = moveStatsLabel(info),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        // F37: a second line only when there's genuinely competitive info to show (see
-        // moveMetaLabel's own doc on why null means "render nothing" here, not an empty Text).
-        moveMetaLabel(info)?.let { metaText ->
-            Text(
-                text = metaText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
     }
 }
 
