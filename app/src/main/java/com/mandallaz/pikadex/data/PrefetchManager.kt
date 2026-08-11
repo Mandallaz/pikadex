@@ -1,6 +1,7 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
+import android.net.ConnectivityManager
 import androidx.annotation.StringRes
 import coil.imageLoader
 import coil.request.CachePolicy
@@ -107,6 +108,24 @@ object PrefetchManager {
     fun cancel() {
         job?.cancel()
         _state.update { PrefetchState.Idle }
+    }
+
+    /** F63 — [SettingsViewModel.startPrefetch]'s guard reports through the same [PrefetchState]
+     *  the actual download uses, so the screen shows this exactly like any other prefetch failure
+     *  (with its own "Retry" affordance) rather than needing a separate error channel. */
+    fun reportWifiRequired() {
+        _state.update { PrefetchState.Failed(R.string.settings_prefetch_error_wifi_required) }
+    }
+
+    /** F63 — the Settings screen checks this before starting a download, so it can warn (or block,
+     *  per [PrefetchSettings.wifiOnlyEnabled]) rather than silently spending mobile data on what
+     *  can be a 50-300MB+ run. `isActiveNetworkMetered` covers both cellular and a metered hotspot
+     *  — a plain "is this Wi-Fi" check would miss the latter. */
+    fun isActiveNetworkMetered(context: Context): Boolean {
+        val connectivityManager = context.applicationContext
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        return connectivityManager.isActiveNetworkMetered
     }
 
     private suspend fun buildUnits(

@@ -28,12 +28,17 @@
     <string name="settings_tier_cries_title">Vocalizações</string>
     <string name="settings_tier_cries_subtitle">A vocalização de cada Pokémon, para que o botão de reprodução na ficha funcione offline — cerca de 1300 clipes de áudio curtos.</string>
 
+    <string name="settings_wifi_only_title">Somente Wi-Fi</string>
+    <string name="settings_wifi_only_subtitle">Recusa o pré-carregamento pelos dados móveis ou por uma conexão limitada.</string>
+
     <string name="settings_cancel">Cancelar</string>
     <string name="settings_prefetch_finished_with_failures">Concluído, %1$d item(ns) falharam e podem ser tentados novamente.</string>
     <string name="settings_prefetch_finished">Download concluído.</string>
     <string name="settings_prefetch_now">Baixar agora</string>
     <string name="settings_retry">Tentar novamente</string>
     <string name="settings_prefetch_error_network">Erro de rede durante o pré-carregamento. Verifique sua conexão.</string>
+    <string name="settings_prefetch_error_wifi_required">\"Somente Wi-Fi\" está ativado e você não está conectado ao Wi-Fi. Conecte-se ao Wi-Fi ou desative \"Somente Wi-Fi\" e tente novamente.</string>
+    <string name="settings_prefetch_confirm_title">Iniciar download?</string>
 
     <string name="settings_storage_section">Armazenamento</string>
     <string name="settings_storage_total">Total: %1$s</string>

@@ -52,6 +52,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val prefetchState by viewModel.prefetchState.collectAsState()
     var showFullDetailWarning by remember { mutableStateOf(false) }
+    var showPrefetchConfirm by remember { mutableStateOf(false) }
     var showTierDialog by remember { mutableStateOf(false) }
     var showTierExplanationDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -133,6 +134,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 checked = uiState.criesEnabled,
                 onCheckedChange = viewModel::setCriesEnabled
             )
+            PrefetchTierRow(
+                title = stringResource(R.string.settings_wifi_only_title),
+                subtitle = stringResource(R.string.settings_wifi_only_subtitle),
+                checked = uiState.wifiOnlyEnabled,
+                onCheckedChange = viewModel::setWifiOnlyEnabled
+            )
 
             when (val state = prefetchState) {
                 is PrefetchState.Running -> {
@@ -156,19 +163,19 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         },
                         modifier = Modifier.padding(top = 12.dp)
                     )
-                    Button(onClick = viewModel::startPrefetch, enabled = uiState.hasAnyTierEnabled, modifier = Modifier.padding(top = 8.dp)) {
+                    Button(onClick = { showPrefetchConfirm = true }, enabled = uiState.hasAnyTierEnabled, modifier = Modifier.padding(top = 8.dp)) {
                         Text(stringResource(R.string.settings_prefetch_now))
                     }
                 }
                 is PrefetchState.Failed -> {
                     Text(stringResource(state.messageRes), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp))
-                    Button(onClick = viewModel::startPrefetch, enabled = uiState.hasAnyTierEnabled, modifier = Modifier.padding(top = 8.dp)) {
+                    Button(onClick = { showPrefetchConfirm = true }, enabled = uiState.hasAnyTierEnabled, modifier = Modifier.padding(top = 8.dp)) {
                         Text(stringResource(R.string.settings_retry))
                     }
                 }
                 PrefetchState.Idle -> {
                     Button(
-                        onClick = viewModel::startPrefetch,
+                        onClick = { showPrefetchConfirm = true },
                         enabled = uiState.hasAnyTierEnabled,
                         modifier = Modifier.padding(top = 12.dp)
                     ) { Text(stringResource(R.string.settings_prefetch_now)) }
@@ -311,6 +318,36 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             },
             dismissButton = {
                 TextButton(onClick = { showFullDetailWarning = false }) { Text(cancelLabel) }
+            }
+        )
+    }
+
+    if (showPrefetchConfirm) {
+        // F63 — surfaces a size estimate (reusing each enabled tier's own subtitle, which already
+        // states its rough size) at the moment of the tap, per B8's same resolved-here-not-in-slot-
+        // lambdas fix used by showFullDetailWarning above.
+        val estimateLines = buildList {
+            if (uiState.essentialsEnabled) add(stringResource(R.string.settings_tier_essentials_subtitle))
+            if (uiState.spritesEnabled) add(stringResource(R.string.settings_tier_sprites_subtitle))
+            if (uiState.spritesExtraEnabled) add(stringResource(R.string.settings_tier_sprites_extra_subtitle))
+            if (uiState.fullDetailEnabled) add(stringResource(R.string.settings_tier_full_detail_subtitle))
+            if (uiState.criesEnabled) add(stringResource(R.string.settings_tier_cries_subtitle))
+        }
+        val confirmTitle = stringResource(R.string.settings_prefetch_confirm_title)
+        val downloadLabel = stringResource(R.string.settings_prefetch_now)
+        val cancelLabel = stringResource(R.string.settings_cancel)
+        AlertDialog(
+            onDismissRequest = { showPrefetchConfirm = false },
+            title = { Text(confirmTitle) },
+            text = { Text(estimateLines.joinToString("\n\n")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPrefetchConfirm = false
+                    viewModel.startPrefetch()
+                }) { Text(downloadLabel) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPrefetchConfirm = false }) { Text(cancelLabel) }
             }
         )
     }

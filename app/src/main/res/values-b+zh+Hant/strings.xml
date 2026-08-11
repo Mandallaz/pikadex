@@ -28,12 +28,17 @@
     <string name="settings_tier_cries_title">鳴叫聲</string>
     <string name="settings_tier_cries_subtitle">每隻寶可夢的鳴叫聲，使詳情頁的播放按鈕也能離線使用 — 約1300段簡短音訊。</string>
 
+    <string name="settings_wifi_only_title">僅限Wi-Fi</string>
+    <string name="settings_wifi_only_subtitle">拒絕透過行動數據或按流量計費的連線進行預先載入。</string>
+
     <string name="settings_cancel">取消</string>
     <string name="settings_prefetch_finished_with_failures">已完成，%1$d 項失敗，可以重試。</string>
     <string name="settings_prefetch_finished">下載完成。</string>
     <string name="settings_prefetch_now">立即下載</string>
     <string name="settings_retry">重試</string>
     <string name="settings_prefetch_error_network">預先載入時發生網路錯誤。請檢查你的網路連線。</string>
+    <string name="settings_prefetch_error_wifi_required">\"僅限Wi-Fi\"已開啟，但你尚未連接Wi-Fi。請連接Wi-Fi，或關閉\"僅限Wi-Fi\"後重試。</string>
+    <string name="settings_prefetch_confirm_title">開始下載？</string>
 
     <string name="settings_storage_section">儲存空間</string>
     <string name="settings_storage_total">總計：%1$s</string>

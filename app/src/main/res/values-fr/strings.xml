@@ -30,12 +30,17 @@
     <string name="settings_tier_cries_title">Cris</string>
     <string name="settings_tier_cries_subtitle">Le cri de chaque Pokémon, pour que le bouton de lecture de sa fiche fonctionne hors ligne — environ 1300 courts extraits audio.</string>
 
+    <string name="settings_wifi_only_title">Wi-Fi uniquement</string>
+    <string name="settings_wifi_only_subtitle">Refuse le préchargement via les données mobiles ou une connexion facturée à l\'usage.</string>
+
     <string name="settings_cancel">Annuler</string>
     <string name="settings_prefetch_finished_with_failures">Terminé, %1$d élément(s) ont échoué et peuvent être relancés.</string>
     <string name="settings_prefetch_finished">Téléchargement terminé.</string>
     <string name="settings_prefetch_now">Télécharger maintenant</string>
     <string name="settings_retry">Réessayer</string>
     <string name="settings_prefetch_error_network">Erreur réseau pendant le préchargement. Vérifiez votre connexion.</string>
+    <string name="settings_prefetch_error_wifi_required">Le mode Wi-Fi uniquement est activé et vous n\'êtes pas connecté au Wi-Fi. Connectez-vous au Wi-Fi, ou désactivez le mode Wi-Fi uniquement, puis réessayez.</string>
+    <string name="settings_prefetch_confirm_title">Démarrer le téléchargement ?</string>
 
     <string name="settings_storage_section">Stockage</string>
     <string name="settings_storage_total">Total : %1$s</string>

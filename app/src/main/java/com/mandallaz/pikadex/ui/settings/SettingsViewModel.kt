@@ -44,6 +44,9 @@ data class SettingsUiState(
     val spritesExtraEnabled: Boolean = false,
     val fullDetailEnabled: Boolean = false,
     val criesEnabled: Boolean = false,
+    /** F63 — when true, [SettingsViewModel.isMeteredNetworkBlocked] refuses to start a prefetch
+     *  over a metered connection instead of silently spending mobile data. */
+    val wifiOnlyEnabled: Boolean = true,
     val storageUsage: StorageUsage? = null,
     val isMeasuringStorage: Boolean = false,
     /** Team-builder Suggestions' competitive tier ceiling (issue #11) — null means no limit. */
@@ -81,6 +84,7 @@ class SettingsViewModel @JvmOverloads constructor(
         viewModelScope.launch { PrefetchSettings.spritesExtraEnabled.collect { v -> _uiState.update { it.copy(spritesExtraEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.fullDetailEnabled.collect { v -> _uiState.update { it.copy(fullDetailEnabled = v) } } }
         viewModelScope.launch { PrefetchSettings.criesEnabled.collect { v -> _uiState.update { it.copy(criesEnabled = v) } } }
+        viewModelScope.launch { PrefetchSettings.wifiOnlyEnabled.collect { v -> _uiState.update { it.copy(wifiOnlyEnabled = v) } } }
         viewModelScope.launch { SuggestionSettings.maxTier.collect { v -> _uiState.update { it.copy(maxSuggestionTier = v) } } }
         viewModelScope.launch { DisplaySettings.amoledEnabled.collect { v -> _uiState.update { it.copy(amoledEnabled = v) } } }
         viewModelScope.launch {
@@ -99,6 +103,7 @@ class SettingsViewModel @JvmOverloads constructor(
     fun setSpritesExtraEnabled(enabled: Boolean) = PrefetchSettings.setSpritesExtraEnabled(enabled)
     fun setFullDetailEnabled(enabled: Boolean) = PrefetchSettings.setFullDetailEnabled(enabled)
     fun setCriesEnabled(enabled: Boolean) = PrefetchSettings.setCriesEnabled(enabled)
+    fun setWifiOnlyEnabled(enabled: Boolean) = PrefetchSettings.setWifiOnlyEnabled(enabled)
     fun setMaxSuggestionTier(tier: String?) = SuggestionSettings.setMaxTier(tier)
     fun setAmoledEnabled(enabled: Boolean) = DisplaySettings.setAmoledEnabled(enabled)
     fun setLanguage(code: String) = LanguageSettings.setLanguage(code)
@@ -122,7 +127,17 @@ class SettingsViewModel @JvmOverloads constructor(
         }
     }
 
+    /** F63 — checked by [SettingsScreen] before showing its "start download?" confirmation, and
+     *  re-checked here in [startPrefetch] as the actual guard: the UI's own check is only ever a
+     *  hint for which dialog to show, not something [startPrefetch] should trust blindly. */
+    fun isMeteredNetworkBlocked(): Boolean =
+        _uiState.value.wifiOnlyEnabled && PrefetchManager.isActiveNetworkMetered(getApplication())
+
     fun startPrefetch() {
+        if (isMeteredNetworkBlocked()) {
+            PrefetchManager.reportWifiRequired()
+            return
+        }
         val state = _uiState.value
         val tiers = buildList {
             if (state.essentialsEnabled) add(PrefetchTier.ESSENTIALS)

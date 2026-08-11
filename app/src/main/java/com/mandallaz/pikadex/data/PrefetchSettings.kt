@@ -20,6 +20,9 @@ object PrefetchSettings {
     private const val KEY_SPRITES_EXTRA = "sprites_extra_enabled"
     private const val KEY_FULL_DETAIL = "full_detail_enabled"
     private const val KEY_CRIES = "cries_enabled"
+    // F63 — defaults on: prefetch tiers can run 50-300MB+, so the safe default is to require
+    // Wi-Fi rather than silently spend a user's mobile data plan.
+    private const val KEY_WIFI_ONLY = "wifi_only_enabled"
 
     private var prefs: SharedPreferences? = null
 
@@ -38,6 +41,9 @@ object PrefetchSettings {
     private val _criesEnabled = MutableStateFlow(false)
     val criesEnabled: StateFlow<Boolean> = _criesEnabled.asStateFlow()
 
+    private val _wifiOnlyEnabled = MutableStateFlow(true)
+    val wifiOnlyEnabled: StateFlow<Boolean> = _wifiOnlyEnabled.asStateFlow()
+
     fun init(context: Context) {
         val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs = sharedPrefs
@@ -46,6 +52,7 @@ object PrefetchSettings {
         _spritesExtraEnabled.value = sharedPrefs.getBoolean(KEY_SPRITES_EXTRA, false)
         _fullDetailEnabled.value = sharedPrefs.getBoolean(KEY_FULL_DETAIL, false)
         _criesEnabled.value = sharedPrefs.getBoolean(KEY_CRIES, false)
+        _wifiOnlyEnabled.value = sharedPrefs.getBoolean(KEY_WIFI_ONLY, true)
     }
 
     fun setEssentialsEnabled(enabled: Boolean) = set(_essentialsEnabled, KEY_ESSENTIALS, enabled)
@@ -53,6 +60,7 @@ object PrefetchSettings {
     fun setSpritesExtraEnabled(enabled: Boolean) = set(_spritesExtraEnabled, KEY_SPRITES_EXTRA, enabled)
     fun setFullDetailEnabled(enabled: Boolean) = set(_fullDetailEnabled, KEY_FULL_DETAIL, enabled)
     fun setCriesEnabled(enabled: Boolean) = set(_criesEnabled, KEY_CRIES, enabled)
+    fun setWifiOnlyEnabled(enabled: Boolean) = set(_wifiOnlyEnabled, KEY_WIFI_ONLY, enabled)
 
     private fun set(flow: MutableStateFlow<Boolean>, key: String, enabled: Boolean) {
         val p = prefs ?: return

@@ -4,6 +4,10 @@
 
     <!-- Requests to pokeapi.co and sprites hosted on GitHub -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- F63 — lets PrefetchManager.isActiveNetworkMetered check whether the active connection is
+         metered before a large prefetch, without needing any user-facing permission prompt (this
+         is a normal, non-dangerous permission). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".PikaDexApplication"

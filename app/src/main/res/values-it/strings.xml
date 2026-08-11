@@ -28,12 +28,17 @@
     <string name="settings_tier_cries_title">Versi</string>
     <string name="settings_tier_cries_subtitle">Il verso di ogni Pokémon, così il pulsante di riproduzione nella sua scheda funziona offline — circa 1300 brevi clip audio.</string>
 
+    <string name="settings_wifi_only_title">Solo Wi-Fi</string>
+    <string name="settings_wifi_only_subtitle">Rifiuta il precaricamento tramite dati mobili o una connessione a consumo.</string>
+
     <string name="settings_cancel">Annulla</string>
     <string name="settings_prefetch_finished_with_failures">Fatto, %1$d elemento/i non riusciti e riprovabili.</string>
     <string name="settings_prefetch_finished">Download completato.</string>
     <string name="settings_prefetch_now">Scarica ora</string>
     <string name="settings_retry">Riprova</string>
     <string name="settings_prefetch_error_network">Errore di rete durante il precaricamento. Controlla la tua connessione.</string>
+    <string name="settings_prefetch_error_wifi_required">\"Solo Wi-Fi\" è attivo e non sei connesso al Wi-Fi. Connettiti al Wi-Fi, oppure disattiva \"Solo Wi-Fi\", quindi riprova.</string>
+    <string name="settings_prefetch_confirm_title">Avviare il download?</string>
 
     <string name="settings_storage_section">Archiviazione</string>
     <string name="settings_storage_total">Totale: %1$s</string>

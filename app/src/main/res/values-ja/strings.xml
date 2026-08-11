@@ -28,12 +28,17 @@
     <string name="settings_tier_cries_title">鳴き声</string>
     <string name="settings_tier_cries_subtitle">詳細画面の再生ボタンがオフラインでも動作するように、すべてのポケモンの鳴き声 — 約1300個の短い音声クリップ。</string>
 
+    <string name="settings_wifi_only_title">Wi-Fiのみ</string>
+    <string name="settings_wifi_only_subtitle">モバイルデータや従量制接続では事前読み込みを行いません。</string>
+
     <string name="settings_cancel">キャンセル</string>
     <string name="settings_prefetch_finished_with_failures">完了しましたが、%1$d件のアイテムが失敗しました。再試行できます。</string>
     <string name="settings_prefetch_finished">ダウンロードが完了しました。</string>
     <string name="settings_prefetch_now">今すぐダウンロード</string>
     <string name="settings_retry">再試行</string>
     <string name="settings_prefetch_error_network">事前読み込み中にネットワークエラーが発生しました。接続を確認してください。</string>
+    <string name="settings_prefetch_error_wifi_required">「Wi-Fiのみ」が有効になっていますが、Wi-Fiに接続されていません。Wi-Fiに接続するか、「Wi-Fiのみ」をオフにしてから再試行してください。</string>
+    <string name="settings_prefetch_confirm_title">ダウンロードを開始しますか?</string>
 
     <string name="settings_storage_section">ストレージ</string>
     <string name="settings_storage_total">合計: %1$s</string>

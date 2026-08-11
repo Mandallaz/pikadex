@@ -28,12 +28,17 @@
     <string name="settings_tier_cries_title">Gritos</string>
     <string name="settings_tier_cries_subtitle">El grito de cada Pokémon, para que el botón de reproducción de su ficha funcione sin conexión — unos 1300 clips de audio cortos.</string>
 
+    <string name="settings_wifi_only_title">Solo Wi-Fi</string>
+    <string name="settings_wifi_only_subtitle">Rechaza la precarga por datos móviles o una conexión medida.</string>
+
     <string name="settings_cancel">Cancelar</string>
     <string name="settings_prefetch_finished_with_failures">Listo, %1$d elemento(s) fallaron y se pueden reintentar.</string>
     <string name="settings_prefetch_finished">Descarga completa.</string>
     <string name="settings_prefetch_now">Descargar ahora</string>
     <string name="settings_retry">Reintentar</string>
     <string name="settings_prefetch_error_network">Error de red durante la precarga. Revisa tu conexión.</string>
+    <string name="settings_prefetch_error_wifi_required">\"Solo Wi-Fi\" está activado y no estás conectado a una red Wi-Fi. Conéctate a una red Wi-Fi, o desactiva \"Solo Wi-Fi\", y vuelve a intentarlo.</string>
+    <string name="settings_prefetch_confirm_title">¿Iniciar descarga?</string>
 
     <string name="settings_storage_section">Almacenamiento</string>
     <string name="settings_storage_total">Total: %1$s</string>
