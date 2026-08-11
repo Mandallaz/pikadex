@@ -1,6 +1,6 @@
 # Privacy Policy for PikaDex
 
-_Last updated: 2026-08-09_
+_Last updated: 2026-08-11_
 
 PikaDex is a Pokédex reference app. This policy explains what data the app handles.
 
@@ -21,6 +21,12 @@ These requests are anonymous lookups of public game data (e.g. "fetch Pikachu's
 stats"). No personal or device-identifying information is sent beyond what's
 inherent to any HTTP request (IP address, standard headers), and none of it is
 logged or stored by this app.
+
+The app also checks, locally on your device only, whether your active
+connection is Wi-Fi or a metered connection (mobile data or a metered
+hotspot), so the optional offline-data prefetch can warn before using mobile
+data. This check never leaves your device and nothing about your network is
+sent anywhere.
 
 ## Data stored on your device
 
