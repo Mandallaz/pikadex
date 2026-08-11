@@ -396,4 +396,25 @@
     <string name="pokemon_card_add_to_team_cd">加入队伍</string>
     <string name="pokemon_card_remove_from_favorites_cd">取消收藏</string>
     <string name="pokemon_card_add_to_favorites_cd">添加到收藏</string>
+
+    <!-- Type names (B39) -->
+    <string name="type_normal">一般</string>
+    <string name="type_fire">火</string>
+    <string name="type_water">水</string>
+    <string name="type_electric">电</string>
+    <string name="type_grass">草</string>
+    <string name="type_ice">冰</string>
+    <string name="type_fighting">格斗</string>
+    <string name="type_poison">毒</string>
+    <string name="type_ground">地面</string>
+    <string name="type_flying">飞行</string>
+    <string name="type_psychic">超能力</string>
+    <string name="type_bug">虫</string>
+    <string name="type_rock">岩石</string>
+    <string name="type_ghost">幽灵</string>
+    <string name="type_dragon">龙</string>
+    <string name="type_dark">恶</string>
+    <string name="type_steel">钢</string>
+    <string name="type_fairy">妖精</string>
+    <string name="type_stellar">星晶</string>
 </resources>

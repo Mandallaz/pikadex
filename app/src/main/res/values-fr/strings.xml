@@ -398,4 +398,25 @@
     <string name="pokemon_card_add_to_team_cd">Ajouter à l\'équipe</string>
     <string name="pokemon_card_remove_from_favorites_cd">Retirer des favoris</string>
     <string name="pokemon_card_add_to_favorites_cd">Ajouter aux favoris</string>
+
+    <!-- Type names (B39) -->
+    <string name="type_normal">Normal</string>
+    <string name="type_fire">Feu</string>
+    <string name="type_water">Eau</string>
+    <string name="type_electric">Électrik</string>
+    <string name="type_grass">Plante</string>
+    <string name="type_ice">Glace</string>
+    <string name="type_fighting">Combat</string>
+    <string name="type_poison">Poison</string>
+    <string name="type_ground">Sol</string>
+    <string name="type_flying">Vol</string>
+    <string name="type_psychic">Psy</string>
+    <string name="type_bug">Insecte</string>
+    <string name="type_rock">Roche</string>
+    <string name="type_ghost">Spectre</string>
+    <string name="type_dragon">Dragon</string>
+    <string name="type_dark">Ténèbres</string>
+    <string name="type_steel">Acier</string>
+    <string name="type_fairy">Fée</string>
+    <string name="type_stellar">Stellaire</string>
 </resources>

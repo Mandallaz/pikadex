@@ -396,4 +396,25 @@
     <string name="pokemon_card_add_to_team_cd">파티에 추가</string>
     <string name="pokemon_card_remove_from_favorites_cd">즐겨찾기에서 제거</string>
     <string name="pokemon_card_add_to_favorites_cd">즐겨찾기에 추가</string>
+
+    <!-- Type names (B39) -->
+    <string name="type_normal">노말</string>
+    <string name="type_fire">불꽃</string>
+    <string name="type_water">물</string>
+    <string name="type_electric">전기</string>
+    <string name="type_grass">풀</string>
+    <string name="type_ice">얼음</string>
+    <string name="type_fighting">격투</string>
+    <string name="type_poison">독</string>
+    <string name="type_ground">땅</string>
+    <string name="type_flying">비행</string>
+    <string name="type_psychic">에스퍼</string>
+    <string name="type_bug">벌레</string>
+    <string name="type_rock">바위</string>
+    <string name="type_ghost">고스트</string>
+    <string name="type_dragon">드래곤</string>
+    <string name="type_dark">악</string>
+    <string name="type_steel">강철</string>
+    <string name="type_fairy">페어리</string>
+    <string name="type_stellar">스텔라</string>
 </resources>

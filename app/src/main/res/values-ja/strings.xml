@@ -396,4 +396,25 @@
     <string name="pokemon_card_add_to_team_cd">パーティに加える</string>
     <string name="pokemon_card_remove_from_favorites_cd">お気に入りから削除</string>
     <string name="pokemon_card_add_to_favorites_cd">お気に入りに追加</string>
+
+    <!-- Type names (B39) -->
+    <string name="type_normal">ノーマル</string>
+    <string name="type_fire">ほのお</string>
+    <string name="type_water">みず</string>
+    <string name="type_electric">でんき</string>
+    <string name="type_grass">くさ</string>
+    <string name="type_ice">こおり</string>
+    <string name="type_fighting">かくとう</string>
+    <string name="type_poison">どく</string>
+    <string name="type_ground">じめん</string>
+    <string name="type_flying">ひこう</string>
+    <string name="type_psychic">エスパー</string>
+    <string name="type_bug">むし</string>
+    <string name="type_rock">いわ</string>
+    <string name="type_ghost">ゴースト</string>
+    <string name="type_dragon">ドラゴン</string>
+    <string name="type_dark">あく</string>
+    <string name="type_steel">はがね</string>
+    <string name="type_fairy">フェアリー</string>
+    <string name="type_stellar">ステラ</string>
 </resources>

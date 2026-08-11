@@ -1,6 +1,8 @@
 package com.mandallaz.pikadex.util
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
+import com.mandallaz.pikadex.R
 
 /** Standard per-type color palette, consistent with the games and common pokedex sites. */
 object TypeColors {
@@ -29,6 +31,36 @@ object TypeColors {
 
     fun of(typeName: String): Color = colors[typeName.lowercase()] ?: Color(0xFF68A090)
 }
+
+/** B39 — [typeName]'s @StringRes translated name, or null for a type with no dedicated
+ *  translation (PokeAPI's "unknown" placeholder, or any type introduced upstream after this map
+ *  was written). Plain-Kotlin (no Compose dependency), same reasoning as [SortStat.labelRes] for
+ *  why this lives here rather than resolving the string directly: the actual lookup happens at
+ *  render time via [com.mandallaz.pikadex.ui.components.localizedTypeName]. */
+private val TYPE_NAME_RES = mapOf(
+    "normal" to R.string.type_normal,
+    "fire" to R.string.type_fire,
+    "water" to R.string.type_water,
+    "electric" to R.string.type_electric,
+    "grass" to R.string.type_grass,
+    "ice" to R.string.type_ice,
+    "fighting" to R.string.type_fighting,
+    "poison" to R.string.type_poison,
+    "ground" to R.string.type_ground,
+    "flying" to R.string.type_flying,
+    "psychic" to R.string.type_psychic,
+    "bug" to R.string.type_bug,
+    "rock" to R.string.type_rock,
+    "ghost" to R.string.type_ghost,
+    "dragon" to R.string.type_dragon,
+    "dark" to R.string.type_dark,
+    "steel" to R.string.type_steel,
+    "fairy" to R.string.type_fairy,
+    "stellar" to R.string.type_stellar
+)
+
+@StringRes
+fun typeNameRes(typeName: String): Int? = TYPE_NAME_RES[typeName.lowercase()]
 
 /**
  * Colors a base-stat bar by how that value ranks against every other Pokemon's same stat,
