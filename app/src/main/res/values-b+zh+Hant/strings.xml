@@ -269,7 +269,6 @@
     <string name="team_suggestions_swipe_all">滑動查看全部%1$d個</string>
     <string name="team_suggestion_bst">種族值總和 %1$d</string>
     <string name="team_suggestion_resists_hits">抗性：%1$s · 命中：%2$s</string>
-    <string name="team_suggestion_not_as">以下形態不適用：%1$s</string>
     <string name="team_suggestion_add_cd">將%1$s新增至隊伍</string>
     <string name="team_error_compute_matrix">計算隊伍屬性相性時發生網路錯誤。請檢查你的網路連線。</string>
     <string name="team_error_load_preset">無法載入%1$s的隊伍。</string>

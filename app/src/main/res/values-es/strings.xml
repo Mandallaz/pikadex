@@ -269,7 +269,6 @@
     <string name="team_suggestions_swipe_all">Desliza para ver los %1$d</string>
     <string name="team_suggestion_bst">BST %1$d</string>
     <string name="team_suggestion_resists_hits">Resiste %1$s · Golpea %2$s</string>
-    <string name="team_suggestion_not_as">No como %1$s</string>
     <string name="team_suggestion_add_cd">Añadir a %1$s al equipo</string>
     <string name="team_error_compute_matrix">Error de red al calcular los enfrentamientos del equipo. Comprueba tu conexión.</string>
     <string name="team_error_load_preset">No se pudo cargar el equipo de %1$s.</string>

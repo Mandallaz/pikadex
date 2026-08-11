@@ -129,50 +129,6 @@ class TeamSuggestionsTest {
         assertEquals(emptyList<String>(), rankSuggestions(sharedWeaknesses, emptyList(), candidates, typeDetails, emptySet()).map { it.name })
     }
 
-    // --- Conflicting forms (mega/gmax/regional disambiguation) ---------------
-
-    @Test
-    fun `a same-species form with different typing that no longer qualifies is flagged`() {
-        // victreebel-mega is psychic: resists water but doesn't hit ground — fails "both required".
-        val typesByName = mapOf("victreebel" to listOf("grass"), "victreebel-mega" to listOf("psychic"))
-        val conflicts = findConflictingForms("victreebel", listOf("grass"), sharedWeaknesses, coverageGaps, typesByName, typeDetails)
-        assertEquals(listOf("victreebel-mega"), conflicts)
-    }
-
-    @Test
-    fun `a same-species form with different typing that still qualifies is not flagged`() {
-        // victreebel-mega adds psychic but keeps grass, so it still resists water and hits ground.
-        val typesByName = mapOf("victreebel" to listOf("grass"), "victreebel-mega" to listOf("grass", "psychic"))
-        val conflicts = findConflictingForms("victreebel", listOf("grass"), sharedWeaknesses, coverageGaps, typesByName, typeDetails)
-        assertEquals(emptyList<String>(), conflicts)
-    }
-
-    @Test
-    fun `a form sharing the exact same typing is never flagged`() {
-        // Purely cosmetic forms (caps, costumes...) that happen to share the "name-suffix" shape.
-        val typesByName = mapOf("victreebel" to listOf("grass"), "victreebel-cosplay" to listOf("grass"))
-        val conflicts = findConflictingForms("victreebel", listOf("grass"), sharedWeaknesses, coverageGaps, typesByName, typeDetails)
-        assertEquals(emptyList<String>(), conflicts)
-    }
-
-    @Test
-    fun `unrelated species are never mistaken for a form of this one`() {
-        val typesByName = mapOf("victreebel" to listOf("grass"), "victreebel2" to listOf("psychic"))
-        val conflicts = findConflictingForms("victreebel", listOf("grass"), sharedWeaknesses, coverageGaps, typesByName, typeDetails)
-        assertEquals(emptyList<String>(), conflicts)
-    }
-
-    @Test
-    fun `multiple conflicting forms are sorted for a stable order`() {
-        val typesByName = mapOf(
-            "victreebel" to listOf("grass"),
-            "victreebel-y" to listOf("psychic"),
-            "victreebel-x" to listOf("water")
-        )
-        val conflicts = findConflictingForms("victreebel", listOf("grass"), sharedWeaknesses, coverageGaps, typesByName, typeDetails)
-        assertEquals(listOf("victreebel-x", "victreebel-y"), conflicts)
-    }
-
     // --- Tier ceiling filter (issue #11) ---------------------------------
 
     @Test

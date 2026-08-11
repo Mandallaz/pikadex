@@ -269,7 +269,6 @@
     <string name="team_suggestions_swipe_all">滑动查看全部%1$d个</string>
     <string name="team_suggestion_bst">种族值总和 %1$d</string>
     <string name="team_suggestion_resists_hits">抗性：%1$s · 命中：%2$s</string>
-    <string name="team_suggestion_not_as">以下形态不适用：%1$s</string>
     <string name="team_suggestion_add_cd">将%1$s添加到队伍</string>
     <string name="team_error_compute_matrix">计算队伍属性相性时发生网络错误。请检查你的网络连接。</string>
     <string name="team_error_load_preset">无法加载%1$s的队伍。</string>

@@ -269,7 +269,6 @@
     <string name="team_suggestions_swipe_all">Wische, um alle %1$d zu sehen</string>
     <string name="team_suggestion_bst">BST %1$d</string>
     <string name="team_suggestion_resists_hits">Widersteht %1$s · Trifft %2$s</string>
-    <string name="team_suggestion_not_as">Nicht als %1$s</string>
     <string name="team_suggestion_add_cd">%1$s zum Team hinzufügen</string>
     <string name="team_error_compute_matrix">Netzwerkfehler bei der Berechnung der Team-Matchups. Überprüfe deine Verbindung.</string>
     <string name="team_error_load_preset">Das Team von %1$s konnte nicht geladen werden.</string>

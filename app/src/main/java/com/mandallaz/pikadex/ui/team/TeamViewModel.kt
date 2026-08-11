@@ -19,7 +19,6 @@ import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.computeTeamMatrices
 import com.mandallaz.pikadex.util.coverageGaps
 import com.mandallaz.pikadex.util.filterByTierCeiling
-import com.mandallaz.pikadex.util.findConflictingForms
 import com.mandallaz.pikadex.util.rankSuggestions
 import com.mandallaz.pikadex.util.sharedWeaknesses
 import com.mandallaz.pikadex.ui.UiText
@@ -260,19 +259,8 @@ class TeamViewModel @JvmOverloads constructor(
                 }
                 val tierFilteredCandidates = filterByTierCeiling(candidates, maxTier, tierByShowdownKey)
                 val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, tierFilteredCandidates, typeDetails, excludeNames)
-                // basics (unlike candidates) still has every alt form — exactly the universe
-                // findConflictingForms needs to check a suggested species' mega/gmax/regional
-                // variants against.
-                val typesByName = basics.mapValues { it.value.types }
-                val withFormNotes = ranked.map { suggestion ->
-                    suggestion.copy(
-                        conflictingForms = findConflictingForms(
-                            suggestion.name, suggestion.types, sharedWeaknesses, coverageGaps, typesByName, typeDetails
-                        )
-                    )
-                }
-                val spriteIds = withFormNotes.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
-                _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = withFormNotes, suggestionSpriteIds = spriteIds) }
+                val spriteIds = ranked.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
+                _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = ranked, suggestionSpriteIds = spriteIds) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

@@ -269,7 +269,6 @@
     <string name="team_suggestions_swipe_all">Scorri per vedere tutti i %1$d</string>
     <string name="team_suggestion_bst">BST %1$d</string>
     <string name="team_suggestion_resists_hits">Resiste a %1$s · Colpisce %2$s</string>
-    <string name="team_suggestion_not_as">Non come %1$s</string>
     <string name="team_suggestion_add_cd">Aggiungi %1$s alla squadra</string>
     <string name="team_error_compute_matrix">Errore di rete durante il calcolo dei matchup della squadra. Controlla la tua connessione.</string>
     <string name="team_error_load_preset">Impossibile caricare la squadra di %1$s.</string>

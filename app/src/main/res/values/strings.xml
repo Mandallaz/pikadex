@@ -278,7 +278,6 @@
     <string name="team_suggestions_swipe_all">Swipe to see all %1$d</string>
     <string name="team_suggestion_bst">BST %1$d</string>
     <string name="team_suggestion_resists_hits">Resists %1$s · Hits %2$s</string>
-    <string name="team_suggestion_not_as">Not as %1$s</string>
     <string name="team_suggestion_add_cd">Add %1$s to team</string>
 
     <!-- Team screen error messages (B13) -->

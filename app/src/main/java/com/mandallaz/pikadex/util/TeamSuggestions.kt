@@ -20,20 +20,12 @@ data class TeamSuggestion(
      *  [rankSuggestions]' sort key (more of either, the more useful the pick). Always non-empty
      *  together (both required to qualify at all — see the "both required" rule below). */
     val weaknessesResisted: List<String> = emptyList(),
-    val gapsHit: List<String> = emptyList(),
-    /** Same-species forms (mega/gmax/regional/...) whose typing differs from [types] and would
-     *  NOT keep the resist-a-weakness/hit-a-gap property this suggestion was made for — e.g. Mega
-     *  Charizard X (Fire/Dragon) losing what base Charizard (Fire/Flying) qualified on. A
-     *  suggestion is always scored against exactly one typing (the base species' — alt forms are
-     *  excluded from [rankSuggestions]' candidate pool entirely), so a form that changes the
-     *  typing can silently invalidate the reason the species was suggested. Populated by
-     *  [findConflictingForms], not [rankSuggestions] itself — see that function's doc. */
-    val conflictingForms: List<String> = emptyList()
+    val gapsHit: List<String> = emptyList()
 )
 
 /** Which of [sharedWeaknesses] [types] resists (<1.0) and which of [coverageGaps] it hits (>1.0)
  *  with its own typing (STAB only) — null unless *both* are non-empty, the "both required" rule
- *  shared by [rankSuggestions] and [findConflictingForms]. */
+ *  used by [rankSuggestions]. */
 private data class Qualification(val weaknessesResisted: List<String>, val gapsHit: List<String>)
 
 private fun qualification(
@@ -52,13 +44,6 @@ private fun qualification(
     if (gapsHit.isEmpty()) return null
     return Qualification(weaknessesResisted, gapsHit)
 }
-
-private fun qualifies(
-    types: List<String>,
-    sharedWeaknesses: List<String>,
-    coverageGaps: List<String>,
-    typeDetailsByType: Map<String, TypeDetailDto>
-): Boolean = qualification(types, sharedWeaknesses, coverageGaps, typeDetailsByType) != null
 
 /**
  * Drops candidates whose competitive tier is above [maxTier] — see [SmogonTierLabels.isAtOrBelowCeiling]
@@ -113,24 +98,3 @@ fun rankSuggestions(
         .take(limit)
         .toList()
 }
-
-/**
- * Same-species forms of [baseName] (names prefixed `"$baseName-"`, e.g. `"charizard-mega-x"`)
- * whose typing in [typesByName] differs from [scoredTypes] and does *not* itself
- * [qualifies] against [sharedWeaknesses]/[coverageGaps] — the ones worth warning the user away
- * from. A form sharing [scoredTypes] (most cosmetic/gmax forms) is silently skipped: there's
- * nothing to disambiguate when the typing didn't actually change. Sorted for a stable UI order.
- */
-fun findConflictingForms(
-    baseName: String,
-    scoredTypes: List<String>,
-    sharedWeaknesses: List<String>,
-    coverageGaps: List<String>,
-    typesByName: Map<String, List<String>>,
-    typeDetailsByType: Map<String, TypeDetailDto>
-): List<String> = typesByName
-    .filterKeys { it != baseName && it.startsWith("$baseName-") }
-    .filterValues { it != scoredTypes }
-    .filterValues { !qualifies(it, sharedWeaknesses, coverageGaps, typeDetailsByType) }
-    .keys
-    .sorted()

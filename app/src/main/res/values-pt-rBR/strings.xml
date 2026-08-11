@@ -269,7 +269,6 @@
     <string name="team_suggestions_swipe_all">Deslize para ver todos os %1$d</string>
     <string name="team_suggestion_bst">BST %1$d</string>
     <string name="team_suggestion_resists_hits">Resiste a %1$s · Acerta %2$s</string>
-    <string name="team_suggestion_not_as">Não como %1$s</string>
     <string name="team_suggestion_add_cd">Adicionar %1$s ao time</string>
     <string name="team_error_compute_matrix">Erro de rede ao calcular os confrontos do time. Verifique sua conexão.</string>
     <string name="team_error_load_preset">Não foi possível carregar o time de %1$s.</string>

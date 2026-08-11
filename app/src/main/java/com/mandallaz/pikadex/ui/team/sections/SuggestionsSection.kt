@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -163,33 +162,6 @@ private fun SuggestionTile(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 2.dp)
         )
-        // The suggestion was scored on this species' base typing only — a mega/gmax/regional form
-        // that changes the typing can silently stop qualifying, so name exactly which ones not to
-        // pick. Stripped of the shared "<species>-" prefix ("charizard-mega-x" -> "Mega X") to fit
-        // this tile's width.
-        if (suggestion.conflictingForms.isNotEmpty()) {
-            Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(top = 2.dp)) {
-                Icon(
-                    Icons.Filled.WarningAmber,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(12.dp).padding(top = 1.dp)
-                )
-                Text(
-                    stringResource(
-                        R.string.team_suggestion_not_as,
-                        suggestion.conflictingForms.joinToString(", ") {
-                            it.removePrefix("${suggestion.name}-").toDisplayName()
-                        }
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 2.dp)
-                )
-            }
-        }
         IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
             Icon(
                 Icons.Filled.Add,

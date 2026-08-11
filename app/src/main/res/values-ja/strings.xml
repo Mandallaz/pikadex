@@ -269,7 +269,6 @@
     <string name="team_suggestions_swipe_all">スワイプして全%1$d件を表示</string>
     <string name="team_suggestion_bst">種族値合計 %1$d</string>
     <string name="team_suggestion_resists_hits">耐性: %1$s · 攻撃: %2$s</string>
-    <string name="team_suggestion_not_as">次は該当しません: %1$s</string>
     <string name="team_suggestion_add_cd">%1$sをチームに追加</string>
     <string name="team_error_compute_matrix">チームの相性計算中にネットワークエラーが発生しました。接続を確認してください。</string>
     <string name="team_error_load_preset">%1$sのチームを読み込めませんでした。</string>
