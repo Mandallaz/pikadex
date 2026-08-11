@@ -224,4 +224,22 @@ class PokedexDetailScreenTest {
     fun `no Showdown sprite data at all returns null`() {
         assertNull(selectShowdownUrl(shiny = false, showdown = null))
     }
+
+    // --- hasAnimatedSprite (B38) --------------------------------------------------------
+
+    @Test
+    fun `a Pokemon with a default animated sprite has one to toggle to`() {
+        assertTrue(hasAnimatedSprite(bothVariants))
+    }
+
+    @Test
+    fun `a Pokemon with only a shiny animated sprite still has none to toggle to by default`() {
+        val shinyOnly = ShowdownSprites(frontDefault = null, frontShiny = "shiny.gif")
+        assertFalse(hasAnimatedSprite(shinyOnly))
+    }
+
+    @Test
+    fun `no Showdown sprite data at all means nothing to toggle to`() {
+        assertFalse(hasAnimatedSprite(null))
+    }
 }

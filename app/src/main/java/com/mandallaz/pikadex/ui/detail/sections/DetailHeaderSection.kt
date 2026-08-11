@@ -27,6 +27,7 @@ import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
 import com.mandallaz.pikadex.ui.components.PokemonArtwork
 import com.mandallaz.pikadex.ui.components.TypeBadge
+import com.mandallaz.pikadex.ui.detail.hasAnimatedSprite
 import com.mandallaz.pikadex.ui.detail.selectShowdownUrl
 import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.localizedOrEnglish
@@ -71,16 +72,18 @@ internal fun DetailHeaderSection(
                     tint = if (shiny) MaterialTheme.colorScheme.primary else LocalContentColor.current
                 )
             }
-            IconButton(onClick = onToggleAnimated) {
-                Icon(
-                    imageVector = Icons.Filled.Animation,
-                    contentDescription = if (animated) {
-                        stringResource(R.string.detail_show_static_artwork)
-                    } else {
-                        stringResource(R.string.detail_show_animated_sprite)
-                    },
-                    tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                )
+            if (hasAnimatedSprite(pokemon.sprites.other?.showdown)) {
+                IconButton(onClick = onToggleAnimated) {
+                    Icon(
+                        imageVector = Icons.Filled.Animation,
+                        contentDescription = if (animated) {
+                            stringResource(R.string.detail_show_static_artwork)
+                        } else {
+                            stringResource(R.string.detail_show_animated_sprite)
+                        },
+                        tint = if (animated) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                    )
+                }
             }
             // F34: a one-shot action, not a toggle like shiny/animated above — disabled
             // rather than hidden while a cry is already playing, so tapping it twice fast

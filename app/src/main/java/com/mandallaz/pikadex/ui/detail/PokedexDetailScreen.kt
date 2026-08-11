@@ -675,6 +675,13 @@ internal fun shouldShowTeamImpactCard(team: List<NamedApiResource>, isInTeam: Bo
 internal fun selectShowdownUrl(shiny: Boolean, showdown: ShowdownSprites?): String? =
     showdown?.let { if (shiny) it.frontShiny ?: it.frontDefault else it.frontDefault }
 
+/** Whether the animated-sprite toggle has anything to show — gates [DetailHeaderSection]'s
+ *  toggle button so it isn't offered for Pokémon with no animated sprite at all (B38), where
+ *  [selectShowdownUrl] would silently fall back to the static artwork instead. Checked against
+ *  frontDefault only (not the shiny variant): selectShowdownUrl itself falls back from shiny to
+ *  default, so default's presence is what actually determines whether toggling does anything. */
+internal fun hasAnimatedSprite(showdown: ShowdownSprites?): Boolean = showdown?.frontDefault != null
+
 /** PokeAPI's own name for "can't breed" is the literal string "no-eggs" — toDisplayName() would
  *  render that as "No Eggs", which reads like a typo rather than the actual game term. Internal,
  *  not private, so it's unit-testable directly. */
