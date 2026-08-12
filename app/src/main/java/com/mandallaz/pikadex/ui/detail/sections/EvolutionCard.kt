@@ -42,7 +42,7 @@ internal fun EvolutionCard(
     speciesNames: Map<String, Map<String, String>>,
     gameDataLanguage: String
 ) {
-    val otherForms = species.otherForms
+    val otherForms = species.otherForms(pokemon.name)
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

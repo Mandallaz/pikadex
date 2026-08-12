@@ -511,7 +511,7 @@ internal fun DetailContent(
         // just now following Evolution instead of leading it.
         // issue #19 — every alternate form of this species (Mega, Gigantamax, one-off special
         // forms like Ursaluna Bloodmoon...), not just Megas — see SpeciesDto.otherForms.
-        val otherForms = species.otherForms
+        val otherForms = species.otherForms(pokemon.name)
         if (evolutionChain != null || otherForms.isNotEmpty()) {
             item {
                 EvolutionCard(pokemon, species, evolutionChain, onPokemonClick, speciesNames, gameDataLanguage)

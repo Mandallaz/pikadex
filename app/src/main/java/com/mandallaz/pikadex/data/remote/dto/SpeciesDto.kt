@@ -21,14 +21,18 @@ data class PokemonSpeciesDto(
      *  field would leave this null anyway (see the same note on NamedApiResource). */
     val varieties: List<SpeciesVariety>?
 ) {
-    /** Every alternate form of this species other than the default one — Mega Evolutions,
+    /** Every form of this species other than [currentPokemonName] — Mega Evolutions,
      *  Gigantamax forms, and one-off special forms like Ursaluna Bloodmoon (issue #19) alike.
      *  PokeAPI models all of these as [varieties], not as links in [evolutionChain], so none of
      *  them are otherwise visible anywhere the evolution chain is read. How each one is actually
      *  obtained isn't in this data at all (it's not a level/item/trade-triggered evolution), so
-     *  this only says a form *exists*, not how to get it. */
-    val otherForms: List<SpeciesVariety>
-        get() = varieties.orEmpty().filterNot { it.isDefault }
+     *  this only says a form *exists*, not how to get it.
+     *
+     *  Filters by [currentPokemonName] rather than [SpeciesVariety.isDefault] (bug B40): a
+     *  non-default variety's own page must still list the default form as an "other form", and
+     *  must not list itself. */
+    fun otherForms(currentPokemonName: String): List<SpeciesVariety> =
+        varieties.orEmpty().filterNot { it.pokemon.name == currentPokemonName }
 }
 
 data class SpeciesVariety(
