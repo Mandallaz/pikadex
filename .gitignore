@@ -13,8 +13,6 @@
 /app/build
 /app/release
 .kotlin
-BACKLOG.md
 /keystore.properties
 *.jks
 *.keystore
-CLAUDE.md
