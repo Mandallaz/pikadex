@@ -351,4 +351,35 @@ class TypeEffectivenessTest {
         assertEquals(emptyList<String>(), teamImmunities(emptyMap(), emptyList()))
         assertEquals(emptyList<String>(), teamQuadWeaknesses(emptyMap(), emptyList()))
     }
+
+    // F93 follow-up — Tom clarified the strikethrough request was about entries in the Weak-to/
+    // Resists lists themselves that vanish once Tera fully replaces the typing (e.g. base Grass was
+    // weak to Fire, but the Fire Tera typing isn't), not the base type badges shown elsewhere. A
+    // weakness/resistance that was notable pre-Tera and is neutral post-Tera needs to still render
+    // (struck through, in its original bucket) rather than just disappearing.
+    @Test
+    fun `a weakness present in the base typing but neutral after Tera is kept for display and flagged as removed`() {
+        val base = mapOf("fire" to 2.0, "water" to 1.0)
+        val effective = mapOf("fire" to 1.0, "water" to 1.0)
+        val (display, removed) = matchupsForDisplay(effective, base)
+        assertEquals(2.0, display["fire"]!!, 0.0)
+        assertEquals(setOf("fire"), removed)
+    }
+
+    @Test
+    fun `a weakness that changes severity but stays notable is not flagged as removed`() {
+        val base = mapOf("fire" to 4.0)
+        val effective = mapOf("fire" to 2.0)
+        val (display, removed) = matchupsForDisplay(effective, base)
+        assertEquals(2.0, display["fire"]!!, 0.0)
+        assertTrue(removed.isEmpty())
+    }
+
+    @Test
+    fun `with no base typing to diff against nothing is flagged as removed`() {
+        val effective = mapOf("fire" to 2.0)
+        val (display, removed) = matchupsForDisplay(effective, emptyMap())
+        assertEquals(effective, display)
+        assertTrue(removed.isEmpty())
+    }
 }

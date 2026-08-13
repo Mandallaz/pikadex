@@ -539,7 +539,14 @@ internal fun DetailContent(
             if (teraType != null) teraPartiallyCounteredTriangles.orEmpty() else partiallyCounteredTriangles
 
         item {
-            TypeMatchupsCard(effectiveTypeMatchups, teraType, onSelectTeraType, teraTypeOptions, onOpenTeraDialog)
+            TypeMatchupsCard(
+                effectiveTypeMatchups,
+                teraType,
+                onSelectTeraType,
+                teraTypeOptions,
+                onOpenTeraDialog,
+                baseTypeMatchups = typeMatchups
+            )
         }
 
         // issue #2 — only present while there's an active team with room to grow; a full or

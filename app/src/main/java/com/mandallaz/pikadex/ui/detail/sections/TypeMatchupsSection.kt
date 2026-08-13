@@ -42,7 +42,14 @@ internal fun TypeMatchupsCard(
     teraType: String? = null,
     onSelectTeraType: (String?) -> Unit = {},
     teraTypeOptions: List<Pair<String, Int>> = emptyList(),
-    onOpenTeraDialog: () -> Unit = {}
+    onOpenTeraDialog: () -> Unit = {},
+    // F93 follow-up — the Pokémon's real (non-Tera) defensive matchups, used to diff against
+    // [typeMatchups] (which is already the effective — base-or-Tera — map by the time it reaches
+    // this card): a Weak-to/Resists entry that only holds *because* of the Tera preview is
+    // outlined, and one the base typing had but the Tera typing no longer does is kept in its
+    // original bucket, grayed and struck through (see [com.mandallaz.pikadex.util.matchupsForDisplay]).
+    // Empty when there's nothing to diff against (no preview active).
+    baseTypeMatchups: Map<String, Double> = emptyMap()
 ) {
     var showTeraDialog by remember { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -85,7 +92,26 @@ internal fun TypeMatchupsCard(
                     }
                 )
             }
-            com.mandallaz.pikadex.ui.components.TypeMatchupGroups(typeMatchups)
+            // F93 follow-up — an attacking type only counts as "added by the preview" if its
+            // multiplier actually changed; a type equally weak/resisted with or without the Tera
+            // override isn't something the preview introduced.
+            val highlightedTypes = if (teraType != null) {
+                typeMatchups.keys.filter { typeMatchups[it] != (baseTypeMatchups[it] ?: 1.0) }.toSet()
+            } else {
+                emptySet()
+            }
+            // F93 follow-up — a weakness/resistance the base typing had but the Tera typing no
+            // longer does (Terastallization fully replaces the typing) simply vanishes from
+            // typeMatchups; matchupsForDisplay merges it back in for display, struck through.
+            val (displayMatchups, removedTypes) = com.mandallaz.pikadex.util.matchupsForDisplay(
+                typeMatchups,
+                if (teraType != null) baseTypeMatchups else emptyMap()
+            )
+            com.mandallaz.pikadex.ui.components.TypeMatchupGroups(
+                displayMatchups,
+                highlightedTypes = highlightedTypes,
+                strikethroughTypes = removedTypes
+            )
         }
     }
 

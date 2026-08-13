@@ -1,6 +1,7 @@
 package com.mandallaz.pikadex.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -35,12 +36,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mandallaz.pikadex.util.TypeColors
@@ -92,6 +96,21 @@ fun typeIcon(typeName: String): ImageVector = TYPE_ICONS[typeName.lowercase()] ?
  * localization/accessibility fix isn't lost in that mode. [typeId] is no longer used for anything
  * (kept as a no-op param so every existing call site — there are a dozen — didn't need touching
  * for B39's fix); prefer dropping it at any call site you're already editing.
+ *
+ * [strikethrough] — F93 follow-up: strikes the label through (icon untouched), grays out the whole
+ * badge (color desaturated toward gray) and fades it (reduced alpha — gray alone wasn't enough to
+ * read as "inactive" for pale type colors like Fairy, which land close to their normal color even
+ * after the gray blend; the fade reads as "washed out" against the card background regardless of
+ * hue), for a base type badge that a currently-previewed Tera type has *replaced* rather than
+ * combined with (Terastallizing overwrites the Pokémon's typing entirely — see F90/F93's own
+ * docs) — signals "this type isn't in effect right now" without removing the badge outright, since
+ * the real typing is still what's underneath when the preview is cleared. No-op when [showLabel]
+ * is false, since there's no label to strike.
+ *
+ * [bordered] — F93 follow-up: outlines the badge, for a Weak-to/Resists entry in
+ * [TypeMatchupGroups] that only applies *because* of the active Tera preview (differs from what
+ * the Pokémon's real typing alone would show) — same "here's what changed" signal as
+ * [strikethrough], for the opposite direction (types the preview added rather than removed).
  */
 @Composable
 fun TypeBadge(
@@ -99,7 +118,9 @@ fun TypeBadge(
     typeId: Int? = null,
     modifier: Modifier = Modifier,
     height: Dp = 24.dp,
-    showLabel: Boolean = true
+    showLabel: Boolean = true,
+    strikethrough: Boolean = false,
+    bordered: Boolean = false
 ) {
     val localizedName = typeName.localizedTypeName()
     // The user asked for the label's font size to track the badge's own height rather than a
@@ -110,8 +131,10 @@ fun TypeBadge(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .height(height)
+            .alpha(if (strikethrough) 0.5f else 1f)
             .clip(RoundedCornerShape(50))
-            .background(TypeColors.of(typeName))
+            .background(TypeColors.of(typeName).let { if (strikethrough) lerp(it, Color.Gray, 0.85f) else it })
+            .let { if (bordered) it.border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(50)) else it }
             .padding(horizontal = if (showLabel) 10.dp else 4.dp)
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -127,7 +150,10 @@ fun TypeBadge(
             if (showLabel) {
                 Text(
                     text = localizedName.uppercase(),
-                    style = MaterialTheme.typography.labelMedium.copy(fontSize = labelFontSize),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = labelFontSize,
+                        textDecoration = if (strikethrough) TextDecoration.LineThrough else null
+                    ),
                     color = Color.White,
                     textAlign = TextAlign.Center,
                     maxLines = 1

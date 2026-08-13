@@ -164,6 +164,27 @@ private val BUCKET_ORDER = listOf(
 // combinations could then land a bit apart.
 private const val EPSILON = 1e-9
 
+/** F93 follow-up — Terastallizing fully replaces a Pokémon's typing, so a weakness/resistance
+ *  that held under [baseMatchups] but is neutral under [effectiveMatchups] simply vanishes from
+ *  the latter and wouldn't render at all if passed alone to [bucketizeMatchups]. Merges [base]'s
+ *  value back in for any such entry (so it still lands in its original bucket) and reports its
+ *  name in the second half of the pair, for the caller to render struck through. An entry whose
+ *  multiplier merely changes between two notable values (e.g. weak becomes resisted) is not
+ *  "removed" — [effectiveMatchups]' own value is kept for it, unflagged. [baseMatchups] empty
+ *  (no Tera preview active) means nothing to diff against: returns [effectiveMatchups] unchanged
+ *  with an empty removed set. */
+fun matchupsForDisplay(
+    effectiveMatchups: Map<String, Double>,
+    baseMatchups: Map<String, Double>
+): Pair<Map<String, Double>, Set<String>> {
+    if (baseMatchups.isEmpty()) return effectiveMatchups to emptySet()
+    val removed = baseMatchups.filterValues { abs(it - 1.0) > EPSILON }.keys
+        .filter { abs((effectiveMatchups[it] ?: 1.0) - 1.0) < EPSILON }
+        .toSet()
+    val display = effectiveMatchups + removed.associateWith { baseMatchups.getValue(it) }
+    return display to removed
+}
+
 /** Groups a defensive-multiplier map into display buckets, skipping neutral (x1) types. */
 fun bucketizeMatchups(multipliers: Map<String, Double>): List<MatchupBucket> =
     BUCKET_ORDER.mapNotNull { (multiplier, labelRes) ->
