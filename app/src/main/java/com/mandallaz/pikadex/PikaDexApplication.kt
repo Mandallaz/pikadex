@@ -12,6 +12,7 @@ import com.mandallaz.pikadex.data.AppContainer
 import com.mandallaz.pikadex.data.DisplaySettings
 import com.mandallaz.pikadex.data.FavoritesRepository
 import com.mandallaz.pikadex.data.LanguageSettings
+import com.mandallaz.pikadex.data.PrefetchManager
 import com.mandallaz.pikadex.data.PrefetchSettings
 import com.mandallaz.pikadex.data.SuggestionSettings
 import com.mandallaz.pikadex.data.TeamRepository
@@ -42,6 +43,7 @@ class PikaDexApplication : Application(), ImageLoaderFactory {
         FavoritesRepository.init(this)
         TeamRepository.init(this)
         PrefetchSettings.init(this)
+        PrefetchManager.init(this)
         SuggestionSettings.init(this)
         DisplaySettings.init(this)
         LanguageSettings.init(this)
