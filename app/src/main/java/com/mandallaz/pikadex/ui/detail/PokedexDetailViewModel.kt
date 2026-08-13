@@ -91,6 +91,15 @@ data class PokedexDetailUiState(
      *  rest of the page on a feature that's a convenience, not the point of the page. */
     val previousPokemonName: String? = null,
     val nextPokemonName: String? = null,
+    /** F90 — the Terastallization type currently being previewed, or null when not active. Purely
+     *  in-memory, screen-local state (like the shiny/animated toggles) — reset to null every fresh
+     *  [PokedexDetailViewModel.load] since this whole state object is replaced then. */
+    val teraType: String? = null,
+    /** [typeMatchups] recomputed against only [teraType]'s own typing instead of the Pokémon's
+     *  real types, once [teraType] is set — null while no Tera type is being previewed. */
+    val teraTypeMatchups: Map<String, Double>? = null,
+    val teraCounteredTriangles: List<TypeTriangle>? = null,
+    val teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
     /** Result of issue #2's "team coverage impact" card — what adding this Pokémon would
      *  change about the team's shared weaknesses and coverage gaps. Null until [loadTeamImpact]
      *  computes it, and reset by [clearTeamImpact] whenever the card's visibility condition stops
@@ -350,6 +359,42 @@ class PokedexDetailViewModel @JvmOverloads constructor(
     fun clearTeamImpact() {
         teamImpactJob?.cancel()
         _uiState.update { it.copy(isTeamImpactLoading = false, teamImpactError = null, teamImpact = null) }
+    }
+
+    private var teraTypeJob: Job? = null
+
+    /** F90 — preview [type] as this Pokémon's Terastallization type: [PokedexDetailUiState.teraTypeMatchups]
+     *  and the triangle lists get recomputed against only [type]'s own typing (the real game rule —
+     *  Terastallizing fully replaces a Pokémon's typing with one pure type, both defensively and for
+     *  STAB), rather than its real 1-2 types. [type] null clears the preview back to the real typing.
+     *  Best-effort like [loadTeamImpact]'s siblings elsewhere in this codebase are for enrichment-only
+     *  fetches — a failed [repository.getTypeDetail] call just leaves the previous preview state (or
+     *  none) rather than surfacing an error for what's a cosmetic, opt-in preview. */
+    fun selectTeraType(type: String?) {
+        teraTypeJob?.cancel()
+        if (type == null) {
+            _uiState.update {
+                it.copy(teraType = null, teraTypeMatchups = null, teraCounteredTriangles = null, teraPartiallyCounteredTriangles = null)
+            }
+            return
+        }
+        teraTypeJob = viewModelScope.launch {
+            try {
+                val detail = repository.getTypeDetail(type)
+                _uiState.update {
+                    it.copy(
+                        teraType = type,
+                        teraTypeMatchups = computeDefensiveMultipliers(listOf(detail)),
+                        teraCounteredTriangles = TypeTriangles.counteredBy(listOf(type)),
+                        teraPartiallyCounteredTriangles = TypeTriangles.partiallyCounteredBy(listOf(type))
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled in PokedexListViewModel for why this rethrow matters
+            } catch (e: Exception) {
+                // best-effort — see doc above
+            }
+        }
     }
 
     fun loadCompareCandidatesIfNeeded() {

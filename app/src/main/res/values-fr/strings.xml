@@ -190,6 +190,9 @@
     <string name="detail_opens_gaps">Ouvre ces lacunes de couverture :</string>
 
     <string name="detail_type_matchups_title">Affinités de type</string>
+    <string name="detail_tera_type_label">Téracristalliser</string>
+    <string name="detail_tera_type_none">Aucun</string>
+    <string name="detail_tera_type_dialog_title">Choisir le type Téracristal</string>
 
     <string name="detail_type_triangles_title">Triangles de types</string>
     <string name="detail_view_chart">Voir le schéma</string>

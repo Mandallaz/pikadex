@@ -291,6 +291,11 @@ fun PokedexDetailScreen(
                     abilityDescriptions = uiState.abilityDescriptions,
                     counteredTriangles = uiState.counteredTriangles,
                     partiallyCounteredTriangles = uiState.partiallyCounteredTriangles,
+                    teraType = uiState.teraType,
+                    teraTypeMatchups = uiState.teraTypeMatchups,
+                    teraCounteredTriangles = uiState.teraCounteredTriangles,
+                    teraPartiallyCounteredTriangles = uiState.teraPartiallyCounteredTriangles,
+                    onSelectTeraType = viewModel::selectTeraType,
                     moveInfo = uiState.moveInfo,
                     statPercentiles = uiState.statPercentiles,
                     formVersionGroup = uiState.formVersionGroup,
@@ -384,6 +389,14 @@ internal fun DetailContent(
     abilityDescriptions: Map<String, String>,
     counteredTriangles: List<TypeTriangle>,
     partiallyCounteredTriangles: List<TypeTriangle>,
+    // F90 — defaulted so existing instrumented-test call sites (rendering this directly with fake
+    // DTOs, no ViewModel) keep compiling unchanged; real usage always passes the ViewModel's
+    // uiState.teraType/etc.
+    teraType: String? = null,
+    teraTypeMatchups: Map<String, Double>? = null,
+    teraCounteredTriangles: List<TypeTriangle>? = null,
+    teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
+    onSelectTeraType: (String?) -> Unit = {},
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     statPercentiles: Map<String, Double>,
     formVersionGroup: String?,
@@ -501,14 +514,9 @@ internal fun DetailContent(
             AbilitiesCard(pokemon, abilityDescriptions, abilityLocalizedNames, gameDataLanguage)
         }
 
-        item {
-            TypeMatchupsCard(typeMatchups)
-        }
-
-        // issue #14 — Evolution moved up to sit right after the core stat/ability/matchup
-        // cluster (Base Stats/Abilities/Type Matchups), ahead of Team Impact/Type Triangles/Smogon
-        // rather than after them — those 3 keep their existing relative order among themselves,
-        // just now following Evolution instead of leading it.
+        // issue #14 — Evolution sits right after Abilities, ahead of Type Matchups/Team
+        // Impact/Type Triangles/Smogon rather than after them — those keep their existing
+        // relative order among themselves, just now following Evolution instead of leading it.
         // issue #19 — every alternate form of this species (Mega, Gigantamax, one-off special
         // forms like Ursaluna Bloodmoon...), not just Megas — see SpeciesDto.otherForms.
         val otherForms = species.otherForms(pokemon.name)
@@ -516,6 +524,18 @@ internal fun DetailContent(
             item {
                 EvolutionCard(pokemon, species, evolutionChain, onPokemonClick, speciesNames, gameDataLanguage)
             }
+        }
+
+        // F90 — while a Tera type is being previewed, its own defensive/offensive multipliers
+        // replace the Pokémon's real ones everywhere they'd otherwise be shown, matching the
+        // actual game mechanic (Terastallizing fully replaces typing with one pure type).
+        val effectiveTypeMatchups = teraTypeMatchups ?: typeMatchups
+        val effectiveCounteredTriangles = if (teraType != null) teraCounteredTriangles.orEmpty() else counteredTriangles
+        val effectivePartiallyCounteredTriangles =
+            if (teraType != null) teraPartiallyCounteredTriangles.orEmpty() else partiallyCounteredTriangles
+
+        item {
+            TypeMatchupsCard(effectiveTypeMatchups, teraType, onSelectTeraType)
         }
 
         // issue #2 — only present while there's an active team with room to grow; a full or
@@ -528,9 +548,9 @@ internal fun DetailContent(
             }
         }
 
-        if (counteredTriangles.isNotEmpty() || partiallyCounteredTriangles.isNotEmpty()) {
+        if (effectiveCounteredTriangles.isNotEmpty() || effectivePartiallyCounteredTriangles.isNotEmpty()) {
             item {
-                TypeTrianglesCard(counteredTriangles, partiallyCounteredTriangles, onViewTypeTriangles)
+                TypeTrianglesCard(effectiveCounteredTriangles, effectivePartiallyCounteredTriangles, onViewTypeTriangles)
             }
         }
 

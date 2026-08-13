@@ -188,6 +188,9 @@
     <string name="detail_opens_gaps">Apre queste lacune di copertura:</string>
 
     <string name="detail_type_matchups_title">Confronti di tipo</string>
+    <string name="detail_tera_type_label">Teracristallizzare</string>
+    <string name="detail_tera_type_none">Nessuno</string>
+    <string name="detail_tera_type_dialog_title">Scegli tipo Terastal</string>
 
     <string name="detail_type_triangles_title">Triangoli di tipo</string>
     <string name="detail_view_chart">Vedi schema</string>

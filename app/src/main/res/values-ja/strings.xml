@@ -188,6 +188,9 @@
     <string name="detail_opens_gaps">これらの攻撃の穴を新たに追加:</string>
 
     <string name="detail_type_matchups_title">タイプ相性</string>
+    <string name="detail_tera_type_label">テラスタル</string>
+    <string name="detail_tera_type_none">なし</string>
+    <string name="detail_tera_type_dialog_title">テラスタイプを選択</string>
 
     <string name="detail_type_triangles_title">三角関係</string>
     <string name="detail_view_chart">図を見る</string>

@@ -193,6 +193,9 @@
     <string name="detail_opens_gaps">Opens these coverage gaps:</string>
 
     <string name="detail_type_matchups_title">Type Matchups</string>
+    <string name="detail_tera_type_label">Terastallize</string>
+    <string name="detail_tera_type_none">None</string>
+    <string name="detail_tera_type_dialog_title">Choose Tera Type</string>
 
     <string name="detail_type_triangles_title">Type Triangles</string>
     <string name="detail_view_chart">View chart</string>

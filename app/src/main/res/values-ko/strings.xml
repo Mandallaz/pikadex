@@ -188,6 +188,9 @@
     <string name="detail_opens_gaps">다음 공격 공백을 새로 만듭니다:</string>
 
     <string name="detail_type_matchups_title">타입 상성</string>
+    <string name="detail_tera_type_label">테라스탈</string>
+    <string name="detail_tera_type_none">없음</string>
+    <string name="detail_tera_type_dialog_title">테라 타입 선택</string>
 
     <string name="detail_type_triangles_title">삼각관계</string>
     <string name="detail_view_chart">차트 보기</string>

@@ -188,6 +188,9 @@
     <string name="detail_opens_gaps">Abre estas brechas de cobertura:</string>
 
     <string name="detail_type_matchups_title">Enfrentamientos de tipo</string>
+    <string name="detail_tera_type_label">Teracristalizar</string>
+    <string name="detail_tera_type_none">Ninguno</string>
+    <string name="detail_tera_type_dialog_title">Elegir tipo Tera</string>
 
     <string name="detail_type_triangles_title">Triángulos de tipo</string>
     <string name="detail_view_chart">Ver esquema</string>

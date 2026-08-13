@@ -188,6 +188,9 @@
     <string name="detail_opens_gaps">Öffnet diese Abdeckungslücken:</string>
 
     <string name="detail_type_matchups_title">Typ-Vergleiche</string>
+    <string name="detail_tera_type_label">Terakristallisieren</string>
+    <string name="detail_tera_type_none">Keine</string>
+    <string name="detail_tera_type_dialog_title">Terakristall-Typ wählen</string>
 
     <string name="detail_type_triangles_title">Typ-Dreiecke</string>
     <string name="detail_view_chart">Diagramm ansehen</string>

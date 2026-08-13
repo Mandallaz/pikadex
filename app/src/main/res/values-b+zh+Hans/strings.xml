@@ -188,6 +188,9 @@
     <string name="detail_opens_gaps">产生以下攻击空缺：</string>
 
     <string name="detail_type_matchups_title">属性相克</string>
+    <string name="detail_tera_type_label">太晶化</string>
+    <string name="detail_tera_type_none">无</string>
+    <string name="detail_tera_type_dialog_title">选择太晶属性</string>
 
     <string name="detail_type_triangles_title">三角关系</string>
     <string name="detail_view_chart">查看图表</string>
