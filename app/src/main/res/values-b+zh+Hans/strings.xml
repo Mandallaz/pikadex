@@ -53,8 +53,6 @@
     <string name="settings_display_section">显示</string>
     <string name="settings_amoled_title">AMOLED纯黑</string>
     <string name="settings_amoled_subtitle">强制使用纯黑背景的深色模式，为AMOLED屏幕节省电量。</string>
-    <string name="settings_front_back_sprites_title">正面和背面精灵图</string>
-    <string name="settings_front_back_sprites_subtitle">在宝可梦详情页并排显示正面和背面精灵图，而不仅仅是正面插画。</string>
 
     <string name="settings_suggestions_section">队伍推荐</string>
     <string name="settings_suggestions_help_content_description">什么是对战分级？</string>
@@ -151,6 +149,8 @@
     <string name="detail_show_shiny_coloring">显示异色配色</string>
     <string name="detail_show_static_artwork">显示静态插图</string>
     <string name="detail_show_animated_sprite">显示动态战斗精灵图</string>
+    <string name="detail_show_front_only">仅显示正面</string>
+    <string name="detail_show_front_and_back">显示正面和背面</string>
     <string name="detail_play_cry">播放鸣叫声</string>
     <string name="detail_legendary">传说</string>
     <string name="detail_mythical">幻兽</string>

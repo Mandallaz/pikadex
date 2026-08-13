@@ -55,7 +55,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.R
-import com.mandallaz.pikadex.data.DisplaySettings
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
@@ -135,6 +134,9 @@ fun PokedexDetailScreen(
     // F38: off by default — an animated GIF looping from the moment the screen opens would be a
     // surprising default for every visit, not just something a user opts into.
     var animated by rememberSaveable { mutableStateOf(false) }
+    // F76: per-Pokémon, not persisted — resets to off when navigating to a different Pokémon,
+    // same pattern as shiny/animated above.
+    var frontBackSprites by rememberSaveable { mutableStateOf(false) }
     var showCompareDialog by rememberSaveable { mutableStateOf(false) }
     // Resolved here, in the composable body, not inside the snackbar's coroutineScope.launch{}
     // lambda below — stringResource() is a @Composable function and that lambda isn't one.
@@ -304,8 +306,10 @@ fun PokedexDetailScreen(
                     groupedMoves = uiState.groupedMoves,
                     shiny = shiny,
                     animated = animated,
+                    frontBackSprites = frontBackSprites,
                     onToggleShiny = { shiny = !shiny },
                     onToggleAnimated = { animated = !animated },
+                    onToggleFrontBackSprites = { frontBackSprites = !frontBackSprites },
                     isCryPlaying = isCryPlaying,
                     // uiState.pokemon is non-null here (this whole branch is gated on `pokemon`
                     // above), but that's `pokemon`, not `uiState.pokemon` — same underlying value,
@@ -407,8 +411,10 @@ internal fun DetailContent(
     groupedMoves: Map<MoveCategory, List<LearnedMove>>,
     shiny: Boolean,
     animated: Boolean,
+    frontBackSprites: Boolean,
     onToggleShiny: () -> Unit,
     onToggleAnimated: () -> Unit,
+    onToggleFrontBackSprites: () -> Unit,
     isCryPlaying: Boolean,
     onPlayCry: () -> Unit,
     showTeamImpactCard: Boolean,
@@ -428,8 +434,6 @@ internal fun DetailContent(
     // F35 — game-data axis: genus/flavor text below read whichever language this resolves to,
     // falling back to English wherever the chosen language's entry is missing.
     val gameDataLanguage by LanguageSettings.currentLanguage.collectAsState()
-    // F76 — global Settings toggle, same direct-read pattern as gameDataLanguage above.
-    val frontBackSpritesEnabled by DisplaySettings.frontBackSpritesEnabled.collectAsState()
 
     // Each category's moves are computed once per load, off the main thread, in the ViewModel
     // (see PokedexDetailUiState.groupedMoves) rather than here — this is the exact same
@@ -463,9 +467,10 @@ internal fun DetailContent(
                 gameDataLanguage = gameDataLanguage,
                 shiny = shiny,
                 animated = animated,
-                frontBackSpritesEnabled = frontBackSpritesEnabled,
+                frontBackSprites = frontBackSprites,
                 onToggleShiny = onToggleShiny,
                 onToggleAnimated = onToggleAnimated,
+                onToggleFrontBackSprites = onToggleFrontBackSprites,
                 isCryPlaying = isCryPlaying,
                 onPlayCry = onPlayCry
             )

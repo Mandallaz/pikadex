@@ -53,8 +53,6 @@
     <string name="settings_display_section">表示</string>
     <string name="settings_amoled_title">AMOLEDブラック</string>
     <string name="settings_amoled_subtitle">AMOLED画面のバッテリーを節約するため、真っ黒な背景のダークモードを強制します。</string>
-    <string name="settings_front_back_sprites_title">表と裏のスプライト</string>
-    <string name="settings_front_back_sprites_subtitle">ポケモン詳細画面で、正面イラストの代わりに表と裏のスプライトを並べて表示します。</string>
 
     <string name="settings_suggestions_section">パーティの提案</string>
     <string name="settings_suggestions_help_content_description">対戦ティアとは？</string>
@@ -151,6 +149,8 @@
     <string name="detail_show_shiny_coloring">色違いを表示</string>
     <string name="detail_show_static_artwork">静止画像を表示</string>
     <string name="detail_show_animated_sprite">アニメーションバトルスプライトを表示</string>
+    <string name="detail_show_front_only">表のみ表示</string>
+    <string name="detail_show_front_and_back">表と裏を表示</string>
     <string name="detail_play_cry">鳴き声を再生</string>
     <string name="detail_legendary">伝説</string>
     <string name="detail_mythical">幻</string>

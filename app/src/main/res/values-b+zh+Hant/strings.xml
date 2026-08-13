@@ -53,8 +53,6 @@
     <string name="settings_display_section">顯示</string>
     <string name="settings_amoled_title">AMOLED純黑</string>
     <string name="settings_amoled_subtitle">強制使用純黑背景的深色模式，為AMOLED螢幕節省電量。</string>
-    <string name="settings_front_back_sprites_title">正面和背面精靈圖</string>
-    <string name="settings_front_back_sprites_subtitle">在寶可夢詳細頁面並排顯示正面和背面精靈圖，而不僅僅是正面插畫。</string>
 
     <string name="settings_suggestions_section">隊伍推薦</string>
     <string name="settings_suggestions_help_content_description">什麼是對戰分級？</string>
@@ -151,6 +149,8 @@
     <string name="detail_show_shiny_coloring">顯示異色配色</string>
     <string name="detail_show_static_artwork">顯示靜態插圖</string>
     <string name="detail_show_animated_sprite">顯示動態戰鬥精靈圖</string>
+    <string name="detail_show_front_only">僅顯示正面</string>
+    <string name="detail_show_front_and_back">顯示正面和背面</string>
     <string name="detail_play_cry">播放叫聲</string>
     <string name="detail_legendary">傳說</string>
     <string name="detail_mythical">夢幻</string>

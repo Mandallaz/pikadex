@@ -13,35 +13,21 @@ import kotlinx.coroutines.flow.asStateFlow
 object DisplaySettings {
     private const val PREFS_NAME = "display_settings"
     private const val KEY_AMOLED = "amoled_enabled"
-    private const val KEY_FRONT_BACK_SPRITES = "front_back_sprites_enabled"
 
     private var prefs: SharedPreferences? = null
 
     private val _amoledEnabled = MutableStateFlow(false)
     val amoledEnabled: StateFlow<Boolean> = _amoledEnabled.asStateFlow()
 
-    /** F76 — front+back sprites side by side on the Pokémon detail screen, instead of the
-     *  front-only official artwork. Off by default, same reasoning as [amoledEnabled]: it changes
-     *  a look not everyone wants. */
-    private val _frontBackSpritesEnabled = MutableStateFlow(false)
-    val frontBackSpritesEnabled: StateFlow<Boolean> = _frontBackSpritesEnabled.asStateFlow()
-
     fun init(context: Context) {
         val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs = sharedPrefs
         _amoledEnabled.value = sharedPrefs.getBoolean(KEY_AMOLED, false)
-        _frontBackSpritesEnabled.value = sharedPrefs.getBoolean(KEY_FRONT_BACK_SPRITES, false)
     }
 
     fun setAmoledEnabled(enabled: Boolean) {
         val p = prefs ?: return
         _amoledEnabled.value = enabled
         p.edit { putBoolean(KEY_AMOLED, enabled) }
-    }
-
-    fun setFrontBackSpritesEnabled(enabled: Boolean) {
-        val p = prefs ?: return
-        _frontBackSpritesEnabled.value = enabled
-        p.edit { putBoolean(KEY_FRONT_BACK_SPRITES, enabled) }
     }
 }

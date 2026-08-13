@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,9 +46,10 @@ internal fun DetailHeaderSection(
     gameDataLanguage: String,
     shiny: Boolean,
     animated: Boolean,
-    frontBackSpritesEnabled: Boolean,
+    frontBackSprites: Boolean,
     onToggleShiny: () -> Unit,
     onToggleAnimated: () -> Unit,
+    onToggleFrontBackSprites: () -> Unit,
     isCryPlaying: Boolean,
     onPlayCry: () -> Unit
 ) {
@@ -88,6 +90,17 @@ internal fun DetailHeaderSection(
                     )
                 }
             }
+            IconButton(onClick = onToggleFrontBackSprites) {
+                Icon(
+                    imageVector = Icons.Filled.Flip,
+                    contentDescription = if (frontBackSprites) {
+                        stringResource(R.string.detail_show_front_only)
+                    } else {
+                        stringResource(R.string.detail_show_front_and_back)
+                    },
+                    tint = if (frontBackSprites) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                )
+            }
             // F34: a one-shot action, not a toggle like shiny/animated above — disabled
             // rather than hidden while a cry is already playing, so tapping it twice fast
             // can't overlap two MediaPlayer instances.
@@ -103,7 +116,7 @@ internal fun DetailHeaderSection(
                 )
             }
         }
-        if (frontBackSpritesEnabled) {
+        if (frontBackSprites) {
             PokemonFrontBackArtwork(
                 id = pokemon.id,
                 contentDescription = pokemon.name,

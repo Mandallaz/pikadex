@@ -55,8 +55,6 @@
     <string name="settings_display_section">Affichage</string>
     <string name="settings_amoled_title">Noir AMOLED</string>
     <string name="settings_amoled_subtitle">Force le mode sombre avec un fond véritablement noir, pour économiser la batterie sur les écrans AMOLED.</string>
-    <string name="settings_front_back_sprites_title">Sprites face et dos</string>
-    <string name="settings_front_back_sprites_subtitle">Affiche les sprites face et dos côte à côte sur la fiche du Pokémon, au lieu de l\'illustration de face seule.</string>
 
     <string name="settings_suggestions_section">Suggestions d\'équipe</string>
     <string name="settings_suggestions_help_content_description">Que sont les tiers compétitifs ?</string>
@@ -153,6 +151,8 @@
     <string name="detail_show_shiny_coloring">Afficher la couleur chromatique</string>
     <string name="detail_show_static_artwork">Afficher l\'illustration statique</string>
     <string name="detail_show_animated_sprite">Afficher le sprite de combat animé</string>
+    <string name="detail_show_front_only">Afficher la face uniquement</string>
+    <string name="detail_show_front_and_back">Afficher face et dos</string>
     <string name="detail_play_cry">Jouer le cri</string>
     <string name="detail_legendary">Légendaire</string>
     <string name="detail_mythical">Fabuleux</string>

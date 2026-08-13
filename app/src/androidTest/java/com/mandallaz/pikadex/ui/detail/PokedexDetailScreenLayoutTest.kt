@@ -67,8 +67,10 @@ class PokedexDetailScreenLayoutTest {
                 groupedMoves = emptyMap(),
                 shiny = false,
                 animated = false,
+                frontBackSprites = false,
                 onToggleShiny = {},
                 onToggleAnimated = {},
+                onToggleFrontBackSprites = {},
                 isCryPlaying = false,
                 onPlayCry = {},
                 showTeamImpactCard = false,
@@ -82,6 +84,7 @@ class PokedexDetailScreenLayoutTest {
 
         composeTestRule.onNodeWithContentDescription("Show shiny coloring").assertExists()
         composeTestRule.onNodeWithContentDescription("Show animated battle sprite").assertExists()
+        composeTestRule.onNodeWithContentDescription("Show front and back").assertExists()
         composeTestRule.onNodeWithContentDescription("Play cry").assertExists()
     }
 }

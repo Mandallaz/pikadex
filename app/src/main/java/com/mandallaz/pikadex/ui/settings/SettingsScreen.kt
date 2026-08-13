@@ -230,12 +230,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 checked = uiState.amoledEnabled,
                 onCheckedChange = viewModel::setAmoledEnabled
             )
-            PrefetchTierRow(
-                title = stringResource(R.string.settings_front_back_sprites_title),
-                subtitle = stringResource(R.string.settings_front_back_sprites_subtitle),
-                checked = uiState.frontBackSpritesEnabled,
-                onCheckedChange = viewModel::setFrontBackSpritesEnabled
-            )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
