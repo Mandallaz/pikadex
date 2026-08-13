@@ -111,7 +111,7 @@ fun PokemonCard(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
-                        types.forEach { TypeBadge(it, height = 16.dp) }
+                        types.forEach { TypeBadge(it, height = 20.dp, showLabel = false) }
                     }
                 }
             }

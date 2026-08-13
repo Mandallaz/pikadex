@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
@@ -63,10 +64,11 @@ class PokemonCardLayoutTest {
         }
     }
 
-    // F82 — the dex list card shows each Pokémon's type(s) as the same colored TypeBadge pills
-    // already used on the detail screen, reusing localizedTypeName()'s uppercased localized name.
+    // F82/F88 — the dex list card shows each Pokémon's type(s) as icon-only TypeBadge pills
+    // (compact; the full icon+name pill is reserved for the detail screen and other call sites)
+    // — the localized name still lives on the icon's contentDescription per F88.
     @Test
-    fun cardShowsATypeBadgeForEachType() {
+    fun cardShowsATypeBadgeIconForEachType() {
         composeTestRule.setContent {
             PokemonCard(
                 id = 6,
@@ -82,7 +84,8 @@ class PokemonCardLayoutTest {
             )
         }
 
-        composeTestRule.onNodeWithText("FIRE").assertExists()
-        composeTestRule.onNodeWithText("FLYING").assertExists()
+        composeTestRule.onNodeWithContentDescription("Fire").assertExists()
+        composeTestRule.onNodeWithContentDescription("Flying").assertExists()
+        composeTestRule.onNodeWithText("FIRE").assertDoesNotExist()
     }
 }
