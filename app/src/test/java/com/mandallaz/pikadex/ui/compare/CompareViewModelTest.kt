@@ -3,6 +3,9 @@ package com.mandallaz.pikadex.ui.compare
 import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.clearForTest
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
+import com.mandallaz.pikadex.data.repository.PokemonDetailBundle
+import com.mandallaz.pikadex.data.repository.fakePokemonDto
+import com.mandallaz.pikadex.data.repository.fakePokemonSpeciesDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -49,6 +52,32 @@ class CompareViewModelTest {
         viewModel = CompareViewModel(repository)
         dispatcher.scheduler.advanceUntilIdle()
 
+        assertEquals(mapOf("fr" to "Carapuce"), viewModel.uiState.value.speciesNames["squirtle"])
+    }
+
+    @Test
+    fun `load does not wipe out species names`() = runTest(dispatcher) {
+        repository.allSpeciesNames = mapOf(
+            "squirtle" to mapOf("fr" to "Carapuce"),
+            "charmander" to mapOf("fr" to "Salamèche")
+        )
+        repository.detailBundle = PokemonDetailBundle(
+            pokemon = fakePokemonDto(id = 7, name = "squirtle", types = listOf("water")),
+            species = fakePokemonSpeciesDto(id = 7, name = "squirtle"),
+            evolutionChain = null
+        )
+
+        viewModel = CompareViewModel(repository)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Verify speciesNames loaded first
+        assertEquals(mapOf("fr" to "Carapuce"), viewModel.uiState.value.speciesNames["squirtle"])
+
+        // Call load, which used to wipe out speciesNames
+        viewModel.load("squirtle", "charmander")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Verify speciesNames is still populated after load
         assertEquals(mapOf("fr" to "Carapuce"), viewModel.uiState.value.speciesNames["squirtle"])
     }
 }
