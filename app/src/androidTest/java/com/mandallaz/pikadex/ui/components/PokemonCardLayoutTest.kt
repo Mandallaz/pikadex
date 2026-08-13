@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
@@ -60,5 +61,28 @@ class PokemonCardLayoutTest {
         assert(oneLineHeight == twoLineHeight) {
             "expected equal card heights, got one-line=$oneLineHeight two-line=$twoLineHeight"
         }
+    }
+
+    // F82 — the dex list card shows each Pokémon's type(s) as the same colored TypeBadge pills
+    // already used on the detail screen, reusing localizedTypeName()'s uppercased localized name.
+    @Test
+    fun cardShowsATypeBadgeForEachType() {
+        composeTestRule.setContent {
+            PokemonCard(
+                id = 6,
+                displayName = "Charizard",
+                baseSpeciesId = null,
+                types = listOf("fire", "flying"),
+                isFavorite = false,
+                isInTeam = false,
+                isTeamFull = false,
+                onClick = {},
+                onToggleTeam = {},
+                onToggleFavorite = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("FIRE").assertExists()
+        composeTestRule.onNodeWithText("FLYING").assertExists()
     }
 }

@@ -381,6 +381,7 @@ fun PokedexListScreen(
                                         id = id,
                                         displayName = resource.name.localizedDisplayName(uiState.speciesNames, language),
                                         baseSpeciesId = baseSpeciesId,
+                                        types = uiState.typesByName[resource.name].orEmpty(),
                                         isFavorite = resource.name in favorites,
                                         isInTeam = isInTeamAlready,
                                         isTeamFull = isTeamFull,

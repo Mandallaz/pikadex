@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,6 +48,10 @@ fun PokemonCard(
     // card.
     displayName: String,
     baseSpeciesId: Int?,
+    // F82 — empty until PokedexListUiState.typesByName has loaded (same lazy bulk fetch already
+    // used for the rarity/counter filters), so a card renders with no type row for a moment on a
+    // cold list load rather than blocking on it.
+    types: List<String> = emptyList(),
     isFavorite: Boolean,
     isInTeam: Boolean,
     isTeamFull: Boolean,
@@ -101,6 +106,14 @@ fun PokemonCard(
                     textAlign = TextAlign.Center,
                     maxLines = 2
                 )
+                if (types.isNotEmpty()) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        types.forEach { TypeBadge(it, height = 16.dp) }
+                    }
+                }
             }
         }
         IconButton(

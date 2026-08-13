@@ -297,6 +297,7 @@ class PokedexListViewModel @JvmOverloads constructor(
     init {
         loadInitialData()
         loadSpeciesNamesIfNeeded()
+        loadTypesIfNeeded()
         viewModelScope.launch {
             FavoritesRepository.favorites.collect { favs ->
                 _uiState.update { it.copy(favorites = favs) }
@@ -559,23 +560,29 @@ class PokedexListViewModel @JvmOverloads constructor(
         }
     }
 
+    /** One bulk fetch feeds stats (for sorting), legendary/mythical status (for the rarity
+     *  filter), and per-species types (for the F82 type badges) — they're all the same GraphQL
+     *  payload (see S-1/PokemonBasics). Shared happy path between [loadBaseStatsIfNeeded] (which
+     *  surfaces a failure) and [loadTypesIfNeeded] (which doesn't). */
+    private suspend fun fetchAndApplyBasics() {
+        val basics = repository.getAllBasics()
+        _uiState.update {
+            it.copy(
+                baseStats = basics.mapValues { (_, b) -> b.stats },
+                legendaryNames = basics.filterValues { b -> b.isLegendary }.keys,
+                mythicalNames = basics.filterValues { b -> b.isMythical }.keys,
+                typesByName = basics.mapValues { (_, b) -> b.types },
+                isStatsLoading = false
+            )
+        }
+    }
+
     fun loadBaseStatsIfNeeded() {
         if (_uiState.value.baseStats.isNotEmpty()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isStatsLoading = true) }
             try {
-                // One bulk fetch feeds both stats (for sorting) and legendary/mythical status (for
-                // the rarity filter) — they're the same GraphQL payload (see S-1/PokemonBasics).
-                val basics = repository.getAllBasics()
-                _uiState.update {
-                    it.copy(
-                        baseStats = basics.mapValues { (_, b) -> b.stats },
-                        legendaryNames = basics.filterValues { b -> b.isLegendary }.keys,
-                        mythicalNames = basics.filterValues { b -> b.isMythical }.keys,
-                        typesByName = basics.mapValues { (_, b) -> b.types },
-                        isStatsLoading = false
-                    )
-                }
+                fetchAndApplyBasics()
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
@@ -590,6 +597,27 @@ class PokedexListViewModel @JvmOverloads constructor(
                         errorMessage = UiText(R.string.list_error_load_base_stats)
                     )
                 }
+            }
+        }
+    }
+
+    /** F82 — eager, best-effort load of the same bulk data [loadBaseStatsIfNeeded] fetches on
+     *  demand, triggered unconditionally from [init] (like [loadSpeciesNamesIfNeeded]) so the dex
+     *  list's type badges show up without the user having to open the filter sheet first. Silent
+     *  on failure — no errorMessage, no sortStat touched — since this is purely cosmetic and every
+     *  card already renders fine with an empty type row; [loadBaseStatsIfNeeded]'s own explicit
+     *  failure UX for the filter-sheet/sort triggers is unaffected. */
+    private fun loadTypesIfNeeded() {
+        if (_uiState.value.baseStats.isNotEmpty()) return
+        viewModelScope.launch {
+            try {
+                fetchAndApplyBasics()
+            } catch (e: CancellationException) {
+                throw e // see onTypeToggled
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // best-effort — leave cards with no type row, same silent-fallback pattern as
+                // loadSpeciesNamesIfNeeded/speciesNames.
             }
         }
     }

@@ -3,6 +3,7 @@ package com.mandallaz.pikadex.ui.list
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.clearForTest
+import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.util.clearForTest
@@ -133,6 +134,33 @@ class PokedexListViewModelLoadTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    // F82 — typesByName (which feeds the dex list's type badges) used to only load once the user
+    // opened the filter sheet or sort dialog (loadBaseStatsIfNeeded's only two callers); it must
+    // now also be populated eagerly from init, with no user action, so cards show their type
+    // badges on first entry to the screen.
+    @Test
+    fun `initial load populates typesByName without any filter or sort action`() = runTest(dispatcher) {
+        // A fresh ViewModel, not the shared one from setUp(): the fake repository has no real
+        // suspension point (no gate set), so viewModelScope's Dispatchers.Main.immediate runs
+        // init{}'s coroutines synchronously at construction time rather than deferring them to
+        // advanceUntilIdle() below — allBasics must already be set before construction for this
+        // eager path to see it, unlike the master-list/type-options load (which genuinely
+        // suspends via async{}.await() and so does pick up state set after construction).
+        repository.allBasics = mapOf(
+            "bulbasaur" to PokeApiGraphQLDataSource.PokemonBasics(
+                stats = emptyMap(),
+                types = listOf("grass", "poison"),
+                isLegendary = false,
+                isMythical = false
+            )
+        )
+        val freshViewModel = PokedexListViewModel(repository)
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("grass", "poison"), freshViewModel.uiState.value.typesByName["bulbasaur"])
     }
 
     @Test
