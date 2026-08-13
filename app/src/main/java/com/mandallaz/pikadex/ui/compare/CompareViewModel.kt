@@ -63,7 +63,7 @@ class CompareViewModel @JvmOverloads constructor(
         if (loadedFor == key) return
         loadedFor = key
         viewModelScope.launch {
-            _uiState.update { CompareUiState(isLoading = true, candidateNames = it.candidateNames) }
+            _uiState.update { it.copy(isLoading = true, left = null, right = null, errorMessage = null) }
             try {
                 // supervisorScope, not a plain coroutine body: without it, one side's async failing
                 // before it's awaited cancels this whole launch's Job as a child failure rather than
