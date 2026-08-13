@@ -49,7 +49,7 @@ class PokedexDetailViewModelLoadTest {
         // bug regress once already (see the issue) despite this class's own @After already doing it.
         LocalizedNames.clearForTest()
         repository = FakePokedexRepository()
-        viewModel = PokedexDetailViewModel(repository)
+        viewModel = PokedexDetailViewModel(repository, dispatcher)
     }
 
     @After
@@ -239,5 +239,44 @@ class PokedexDetailViewModelLoadTest {
         assertNull(state.teamImpact)
         assertNull(state.teamImpactError)
         assertEquals(false, state.isTeamImpactLoading)
+    }
+
+    // Regression test for B42 / issue #111: reproduces the timing race when the default Dispatchers.Default
+    // is used (not overridden with the test dispatcher). In that case, load() suspends on a real-time
+    // background thread pool, meaning advanceUntilIdle() on the test scheduler does not wait for it.
+    // Consequently, uiState.value.pokemon is still null when loadTeamImpact() is called, so it returns early (no-op).
+    @Test
+    fun `reproduce loadTeamImpact timing race when defaultDispatcher is not overridden`() = runTest(dispatcher) {
+        // Construct the ViewModel WITHOUT the test dispatcher (so it uses real Dispatchers.Default)
+        val vmWithRace = PokedexDetailViewModel(repository) // uses Dispatchers.Default
+
+        TeamRepository.replaceAll(listOf(NamedApiResource("squirtle", "https://pokeapi.co/api/v2/pokemon/7/")))
+        repository.detailBundle = bundleFor("charmander")
+        repository.typeDetailByName = mapOf(
+            "fire" to fakeTypeDetailDto("fire"),
+            "water" to fakeTypeDetailDto("water")
+        )
+        repository.pokemonTypes = listOf("water")
+        repository.pokemonLevelUpMoveNames = emptyList()
+        repository.allMoveInfo = emptyMap()
+
+        // Call load() which launches a coroutine that suspends on a real-time thread (Dispatchers.Default)
+        vmWithRace.load("charmander")
+
+        // Immediately calling loadTeamImpact() (before real-time thread finishes)
+        vmWithRace.loadTeamImpact()
+
+        // At this point, the load() coroutine is still in progress, so uiState.pokemon is null,
+        // and loadTeamImpact() gets skipped.
+        val state = vmWithRace.uiState.value
+        assertNull("Expected teamImpact to be null because of the timing race skip", state.teamImpact)
+
+        // However, with the properly configured viewModel (which overrides defaultDispatcher with test dispatcher),
+        // we can run a deterministic version of this test and assert it compiles and finishes successfully.
+        viewModel.load("charmander")
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadTeamImpact()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertNotNull("Expected teamImpact to be computed under deterministic test dispatcher", viewModel.uiState.value.teamImpact)
     }
 }
