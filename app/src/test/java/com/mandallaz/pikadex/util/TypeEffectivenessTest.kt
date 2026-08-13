@@ -40,6 +40,48 @@ class TypeEffectivenessTest {
     private val flying = type("flying", weakTo = listOf("electric", "rock", "ice"), resists = listOf("grass", "fighting"), immuneTo = listOf("ground"))
     private val ground = type("ground", weakTo = listOf("water", "grass", "ice"), immuneTo = listOf("electric"))
 
+    // F90 follow-up — ranking candidate Tera types by how well each one resolves the Pokémon's
+    // *current* weaknesses, so the picker can surface the best options first instead of an
+    // arbitrary/alphabetical list. Per weakness (weight 2 for a ×4 weakness, 1 for ×2), a
+    // candidate scores +2 for becoming immune to that attacking type, +1 for resisting it, 0 for
+    // neutral, -1 for still being weak to it (weighted the same way) — types that fix more, and
+    // more severe, weaknesses rank higher.
+    private val dragonResistsFireImmuneIce = type("dragon", resists = listOf("fire"), immuneTo = listOf("ice"))
+    private val steelResistsFireAndIce = type("steel", resists = listOf("fire", "ice"))
+    private val rockStillWeakToFire = type("rock", weakTo = listOf("fire"))
+
+    @Test
+    fun `types are ranked by how many weaknesses they resolve, weighted by severity`() {
+        // fire: x2 weakness (weight 1); ice: x4 weakness (weight 2)
+        val currentMatchups = mapOf("fire" to 2.0, "ice" to 4.0, "water" to 1.0)
+        val candidates = mapOf(
+            "dragon" to dragonResistsFireImmuneIce,
+            "steel" to steelResistsFireAndIce,
+            "rock" to rockStillWeakToFire
+        )
+
+        val ranking = rankTeraTypes(currentMatchups, candidates)
+
+        assertEquals(listOf("dragon", "steel", "rock"), ranking.map { it.first })
+        assertEquals(5, ranking.first { it.first == "dragon" }.second) // resist fire (+1) + immune ice (+2*2)
+        assertEquals(3, ranking.first { it.first == "steel" }.second) // resist fire (+1) + resist ice (+1*2)
+        assertEquals(-1, ranking.first { it.first == "rock" }.second) // still weak to fire (-1), ice neutral (0)
+    }
+
+    @Test
+    fun `a type with no listed weaknesses scores zero for every candidate`() {
+        val ranking = rankTeraTypes(emptyMap(), mapOf("dragon" to dragonResistsFireImmuneIce))
+        assertEquals(0, ranking.single().second)
+    }
+
+    @Test
+    fun `a x1 or resisted matchup is not a weakness and contributes nothing to the ranking`() {
+        // water is neutral (x1) and grass would be a resistance (x0.5) — neither should be scored.
+        val currentMatchups = mapOf("water" to 1.0, "grass" to 0.5)
+        val ranking = rankTeraTypes(currentMatchups, mapOf("dragon" to dragonResistsFireImmuneIce))
+        assertEquals(0, ranking.single().second)
+    }
+
     @Test
     fun `a single type leaves every unrelated type neutral`() {
         val result = computeDefensiveMultipliers(listOf(water))

@@ -296,6 +296,8 @@ fun PokedexDetailScreen(
                     teraCounteredTriangles = uiState.teraCounteredTriangles,
                     teraPartiallyCounteredTriangles = uiState.teraPartiallyCounteredTriangles,
                     onSelectTeraType = viewModel::selectTeraType,
+                    teraTypeOptions = uiState.teraTypeOptions,
+                    onOpenTeraDialog = viewModel::loadTeraTypeOptionsIfNeeded,
                     moveInfo = uiState.moveInfo,
                     statPercentiles = uiState.statPercentiles,
                     formVersionGroup = uiState.formVersionGroup,
@@ -397,6 +399,8 @@ internal fun DetailContent(
     teraCounteredTriangles: List<TypeTriangle>? = null,
     teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
     onSelectTeraType: (String?) -> Unit = {},
+    teraTypeOptions: List<Pair<String, Int>> = emptyList(),
+    onOpenTeraDialog: () -> Unit = {},
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     statPercentiles: Map<String, Double>,
     formVersionGroup: String?,
@@ -535,7 +539,7 @@ internal fun DetailContent(
             if (teraType != null) teraPartiallyCounteredTriangles.orEmpty() else partiallyCounteredTriangles
 
         item {
-            TypeMatchupsCard(effectiveTypeMatchups, teraType, onSelectTeraType)
+            TypeMatchupsCard(effectiveTypeMatchups, teraType, onSelectTeraType, teraTypeOptions, onOpenTeraDialog)
         }
 
         // issue #2 — only present while there's an active team with room to grow; a full or

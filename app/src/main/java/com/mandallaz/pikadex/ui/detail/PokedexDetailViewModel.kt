@@ -21,6 +21,7 @@ import com.mandallaz.pikadex.util.CryPlayer
 import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.TeamImpactSummary
+import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.adjacentNames
@@ -30,6 +31,7 @@ import com.mandallaz.pikadex.util.computeTeamMatrices
 import com.mandallaz.pikadex.util.coverageGaps
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.namesForAdjacency
+import com.mandallaz.pikadex.util.rankTeraTypes
 import com.mandallaz.pikadex.util.sharedWeaknesses
 import com.mandallaz.pikadex.util.teamImmunities
 import com.mandallaz.pikadex.util.teamQuadWeaknesses
@@ -100,6 +102,10 @@ data class PokedexDetailUiState(
     val teraTypeMatchups: Map<String, Double>? = null,
     val teraCounteredTriangles: List<TypeTriangle>? = null,
     val teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
+    /** F90 follow-up — (type, score) pairs from [rankTeraTypes] against this Pokémon's current
+     *  weaknesses, best-first; empty until [loadTeraTypeOptionsIfNeeded] resolves. The score is
+     *  shown next to each option in the picker, not just used to order it. */
+    val teraTypeOptions: List<Pair<String, Int>> = emptyList(),
     /** Result of issue #2's "team coverage impact" card — what adding this Pokémon would
      *  change about the team's shared weaknesses and coverage gaps. Null until [loadTeamImpact]
      *  computes it, and reset by [clearTeamImpact] whenever the card's visibility condition stops
@@ -407,6 +413,30 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                 throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = UiText(R.string.detail_error_load_pokemon_list)) }
+            }
+        }
+    }
+
+    /** F90 follow-up — ranks every candidate Tera type by [rankTeraTypes] against this Pokémon's
+     *  current (real, non-Tera) weaknesses, so the picker can list the best options first. Lazy,
+     *  triggered when the picker opens — same "not part of load()" reasoning as
+     *  [loadCompareCandidatesIfNeeded]: most detail-screen visits never open the Tera picker.
+     *  Best-effort — a failed fetch just leaves [PokedexDetailUiState.teraTypeOptions] empty, and
+     *  the picker falls back to [TypeIds.standardTypeNames]'s own order. */
+    fun loadTeraTypeOptionsIfNeeded() {
+        if (_uiState.value.teraTypeOptions.isNotEmpty()) return
+        val currentMatchups = _uiState.value.typeMatchups
+        viewModelScope.launch {
+            try {
+                val details = supervisorScope {
+                    TypeIds.standardTypeNames.map { type -> async { type to repository.getTypeDetail(type) } }.awaitAll()
+                }.toMap()
+                val ranking = rankTeraTypes(currentMatchups, details)
+                _uiState.update { it.copy(teraTypeOptions = ranking) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // best-effort — see doc above
             }
         }
     }

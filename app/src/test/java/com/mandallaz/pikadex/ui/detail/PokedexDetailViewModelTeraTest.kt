@@ -10,6 +10,7 @@ import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.PokemonDetailBundle
 import com.mandallaz.pikadex.data.repository.fakePokemonDto
 import com.mandallaz.pikadex.data.repository.fakePokemonSpeciesDto
+import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.clearForTest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -60,6 +61,20 @@ class PokedexDetailViewModelTeraTest {
             doubleDamageFrom = weakTo.map { NamedApiResource(it, "") },
             doubleDamageTo = null,
             halfDamageFrom = null,
+            halfDamageTo = null,
+            noDamageFrom = null,
+            noDamageTo = null
+        ),
+        pokemon = null
+    )
+
+    private fun typeDetailWithHalfDamageFrom(name: String, vararg resists: String) = TypeDetailDto(
+        id = 1,
+        name = name,
+        damageRelations = DamageRelations(
+            doubleDamageFrom = null,
+            doubleDamageTo = null,
+            halfDamageFrom = resists.map { NamedApiResource(it, "") },
             halfDamageTo = null,
             noDamageFrom = null,
             noDamageTo = null
@@ -127,5 +142,35 @@ class PokedexDetailViewModelTeraTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.teraType)
+    }
+
+    // F90 follow-up — the Tera-type picker is ranked best-first (util.rankTeraTypes), loaded
+    // lazily when the picker opens (same "not part of load()" pattern as loadCompareCandidatesIfNeeded)
+    // rather than eagerly, since most detail-screen visits never open it.
+    @Test
+    fun `loading Tera type options ranks them by how well each resolves the current weaknesses`() = runTest(dispatcher) {
+        loadCharizard() // real weaknesses end up water x2 and electric x2 (fire+flying combined)
+        // Every standard type needs an entry — getTypeDetail(t) is called for all 18 to build the
+        // ranking. "grass" resists both current weaknesses (best); "rock" is weak to one of them
+        // (worst); everything else stays neutral (score 0).
+        val allTypeDetails = TypeIds.standardTypeNames.associateWith { name ->
+            when (name) {
+                "grass" -> typeDetailWithHalfDamageFrom("grass", "water", "electric")
+                "rock" -> typeDetailWithDoubleDamageFrom("rock", "water")
+                else -> typeDetailWithDoubleDamageFrom(name)
+            }
+        }
+        repository.typeDetailByName = allTypeDetails + repository.typeDetailByName
+
+        viewModel.loadTeraTypeOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // F90 follow-up — the picker shows each option's score, not just its rank, so
+        // teraTypeOptions carries the (type, score) pair rankTeraTypes already computes rather
+        // than just the ordered names.
+        val options = viewModel.uiState.value.teraTypeOptions
+        assertEquals(TypeIds.standardTypeNames.size, options.size)
+        assertEquals("grass" to 2, options.first()) // resists both x2 weaknesses (water, electric): +1 + +1
+        assertEquals("rock" to -1, options.last())
     }
 }

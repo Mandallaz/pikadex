@@ -1,7 +1,9 @@
 package com.mandallaz.pikadex.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -16,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -63,13 +66,18 @@ fun SortStat.localizedLabel(): String = stringResource(labelRes)
  * label (e.g. [SmogonGen.localizedLabel], [SortStat.localizedLabel]) via stringResource() from
  * inside it, not just return an already-hardcoded String like
  * [com.mandallaz.pikadex.util.RarityFilter.label] still does (out of scope for B30 — not part of
- * the review finding that prompted [SortStat]'s own fix). */
+ * the review finding that prompted [SortStat]'s own fix).
+ *
+ * [iconFor], when provided, renders a small leading icon per row (e.g. the Tera-type picker's
+ * per-type icon) ahead of the selected-row checkmark — null for existing callers (Sort/Format/
+ * Tier/Rarity), which keep their checkmark-only leading content unchanged. */
 @Composable
 fun <T> OptionsDialog(
     title: String,
     options: List<T>,
     labelFor: @Composable (T) -> String,
     selected: T? = null,
+    iconFor: (@Composable (T) -> Unit)? = null,
     onDismiss: () -> Unit,
     onSelect: (T) -> Unit
 ) {
@@ -100,8 +108,15 @@ fun <T> OptionsDialog(
                                 headlineContent = {
                                     Text(labelFor(option), fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
                                 },
-                                leadingContent = if (isSelected) {
-                                    { Icon(Icons.Default.Check, contentDescription = stringResource(R.string.options_dialog_selected_cd), tint = MaterialTheme.colorScheme.primary) }
+                                leadingContent = if (iconFor != null || isSelected) {
+                                    {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            iconFor?.invoke(option)
+                                            if (isSelected) {
+                                                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.options_dialog_selected_cd), tint = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    }
                                 } else {
                                     null
                                 },

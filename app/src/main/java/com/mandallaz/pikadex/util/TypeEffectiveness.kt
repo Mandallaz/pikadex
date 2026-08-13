@@ -170,3 +170,33 @@ fun bucketizeMatchups(multipliers: Map<String, Double>): List<MatchupBucket> =
         val types = multipliers.filterValues { abs(it - multiplier) < EPSILON }.keys.sorted()
         if (types.isEmpty()) null else MatchupBucket(labelRes, multiplier, types)
     }
+
+/** F90 follow-up — ranks each candidate Tera type by how well it resolves [currentMatchups]'
+ *  weaknesses (any attacking type at more than neutral, i.e. x2 or x4), for sorting the Tera-type
+ *  picker best-first instead of alphabetically. Per weakness, weighted x2 for a x4 weakness and
+ *  x1 for a x2 weakness, a candidate scores +2 for becoming immune to that attacking type, +1 for
+ *  resisting it, 0 for staying neutral, -1 for still being weak to it — so a candidate that fixes
+ *  more, and more severe, weaknesses ranks higher. Types with no weaknesses in [currentMatchups]
+ *  (or with only resisted/neutral entries) score 0 for every candidate, since there's nothing to
+ *  resolve. Sorted descending by score; ties keep [candidateTypeDetails]' own iteration order. */
+fun rankTeraTypes(
+    currentMatchups: Map<String, Double>,
+    candidateTypeDetails: Map<String, TypeDetailDto>
+): List<Pair<String, Int>> {
+    val weaknesses = currentMatchups.filterValues { it > 1.0 + EPSILON }
+    return candidateTypeDetails.map { (candidateName, detail) ->
+        val candidateProfile = computeDefensiveMultipliers(listOf(detail))
+        val score = weaknesses.entries.sumOf { (attackingType, originalMultiplier) ->
+            val weight = if (originalMultiplier >= 4.0 - EPSILON) 2 else 1
+            val newMultiplier = candidateProfile[attackingType] ?: 1.0
+            val points = when {
+                newMultiplier < EPSILON -> 2
+                newMultiplier < 1.0 - EPSILON -> 1
+                newMultiplier < 1.0 + EPSILON -> 0
+                else -> -1
+            }
+            points * weight
+        }
+        candidateName to score
+    }.sortedByDescending { it.second }
+}
