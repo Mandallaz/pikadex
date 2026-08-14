@@ -61,7 +61,6 @@ class FakePokedexRepository : PokedexRepositoryApi {
     }
 
     override suspend fun getMasterList() = resolve(masterList)
-    override suspend fun masterIdByName() = resolve(masterList.mapNotNull { r -> r.id?.let { r.name to it } }.toMap())
     override suspend fun getTypes() = resolve(types)
     override suspend fun getMoveNames() = resolve(moveNames)
     override suspend fun getAbilityNames() = resolve(abilityNames)

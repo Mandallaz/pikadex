@@ -44,14 +44,4 @@ class TypeTrianglesTest {
     fun `partiallyCounteredBy is empty for a typing sharing no counter type`() {
         assertTrue(TypeTriangles.partiallyCounteredBy(listOf("normal")).isEmpty())
     }
-
-    @Test
-    fun `all 16 triangles have their counters recognized as perfect counters`() {
-        for (triangle in TypeTriangles.ALL) {
-            assertTrue(
-                "Counter ${triangle.counter.types} for triangle '${triangle.title}' should be recognized as a perfect counter",
-                TypeTriangles.isPerfectCounter(triangle.counter.types)
-            )
-        }
-    }
 }

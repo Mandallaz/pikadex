@@ -110,42 +110,6 @@ data class PokedexListUiState(
      *  needs a generation to look up regardless — this defaults to the current one. */
     val effectiveFormatGen: SmogonGen
         get() = selectedFormatGen ?: Smogon.ALL_GENERATIONS.last()
-
-    fun toListAffectingState(): PokedexListUiState {
-        return PokedexListUiState(
-            isLoading = false,
-            errorMessage = null,
-            searchQuery = "",
-            allPokemon = allPokemon,
-            typeOptions = emptyList(),
-            selectedTypes = emptySet(),
-            typeFilterNames = typeFilterNames,
-            moveOptions = emptyList(),
-            selectedMove = null,
-            moveFilterNames = moveFilterNames,
-            abilityOptions = emptyList(),
-            selectedAbility = null,
-            abilityFilterNames = abilityFilterNames,
-            selectedFormatGen = null,
-            formatTierOptions = emptyList(),
-            selectedFormatTier = null,
-            formatFilterNames = formatFilterNames,
-            isFilterLoading = false,
-            sortStat = sortStat,
-            sortAscending = sortAscending,
-            baseStats = baseStats,
-            isStatsLoading = false,
-            showFavoritesOnly = showFavoritesOnly,
-            favorites = favorites,
-            rarityFilter = rarityFilter,
-            legendaryNames = legendaryNames,
-            mythicalNames = mythicalNames,
-            typesByName = typesByName,
-            statMinimums = statMinimums,
-            counterFilterActive = counterFilterActive,
-            speciesNames = speciesNames
-        )
-    }
 }
 
 /** [PokedexListUiState.statMinimums] key for the stat *total* filter (F14) — a derived sum, not one
@@ -317,16 +281,14 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     /** The filtered/sorted list, recomputed once per actual state change (not once per
      *  recomposition) and off the main thread — see [computeDisplayed]. */
-    // Visible for testing to verify computeDisplayed execution counts and avoid regression
-    internal var computeDisplayedCount = 0
-
     @OptIn(FlowPreview::class)
     val displayedPokemon: StateFlow<List<NamedApiResource>> =
         combine(
-            // Scope UI state updates down to only those fields that actually affect the list representation.
-            // This prevents unrelated changes (like isLoading, isFilterLoading, errorMessage, etc.)
-            // from triggering a complete recalculation via computeDisplayed.
-            _uiState.map { it.toListAffectingState() }.distinctUntilChanged(),
+            // searchQuery is deliberately zeroed out here — it's already fed in separately, via
+            // the debounced flow below. Left in, every keystroke would re-emit *this* arm too
+            // (searchQuery lives on the same _uiState as everything else), which re-ran the
+            // filter/sort pass on the un-debounced text and defeated the debounce entirely.
+            _uiState.map { it.copy(searchQuery = "") }.distinctUntilChanged(),
             // Only a non-empty query is worth waiting on. A flat debounce(150) also delayed the
             // *initial* "" emission, and since combine can't produce anything until both arms have
             // emitted, displayedPokemon stayed empty for the first 150ms of the screen's life — long
@@ -338,11 +300,8 @@ class PokedexListViewModel @JvmOverloads constructor(
             // changes: switching language mid-search should re-filter against the new language's
             // names without the user having to retype anything.
             LanguageSettings.currentLanguage
-        ) { state, query, language ->
-            computeDisplayedCount++
-            computeDisplayed(state, query, language)
-        }
-            .flowOn(Dispatchers.Default)
+        ) { state, query, language -> computeDisplayed(state, query, language) }
+            .flowOn(defaultDispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

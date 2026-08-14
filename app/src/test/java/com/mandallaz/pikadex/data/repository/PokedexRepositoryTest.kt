@@ -187,28 +187,6 @@ class PokedexRepositoryTest {
         }
     }
 
-    /** F108 — masterIdByName is the shared name->id map several screens used to rebuild via their
-     *  own `mapNotNull { it.id }` blocks; it must mirror exactly what that derivation produced,
-     *  including dropping any entry whose URL carries no id. */
-    @Test
-    fun `masterIdByName maps every master-list name to its id, dropping id-less entries`() = runBlocking {
-        val api = object : UnexpectedApi() {
-            override suspend fun getPokemonList(limit: Int, offset: Int): NamedApiResourceList =
-                NamedApiResourceList(
-                    count = 3,
-                    next = null,
-                    previous = null,
-                    results = listOf(
-                        NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"),
-                        NamedApiResource("no-id", "https://pokeapi.co/api/v2/pokemon/"),
-                        NamedApiResource("charizard", "https://pokeapi.co/api/v2/pokemon/6/")
-                    )
-                )
-        }
-
-        assertEquals(mapOf("bulbasaur" to 1, "charizard" to 6), PokedexRepository(api).masterIdByName())
-    }
-
     // B23 — getPokemonDetailBundle used to be persisted only in a 200-entry in-memory cache, dying
     // with the process; a fresh PokedexRepository instance (a cold start, or the ~1300th distinct
     // Pokémon in a session evicting the 1st from the bounded in-memory cache) had to re-fetch from

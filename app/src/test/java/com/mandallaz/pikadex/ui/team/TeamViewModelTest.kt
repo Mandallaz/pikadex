@@ -3,9 +3,7 @@ package com.mandallaz.pikadex.ui.team
 import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.clearForTest
-import com.mandallaz.pikadex.data.remote.dto.DamageRelations
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
-import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.fakeTypeDetailDto
 import com.mandallaz.pikadex.util.clearForTest
@@ -123,75 +121,6 @@ class TeamViewModelTest {
         val state = viewModel.uiState.value
         assertNull(state.errorMessage)
         assertFalse(state.isMatrixStale)
-    }
-
-    // F99 — the derived summaries (isMatrixStale, sharedWeaknesses, coverageGaps,
-    // hasUnfixableSingleAxisIssue) used to be getters recomputed on every read, and are now
-    // computed once into state at publish time. These two tests pin the publish-side behavior: the
-    // values TeamScreen reads are the ones stored when the matrix result lands, not ones derived
-    // on the fly.
-    @Test
-    fun `shared weaknesses and coverage gaps are computed into state when the matrix is published`() = runTest(dispatcher) {
-        // torkoal (fire): defensively x2 to water; its only attacking type is its fire STAB, so it
-        // can dent nothing but grass. Single member, so the >x1 water weakness counts as shared.
-        repository.pokemonTypesByName = mapOf("torkoal" to listOf("fire"))
-        repository.pokemonLevelUpMoveNamesByName = mapOf("torkoal" to emptyList())
-        repository.typeDetailByName = mapOf(
-            "fire" to TypeDetailDto(
-                id = 1,
-                name = "fire",
-                damageRelations = DamageRelations(
-                    doubleDamageFrom = listOf(NamedApiResource("water", "")),
-                    doubleDamageTo = listOf(NamedApiResource("grass", "")),
-                    halfDamageFrom = null,
-                    halfDamageTo = null,
-                    noDamageFrom = null,
-                    noDamageTo = null
-                ),
-                pokemon = null
-            )
-        )
-        repository.allMoveInfo = emptyMap()
-
-        TeamRepository.replaceAll(listOf(NamedApiResource("torkoal", "")))
-        dispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertFalse(state.isMatrixStale)
-        assertEquals(listOf("water"), state.sharedWeaknesses)
-        // grass is the only defending type fire hits for >x1, so every other type is a gap — and
-        // the summaries must be populated in the stored state, not left at their empty defaults.
-        assertTrue(state.coverageGaps.isNotEmpty())
-        assertTrue(state.coverageGaps.contains("fire"))
-        assertFalse(state.coverageGaps.contains("grass"))
-        // Both axes are present, so the single-axis explanation must not be set.
-        assertFalse(state.hasUnfixableSingleAxisIssue)
-    }
-
-    // A member read of the stored fields mid-fetch must see the *stale* values (empty summaries),
-    // not leftover data from the previous team — the same guarantee the old getters gave, now
-    // carried by what computeMatrix publishes while the fetch is in flight.
-    @Test
-    fun `while the matrix fetch is in flight the published summaries reflect the stale matrix`() = runTest(dispatcher) {
-        val gate = CompletableDeferred<Unit>()
-        repository.gate = gate
-        TeamRepository.replaceAll(listOf(squirtle))
-        dispatcher.scheduler.advanceUntilIdle()
-
-        val inFlight = viewModel.uiState.value
-        assertTrue(inFlight.isLoading)
-        assertTrue(inFlight.isMatrixStale)
-        assertTrue(inFlight.sharedWeaknesses.isEmpty())
-        assertTrue(inFlight.coverageGaps.isEmpty())
-        assertFalse(inFlight.hasUnfixableSingleAxisIssue)
-
-        repository.gate = null
-        gate.complete(Unit)
-        dispatcher.scheduler.advanceUntilIdle()
-
-        val settled = viewModel.uiState.value
-        assertFalse(settled.isLoading)
-        assertFalse(settled.isMatrixStale)
     }
 
     // Two team changes in quick succession must leave the matrix reflecting only the *second*

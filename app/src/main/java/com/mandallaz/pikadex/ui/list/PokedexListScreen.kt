@@ -524,7 +524,7 @@ fun PokedexListScreen(
             OptionsDialog(
                 title = stringResource(R.string.list_rarity_title),
                 options = listOf<RarityFilter?>(null) + RarityFilter.entries,
-                labelFor = { it?.let { stringResource(it.labelResId) } ?: anyRarity },
+                labelFor = { it?.label ?: anyRarity },
                 selected = uiState.rarityFilter,
                 onDismiss = { activeDialog = ActiveDialog.NONE },
                 onSelect = { rarity ->

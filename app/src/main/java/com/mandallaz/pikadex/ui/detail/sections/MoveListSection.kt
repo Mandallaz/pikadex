@@ -55,7 +55,6 @@ internal fun LazyListScope.moveSection(
     expanded: Boolean,
     moveLocalizedNames: Map<String, Map<String, String>>,
     language: String,
-    moveLabels: MoveLabels,
     onToggleExpanded: () -> Unit
 ) {
     // An empty category (e.g. no Egg moves for a legendary) used to render as a normal expandable
@@ -113,7 +112,7 @@ internal fun LazyListScope.moveSection(
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
                 if (index > 0) HorizontalDivider(modifier = Modifier.padding(bottom = 6.dp))
-                MoveRow(move, category, moveInfo, moveLocalizedNames, language, moveLabels)
+                MoveRow(move, category, moveInfo, moveLocalizedNames, language)
             }
         }
     }
@@ -138,7 +137,7 @@ private fun MoveCategory.localizedLabel(): String = stringResource(
  *  already existed, already translated into all 11 locales — apparently prepared for exactly this
  *  fix and then never wired up. Only `detail_stat_change_chance` needed adding fresh. */
 @Composable
-internal fun moveLabels(): MoveLabels = MoveLabels(
+private fun moveLabels(): MoveLabels = MoveLabels(
     physical = stringResource(R.string.detail_damage_class_physical),
     special = stringResource(R.string.detail_damage_class_special),
     status = stringResource(R.string.detail_damage_class_status),
@@ -162,8 +161,7 @@ private fun MoveRow(
     category: MoveCategory,
     moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
     moveLocalizedNames: Map<String, Map<String, String>>,
-    language: String,
-    labels: MoveLabels
+    language: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -185,6 +183,10 @@ private fun MoveRow(
         }
     }
     moveInfo[move.moveName]?.let { info ->
+        // B30 — resolved here, once per row, and threaded into the two pure functions below rather
+        // than having them read stringResource() themselves (they aren't @Composable, so existing
+        // unit tests can keep calling them directly — same reasoning as MoveLabels' own doc).
+        val labels = moveLabels()
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -257,24 +257,18 @@ object TypeTriangles {
         )
     )
 
-    private val CANONICAL_KEYS: List<Set<String>> = ALL.map { it.counter.types.toSet() }
-
-    private val CANONICAL_KEYS_SET: Set<Set<String>> = CANONICAL_KEYS.toSet()
-
     /** Every triangle whose best-counter typing exactly matches the given types (order-independent) —
      *  i.e. this is one of the dual-types that "breaks" that triangle. */
     fun counteredBy(types: Collection<String>): List<TypeTriangle> {
         val typeSet = types.toSet()
-        return ALL.filterIndexed { index, _ -> CANONICAL_KEYS[index] == typeSet }
+        return ALL.filter { triangle -> triangle.counter.types.toSet() == typeSet }
     }
 
     /** True if [types] is the exact best-counter typing to at least one triangle in [ALL] — the
      *  per-Pokémon predicate behind the Pokédex list's "Perfect Counter" filter (F33), same check
      *  the detail screen's Type Triangles card already runs via [counteredBy] to decide whether it
      *  has anything to show for a given Pokémon. */
-    fun isPerfectCounter(types: Collection<String>): Boolean {
-        return types.toSet() in CANONICAL_KEYS_SET
-    }
+    fun isPerfectCounter(types: Collection<String>): Boolean = counteredBy(types).isNotEmpty()
 
     /** Every triangle whose best-counter typing [types] merely *shares* a type with (F69) — at
      *  least one of the two types in the triangle's [TypeCounter.types], without matching it
