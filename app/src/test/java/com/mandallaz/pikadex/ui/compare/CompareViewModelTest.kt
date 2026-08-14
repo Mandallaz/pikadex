@@ -6,6 +6,7 @@ import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.PokemonDetailBundle
 import com.mandallaz.pikadex.data.repository.fakePokemonDto
 import com.mandallaz.pikadex.data.repository.fakePokemonSpeciesDto
+import com.mandallaz.pikadex.util.clearForTest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -39,6 +40,11 @@ class CompareViewModelTest {
 
     @After
     fun tearDown() {
+        // B52 — cancel CompareViewModel's viewModelScope before anything else, the same as every
+        // other ViewModel test class does: without this its init{}-launched collectors (including
+        // a LocalizedNames.ensureLoaded subscription) stay alive for the rest of the JVM test run,
+        // subscribed to shared singletons, and can throw into a later, unrelated test.
+        viewModel.clearForTest(dispatcher.scheduler)
         // B35 — reset the shared LocalizedNames cache this test's own species-name assertion
         // warms, or it stays stale for every other test class sharing this JVM worker.
         LocalizedNames.clearForTest()
