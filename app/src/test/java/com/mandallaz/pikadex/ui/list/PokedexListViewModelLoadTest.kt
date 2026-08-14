@@ -255,4 +255,35 @@ class PokedexListViewModelLoadTest {
         assertFalse(state.isFilterLoading)
         assertNull(state.typeFilterNames)
     }
+
+    // issue #133 — scope displayedPokemon combine to only the list-affecting state fields
+    // so unrelated state changes do not trigger a full computeDisplayed recompute.
+    @Test
+    fun `updating unrelated state fields does not trigger computeDisplayed recompute`() = runTest(dispatcher) {
+        val bulbasaur = NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/")
+        repository.masterList = listOf(bulbasaur)
+        repository.types = listOf(NamedApiResource("grass", "https://pokeapi.co/api/v2/type/12/"))
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Capture initial computeDisplayedCount
+        val initialCount = viewModel.computeDisplayedCount
+
+        // Cause a failure in loadMoveOptionsIfNeeded to trigger a state update for errorMessage,
+        // which is unrelated to the displayedPokemon calculation.
+        repository.failWith = RuntimeException("boom")
+        viewModel.loadMoveOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Verify errorMessage was actually populated in the state
+        assertNotNull(viewModel.uiState.value.errorMessage)
+
+        // Dismiss the error, triggering another state update to errorMessage
+        viewModel.dismissError()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.errorMessage)
+
+        // Assert that computeDisplayedCount did not increase after the initial load count
+        assertEquals(initialCount, viewModel.computeDisplayedCount)
+    }
 }
