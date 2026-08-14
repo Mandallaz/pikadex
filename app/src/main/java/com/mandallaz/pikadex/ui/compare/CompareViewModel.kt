@@ -8,6 +8,8 @@ import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import com.mandallaz.pikadex.ui.UiText
+import com.mandallaz.pikadex.util.TOTAL
+import com.mandallaz.pikadex.util.baseStatTotal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -93,7 +95,7 @@ class CompareViewModel @JvmOverloads constructor(
         val stats = bundle.pokemon.stats.orEmpty()
         val percentiles = stats.associate { stat ->
             stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
-        } + mapOf("total" to repository.getStatPercentile("total", stats.sumOf { it.baseStat }))
+        } + mapOf(TOTAL to repository.getStatPercentile(TOTAL, bundle.pokemon.baseStatTotal()))
         return CompareSide(bundle.pokemon, percentiles)
     }
 

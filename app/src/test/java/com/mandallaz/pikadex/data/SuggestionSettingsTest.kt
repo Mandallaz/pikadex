@@ -22,9 +22,12 @@ import org.junit.Test
 class SuggestionSettingsTest {
 
     private fun swapInFakePrefs(fake: FakeSharedPreferences) {
-        val field = SuggestionSettings::class.java.getDeclaredField("prefs")
+        val field = SuggestionSettings::class.java.getDeclaredField("store")
         field.isAccessible = true
-        field.set(SuggestionSettings, fake)
+        val store = field.get(SuggestionSettings) as PrefsStore<String?>
+        store.prefs = fake
+        store.key = "max_tier"
+        store.encode = { key, value -> putString(key, value ?: "") }
     }
 
     // --- resolveMaxTier (pure) ---------------------------------------------------------

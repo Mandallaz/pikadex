@@ -7,9 +7,12 @@ import org.junit.Test
 class LanguageSettingsTest {
 
     private fun swapInFakePrefs(fake: FakeSharedPreferences) {
-        val field = LanguageSettings::class.java.getDeclaredField("prefs")
+        val field = LanguageSettings::class.java.getDeclaredField("store")
         field.isAccessible = true
-        field.set(LanguageSettings, fake)
+        val store = field.get(LanguageSettings) as PrefsStore<String>
+        store.prefs = fake
+        store.key = "language_code"
+        store.encode = { key, value -> putString(key, value) }
     }
 
     // --- resolveLanguage (pure) ---------------------------------------------------------

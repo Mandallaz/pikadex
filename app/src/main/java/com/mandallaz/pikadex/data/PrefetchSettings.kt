@@ -1,9 +1,6 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -24,47 +21,37 @@ object PrefetchSettings {
     // Wi-Fi rather than silently spend a user's mobile data plan.
     private const val KEY_WIFI_ONLY = "wifi_only_enabled"
 
-    private var prefs: SharedPreferences? = null
+    private val essentialsStore = PrefsStore(true)
+    val essentialsEnabled: StateFlow<Boolean> = essentialsStore.flow.asStateFlow()
 
-    private val _essentialsEnabled = MutableStateFlow(true)
-    val essentialsEnabled: StateFlow<Boolean> = _essentialsEnabled.asStateFlow()
+    private val spritesStore = PrefsStore(true)
+    val spritesEnabled: StateFlow<Boolean> = spritesStore.flow.asStateFlow()
 
-    private val _spritesEnabled = MutableStateFlow(true)
-    val spritesEnabled: StateFlow<Boolean> = _spritesEnabled.asStateFlow()
+    private val spritesExtraStore = PrefsStore(false)
+    val spritesExtraEnabled: StateFlow<Boolean> = spritesExtraStore.flow.asStateFlow()
 
-    private val _spritesExtraEnabled = MutableStateFlow(false)
-    val spritesExtraEnabled: StateFlow<Boolean> = _spritesExtraEnabled.asStateFlow()
+    private val fullDetailStore = PrefsStore(false)
+    val fullDetailEnabled: StateFlow<Boolean> = fullDetailStore.flow.asStateFlow()
 
-    private val _fullDetailEnabled = MutableStateFlow(false)
-    val fullDetailEnabled: StateFlow<Boolean> = _fullDetailEnabled.asStateFlow()
+    private val criesStore = PrefsStore(false)
+    val criesEnabled: StateFlow<Boolean> = criesStore.flow.asStateFlow()
 
-    private val _criesEnabled = MutableStateFlow(false)
-    val criesEnabled: StateFlow<Boolean> = _criesEnabled.asStateFlow()
-
-    private val _wifiOnlyEnabled = MutableStateFlow(true)
-    val wifiOnlyEnabled: StateFlow<Boolean> = _wifiOnlyEnabled.asStateFlow()
+    private val wifiOnlyStore = PrefsStore(true)
+    val wifiOnlyEnabled: StateFlow<Boolean> = wifiOnlyStore.flow.asStateFlow()
 
     fun init(context: Context) {
-        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs = sharedPrefs
-        _essentialsEnabled.value = sharedPrefs.getBoolean(KEY_ESSENTIALS, true)
-        _spritesEnabled.value = sharedPrefs.getBoolean(KEY_SPRITES, true)
-        _spritesExtraEnabled.value = sharedPrefs.getBoolean(KEY_SPRITES_EXTRA, false)
-        _fullDetailEnabled.value = sharedPrefs.getBoolean(KEY_FULL_DETAIL, false)
-        _criesEnabled.value = sharedPrefs.getBoolean(KEY_CRIES, false)
-        _wifiOnlyEnabled.value = sharedPrefs.getBoolean(KEY_WIFI_ONLY, true)
+        essentialsStore.init(context, PREFS_NAME, KEY_ESSENTIALS, true)
+        spritesStore.init(context, PREFS_NAME, KEY_SPRITES, true)
+        spritesExtraStore.init(context, PREFS_NAME, KEY_SPRITES_EXTRA, false)
+        fullDetailStore.init(context, PREFS_NAME, KEY_FULL_DETAIL, false)
+        criesStore.init(context, PREFS_NAME, KEY_CRIES, false)
+        wifiOnlyStore.init(context, PREFS_NAME, KEY_WIFI_ONLY, true)
     }
 
-    fun setEssentialsEnabled(enabled: Boolean) = set(_essentialsEnabled, KEY_ESSENTIALS, enabled)
-    fun setSpritesEnabled(enabled: Boolean) = set(_spritesEnabled, KEY_SPRITES, enabled)
-    fun setSpritesExtraEnabled(enabled: Boolean) = set(_spritesExtraEnabled, KEY_SPRITES_EXTRA, enabled)
-    fun setFullDetailEnabled(enabled: Boolean) = set(_fullDetailEnabled, KEY_FULL_DETAIL, enabled)
-    fun setCriesEnabled(enabled: Boolean) = set(_criesEnabled, KEY_CRIES, enabled)
-    fun setWifiOnlyEnabled(enabled: Boolean) = set(_wifiOnlyEnabled, KEY_WIFI_ONLY, enabled)
-
-    private fun set(flow: MutableStateFlow<Boolean>, key: String, enabled: Boolean) {
-        val p = prefs ?: return
-        flow.value = enabled
-        p.edit { putBoolean(key, enabled) }
-    }
+    fun setEssentialsEnabled(enabled: Boolean) = essentialsStore.set(enabled)
+    fun setSpritesEnabled(enabled: Boolean) = spritesStore.set(enabled)
+    fun setSpritesExtraEnabled(enabled: Boolean) = spritesExtraStore.set(enabled)
+    fun setFullDetailEnabled(enabled: Boolean) = fullDetailStore.set(enabled)
+    fun setCriesEnabled(enabled: Boolean) = criesStore.set(enabled)
+    fun setWifiOnlyEnabled(enabled: Boolean) = wifiOnlyStore.set(enabled)
 }

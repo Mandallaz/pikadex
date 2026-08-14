@@ -5,6 +5,7 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import com.mandallaz.pikadex.util.UrlValidator
 
 /**
  * F34's own local cache for cry audio, separate from Coil's image disk cache ([PikaDexApplication])
@@ -27,6 +28,7 @@ object CryCache {
      *  [PrefetchManager] unit, where one failed download shouldn't abort the other ~1300. */
     suspend fun download(context: Context, id: Int, url: String): Boolean = withContext(Dispatchers.IO) {
         try {
+            if (!UrlValidator.isValid(url)) return@withContext false
             val request = Request.Builder().url(url).build()
             AppContainer.sharedOkHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@withContext false
