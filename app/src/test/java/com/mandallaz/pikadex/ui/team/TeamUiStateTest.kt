@@ -7,10 +7,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * B36 — [TeamUiState.hasUnfixableSingleAxisIssue] powers the explanatory message TeamScreen shows
+ * B36/F99 — [TeamUiState.hasUnfixableSingleAxisIssue] powers the explanatory message TeamScreen shows
  * in place of the Suggestions card when [TeamViewModel.loadSuggestions]'s dual-fix gate (needs
  * both a shared weakness and a coverage gap) can never be satisfied, so the card doesn't just
- * vanish with no explanation. Pure derived-property tests, no ViewModel/coroutines needed.
+ * vanish with no explanation. The derived values are no longer getters — they're computed once by
+ * [TeamUiState.withDerivedFields] at publish time and stored — so these tests exercise that
+ * derivation directly on hand-built states, no ViewModel/coroutines needed.
  */
 class TeamUiStateTest {
 
@@ -31,7 +33,7 @@ class TeamUiStateTest {
             matrixComputedFor = setOf("squirtle"),
             matrix = matrix,
             offensiveMatrix = offensiveMatrix
-        )
+        ).withDerivedFields()
     }
 
     @Test

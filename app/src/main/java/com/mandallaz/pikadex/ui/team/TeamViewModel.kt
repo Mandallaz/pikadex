@@ -48,6 +48,25 @@ data class TeamUiState(
     // failed and left the previous team's matrix behind), the matrix is stale and must not be
     // rendered as if it were live data.
     val matrixComputedFor: Set<String> = emptySet(),
+    // F99 — these four were computed getters, so every TeamScreen recomposition re-ran them (each
+    // iterating the 18-type x 6-member matrices and rebuilding the name sets). They're now computed
+    // once by withDerivedFields() at the moment a result is published into state, and stored here
+    // so reads are free. Whenever [members]/[matrix]/[offensiveMatrix]/[matrixComputedFor] change,
+    // the published state must run it; states that only touch suggestions/loading/etc. skip it.
+    /** True when [matrixComputedFor] doesn't match the current [members] — mid-fetch, or the fetch
+     *  just failed and left the previous team's matrix behind. */
+    val isMatrixStale: Boolean = false,
+    /** Types where at least half the team is weak (>1x) — the team's shared vulnerabilities. Empty
+     *  when the team is empty or [isMatrixStale]. */
+    val sharedWeaknesses: List<String> = emptyList(),
+    /** Types nobody on the team can hit for more than neutral — the offensive counterpart of
+     *  [sharedWeaknesses], and the thing a defence-only view of a team never surfaces. Empty when
+     *  the team is empty or [isMatrixStale]. */
+    val coverageGaps: List<String> = emptyList(),
+    /** B36 — true when exactly one of [sharedWeaknesses]/[coverageGaps] is non-empty. Empty when
+     *  both are empty (else the gate could never be the problem), false when *both* are non-empty
+     *  but suggestions still came back empty (tier filter too restrictive) — see [withDerivedFields]. */
+    val hasUnfixableSingleAxisIssue: Boolean = false,
     /** Dex ids for the species named in [com.mandallaz.pikadex.util.PresetTeams], so the preset
      *  picker can preview each roster as sprites. Empty until the master list is available (the
      *  picker then falls back to names), since presets deliberately store names, not ids. */
@@ -69,34 +88,23 @@ data class TeamUiState(
     // shows species names too (roster chips, suggestion tiles) and was still falling back to the
     // English-formatted raw name for every non-English language.
     val speciesNames: Map<String, Map<String, String>> = emptyMap()
-) {
-    val isMatrixStale: Boolean
-        get() = matrixComputedFor != members.map { it.name }.toSet()
+)
 
-    /** Types where at least half the team is weak (>1x) — the team's shared vulnerabilities. */
-    val sharedWeaknesses: List<String>
-        get() {
-            if (members.isEmpty() || isMatrixStale) return emptyList()
-            return sharedWeaknesses(matrix, members.map { it.name })
-        }
-
-    /** Types nobody on the team can hit for more than neutral — the offensive counterpart of
-     *  [sharedWeaknesses], and the thing a defence-only view of a team never surfaces. */
-    val coverageGaps: List<String>
-        get() {
-            if (members.isEmpty() || isMatrixStale) return emptyList()
-            return coverageGaps(offensiveMatrix, members.map { it.name })
-        }
-
-    /** B36 — true when exactly one of [sharedWeaknesses]/[coverageGaps] is non-empty, so
-     *  [loadSuggestions]'s dual-fix gate can never find a candidate (it requires both). Without
-     *  this, the Suggestions card just vanishes with no explanation even while a weaknesses/gaps
-     *  callout is still visibly telling the user something is wrong — this powers a small
-     *  explanatory message in its place for that specific case. Deliberately false when *both*
-     *  lists are non-empty but suggestions still came back empty (e.g. tier filter too
-     *  restrictive) — that's a different, out-of-scope case per the issue. */
-    val hasUnfixableSingleAxisIssue: Boolean
-        get() = sharedWeaknesses.isNotEmpty() != coverageGaps.isNotEmpty()
+/** F99 — recomputes the four derived fields that used to be getters on [TeamUiState], so they're
+ *  computed once per publish into state instead of on every read. Call it on every state that
+ *  mutates [TeamUiState.members]/[TeamUiState.matrix]/[TeamUiState.offensiveMatrix]/
+ *  [TeamUiState.matrixComputedFor]; states that only touch suggestions/loading/names skip it, since
+ *  none of the four can change when those do. */
+internal fun TeamUiState.withDerivedFields(): TeamUiState {
+    val stale = matrixComputedFor != members.map { it.name }.toSet()
+    val weaknesses = if (members.isEmpty() || stale) emptyList() else sharedWeaknesses(matrix, members.map { it.name })
+    val gaps = if (members.isEmpty() || stale) emptyList() else coverageGaps(offensiveMatrix, members.map { it.name })
+    return copy(
+        isMatrixStale = stale,
+        sharedWeaknesses = weaknesses,
+        coverageGaps = gaps,
+        hasUnfixableSingleAxisIssue = weaknesses.isNotEmpty() != gaps.isNotEmpty()
+    )
 }
 
 class TeamViewModel @JvmOverloads constructor(
@@ -163,11 +171,11 @@ class TeamViewModel @JvmOverloads constructor(
                     matrixComputedFor = emptySet(),
                     suggestions = emptyList(),
                     suggestionSpriteIds = emptyMap()
-                )
+                ).withDerivedFields()
             }
             return
         }
-        _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null) }
+        _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null).withDerivedFields() }
         matrixJob = viewModelScope.launch {
             try {
                 // supervisorScope so one member's failed fetch surfaces as a normal catchable
@@ -180,7 +188,7 @@ class TeamViewModel @JvmOverloads constructor(
                         matrix = result.defensive,
                         offensiveMatrix = result.offensive,
                         matrixComputedFor = members.map { m -> m.name }.toSet()
-                    )
+                    ).withDerivedFields()
                 }
                 // Only worth attempting once the matrix that sharedWeaknesses/coverageGaps are
                 // read from is actually fresh for this team.
@@ -202,7 +210,7 @@ class TeamViewModel @JvmOverloads constructor(
                         errorMessage = UiText(R.string.team_error_compute_matrix),
                         suggestions = emptyList(),
                         suggestionSpriteIds = emptyMap()
-                    )
+                    ).withDerivedFields()
                 }
             }
         }
