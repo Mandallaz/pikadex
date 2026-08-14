@@ -44,7 +44,7 @@ class CryPlayerAudioFocusTest {
         val ifBranch = errorListener.substringBefore("} else {")
         assertTrue(
             "the fallback branch should re-enter play(), not call abandonAudioFocus() itself",
-            ifBranch.contains("play(context, fallbackSource)") && !ifBranch.contains("abandonAudioFocus()")
+            ifBranch.contains("play(context, cleanFallback)") && !ifBranch.contains("abandonAudioFocus()")
         )
     }
 }
