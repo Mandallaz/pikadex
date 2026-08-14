@@ -2,6 +2,8 @@ package com.mandallaz.pikadex.ui.list
 
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LocalizedNames
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlin.coroutines.CoroutineContext
 import com.mandallaz.pikadex.data.clearForTest
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -45,7 +47,7 @@ class PokedexListViewModelLoadTest {
         // fires from init{} but its coroutine body doesn't actually run until the test advances
         // the (Standard, not immediate) test dispatcher, so fields set afterward are still picked
         // up in time.
-        viewModel = PokedexListViewModel(repository)
+        viewModel = PokedexListViewModel(repository, dispatcher)
     }
 
     @After
@@ -156,7 +158,7 @@ class PokedexListViewModelLoadTest {
                 isMythical = false
             )
         )
-        val freshViewModel = PokedexListViewModel(repository)
+        val freshViewModel = PokedexListViewModel(repository, dispatcher)
 
         dispatcher.scheduler.advanceUntilIdle()
 
@@ -254,5 +256,64 @@ class PokedexListViewModelLoadTest {
         val state = viewModel.uiState.value
         assertFalse(state.isFilterLoading)
         assertNull(state.typeFilterNames)
+    }
+
+    private class TestTrackingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
+        var blocksDispatched = 0
+            private set
+
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            blocksDispatched++
+            delegate.dispatch(context, block)
+        }
+    }
+
+    @Test
+    fun `fetchAndApplyBasics post processing executes on the defaultDispatcher`() = runTest(dispatcher) {
+        val trackingDispatcher = TestTrackingDispatcher(dispatcher)
+        repository.allBasics = mapOf(
+            "bulbasaur" to PokeApiGraphQLDataSource.PokemonBasics(
+                stats = emptyMap(),
+                types = listOf("grass", "poison"),
+                isLegendary = false,
+                isMythical = false
+            )
+        )
+        repository.masterList = listOf(NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"))
+
+        val testViewModel = PokedexListViewModel(repository, trackingDispatcher)
+
+        val initialDispatches = trackingDispatcher.blocksDispatched
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(
+            "Expected fetchAndApplyBasics to dispatch to defaultDispatcher",
+            trackingDispatcher.blocksDispatched > initialDispatches
+        )
+        assertEquals(listOf("grass", "poison"), testViewModel.uiState.value.typesByName["bulbasaur"])
+    }
+
+    @Test
+    fun `PokedexListContext update name mapping executes on the defaultDispatcher`() = runTest(dispatcher) {
+        val trackingDispatcher = TestTrackingDispatcher(dispatcher)
+        repository.masterList = listOf(
+            NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"),
+            NamedApiResource("charmander", "https://pokeapi.co/api/v2/pokemon/4/")
+        )
+
+        // Create the view model. This registers the collector.
+        val testViewModel = PokedexListViewModel(repository, trackingDispatcher)
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        com.mandallaz.pikadex.data.PokedexListContext.displayedNames.value.let { names ->
+            assertEquals(listOf("bulbasaur", "charmander"), names)
+        }
+
+        assertTrue(
+            "Expected PokedexListContext mapping to dispatch to defaultDispatcher",
+            trackingDispatcher.blocksDispatched > 0
+        )
     }
 }

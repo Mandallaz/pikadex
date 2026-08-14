@@ -22,6 +22,7 @@ import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.toDisplayName
 import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -39,6 +40,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import java.text.Collator
 
 data class PokedexListUiState(
@@ -257,8 +259,16 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String,
 // would put every non-ASCII character in its own separate bucket after all plain-ASCII names.
 private val NAME_COLLATOR: Collator = Collator.getInstance().apply { strength = Collator.PRIMARY }
 
+private data class BasicsPostProcessed(
+    val baseStats: Map<String, Map<String, Int>>,
+    val legendaryNames: Set<String>,
+    val mythicalNames: Set<String>,
+    val typesByName: Map<String, List<String>>
+)
+
 class PokedexListViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepositoryApi = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PokedexListUiState())
@@ -308,7 +318,12 @@ class PokedexListViewModel @JvmOverloads constructor(
         // land on another Fire type. See PokedexListContext's own doc for the fallback when a
         // Pokémon isn't part of this list at all.
         viewModelScope.launch {
-            displayedPokemon.collect { list -> PokedexListContext.update(list.map { it.name }) }
+            displayedPokemon.collect { list ->
+                val names = withContext(defaultDispatcher) {
+                    list.map { it.name }
+                }
+                PokedexListContext.update(names)
+            }
         }
     }
 
@@ -566,12 +581,19 @@ class PokedexListViewModel @JvmOverloads constructor(
      *  surfaces a failure) and [loadTypesIfNeeded] (which doesn't). */
     private suspend fun fetchAndApplyBasics() {
         val basics = repository.getAllBasics()
+        val processed = withContext(defaultDispatcher) {
+            val baseStats = basics.mapValues { (_, b) -> b.stats }
+            val legendaryNames = basics.filterValues { b -> b.isLegendary }.keys
+            val mythicalNames = basics.filterValues { b -> b.isMythical }.keys
+            val typesByName = basics.mapValues { (_, b) -> b.types }
+            BasicsPostProcessed(baseStats, legendaryNames, mythicalNames, typesByName)
+        }
         _uiState.update {
             it.copy(
-                baseStats = basics.mapValues { (_, b) -> b.stats },
-                legendaryNames = basics.filterValues { b -> b.isLegendary }.keys,
-                mythicalNames = basics.filterValues { b -> b.isMythical }.keys,
-                typesByName = basics.mapValues { (_, b) -> b.types },
+                baseStats = processed.baseStats,
+                legendaryNames = processed.legendaryNames,
+                mythicalNames = processed.mythicalNames,
+                typesByName = processed.typesByName,
                 isStatsLoading = false
             )
         }
