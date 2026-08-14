@@ -240,8 +240,8 @@ class TeamViewModel @JvmOverloads constructor(
         suggestionsJob = viewModelScope.launch {
             try {
                 var tierByShowdownKey: Map<String, String> = emptyMap()
-                val (masterList, basics, typeDetails) = supervisorScope {
-                    val masterDeferred = async { repository.getMasterList() }
+                val (idByName, basics, typeDetails) = supervisorScope {
+                    val masterDeferred = async { repository.masterIdByName() }
                     val basicsDeferred = async { repository.getAllBasics() }
                     // Reuses whatever computeMatrix already warmed in the cache — a plain cache
                     // hit for every type that mattered to this team, a real fetch only for the
@@ -255,7 +255,6 @@ class TeamViewModel @JvmOverloads constructor(
                     tierByShowdownKey = tiersDeferred?.await().orEmpty()
                     Triple(masterDeferred.await(), basicsDeferred.await(), typeDetailsDeferred.mapValues { it.value.await() })
                 }
-                val idByName = masterList.mapNotNull { r -> r.id?.let { r.name to it } }.toMap()
                 val candidates = basics.mapNotNull { (name, basic) ->
                     val id = idByName[name] ?: return@mapNotNull null
                     // Alternate forms (mega/gmax/regional/...) — same id-range heuristic as
