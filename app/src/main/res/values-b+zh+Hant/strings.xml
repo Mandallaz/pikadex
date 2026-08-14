@@ -154,6 +154,7 @@
     <string name="detail_play_cry">播放叫聲</string>
     <string name="detail_legendary">傳說</string>
     <string name="detail_mythical">夢幻</string>
+    <string name="detail_ordinary">普通</string>
     <string name="detail_height">身高</string>
     <string name="detail_weight">體重</string>
     <string name="detail_egg_groups">蛋群</string>

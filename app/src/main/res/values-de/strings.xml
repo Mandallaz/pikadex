@@ -154,6 +154,7 @@
     <string name="detail_play_cry">Ruf abspielen</string>
     <string name="detail_legendary">Legendär</string>
     <string name="detail_mythical">Mysteriös</string>
+    <string name="detail_ordinary">Gewöhnlich</string>
     <string name="detail_height">Größe</string>
     <string name="detail_weight">Gewicht</string>
     <string name="detail_egg_groups">Ei-Gruppen</string>

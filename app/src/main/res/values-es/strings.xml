@@ -154,6 +154,7 @@
     <string name="detail_play_cry">Reproducir grito</string>
     <string name="detail_legendary">Legendario</string>
     <string name="detail_mythical">Singular</string>
+    <string name="detail_ordinary">Ordinario</string>
     <string name="detail_height">Altura</string>
     <string name="detail_weight">Peso</string>
     <string name="detail_egg_groups">Grupos Huevo</string>

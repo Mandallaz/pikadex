@@ -154,6 +154,7 @@
     <string name="detail_play_cry">울음소리 재생</string>
     <string name="detail_legendary">전설의 포켓몬</string>
     <string name="detail_mythical">환상의 포켓몬</string>
+    <string name="detail_ordinary">일반</string>
     <string name="detail_height">키</string>
     <string name="detail_weight">몸무게</string>
     <string name="detail_egg_groups">알그룹</string>
