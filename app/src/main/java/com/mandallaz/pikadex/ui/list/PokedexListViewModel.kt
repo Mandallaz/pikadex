@@ -20,6 +20,8 @@ import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.toDisplayName
+import com.mandallaz.pikadex.util.TOTAL
+import com.mandallaz.pikadex.util.statTotal
 import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -146,12 +148,6 @@ data class PokedexListUiState(
     }
 }
 
-/** [PokedexListUiState.statMinimums] key for the stat *total* filter (F14) — a derived sum, not one
- *  of the six raw stat names [SortStat.apiName] provides, so it needs a key of its own rather than
- *  colliding with (or being mistaken for) a real stat. Internal, not private: [FilterSheetContent]
- *  in `PokedexListScreen.kt` reads/writes it too. */
-internal const val STAT_KEY_TOTAL = "total"
-
 /** Same filtering/sorting [PokedexListUiState] used to expose as a `displayed` getter, moved to a
  *  plain function fed by a debounced query — a getter re-ran this (up to 5 chained `.filter{}`
  *  passes, plus a full sort, over ~1300 items) on every single recomposition; now it only runs
@@ -238,9 +234,9 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String,
         list = list.filter { resource ->
             val stats = state.baseStats[resource.name] ?: return@filter false
             state.statMinimums.all { (key, minimum) ->
-                // STAT_KEY_TOTAL is a derived sum, not a raw stat name — never present in `stats`
+                // TOTAL is a derived sum, not a raw stat name — never present in `stats`
                 // itself, so a plain lookup would read it as 0 and filter out everything.
-                val value = if (key == STAT_KEY_TOTAL) stats.values.sum() else stats[key] ?: 0
+                val value = if (key == TOTAL) stats.statTotal() else stats[key] ?: 0
                 value >= minimum
             }
         }
@@ -270,7 +266,7 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String,
                 val stats = state.baseStats[resource.name]
                 when {
                     stats == null -> Int.MIN_VALUE
-                    stat == SortStat.TOTAL -> stats.values.sum()
+                    stat == SortStat.TOTAL -> stats.statTotal()
                     else -> stats[stat.apiName] ?: Int.MIN_VALUE
                 }
             }

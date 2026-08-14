@@ -37,6 +37,8 @@ import com.mandallaz.pikadex.util.teamImmunities
 import com.mandallaz.pikadex.util.teamQuadWeaknesses
 import com.mandallaz.pikadex.util.teamResistances
 import com.mandallaz.pikadex.ui.UiText
+import com.mandallaz.pikadex.util.TOTAL
+import com.mandallaz.pikadex.util.baseStatTotal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -242,7 +244,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         bundle.pokemon.stats.orEmpty().associate { stat ->
                             stat.stat.name to repository.getStatPercentile(stat.stat.name, stat.baseStat)
                         } + mapOf(
-                            "total" to repository.getStatPercentile("total", bundle.pokemon.stats.orEmpty().sumOf { it.baseStat })
+                            TOTAL to repository.getStatPercentile(TOTAL, bundle.pokemon.baseStatTotal())
                         )
                     }.orEmpty()
 

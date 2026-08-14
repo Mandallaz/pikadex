@@ -3,6 +3,7 @@ package com.mandallaz.pikadex.ui.list
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.SortStat
+import com.mandallaz.pikadex.util.TOTAL
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -237,11 +238,11 @@ class PokedexListViewModelTest {
     // --- Stat total minimum filter (F14) --------------------------------------
 
     // charmander sums to 117, bulbasaur to 94, squirtle to 91 — none of these is a real key in
-    // statBaseline, proving STAT_KEY_TOTAL is read as a derived sum rather than a literal lookup
+    // statBaseline, proving TOTAL is read as a derived sum rather than a literal lookup
     // into a "total" entry that doesn't exist in the map.
     @Test
     fun `a total minimum keeps only entries whose summed stats meet or exceed it`() {
-        val state = PokedexListUiState(allPokemon = unsorted, baseStats = statBaseline, statMinimums = mapOf(STAT_KEY_TOTAL to 95))
+        val state = PokedexListUiState(allPokemon = unsorted, baseStats = statBaseline, statMinimums = mapOf(TOTAL to 95))
         assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
     }
 
@@ -251,7 +252,7 @@ class PokedexListViewModelTest {
         val state = PokedexListUiState(
             allPokemon = unsorted,
             baseStats = statBaseline,
-            statMinimums = mapOf(STAT_KEY_TOTAL to 90, "attack" to 50)
+            statMinimums = mapOf(TOTAL to 90, "attack" to 50)
         )
         assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
     }

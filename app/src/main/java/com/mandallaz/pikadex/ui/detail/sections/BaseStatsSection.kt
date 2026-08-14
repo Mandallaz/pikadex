@@ -16,6 +16,8 @@ import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.ui.components.STAT_BAR_SCALE_MAX
 import com.mandallaz.pikadex.ui.components.StatBar
 import com.mandallaz.pikadex.util.StatColors
+import com.mandallaz.pikadex.util.TOTAL
+import com.mandallaz.pikadex.util.baseStatTotal
 import kotlin.math.roundToInt
 
 @Composable
@@ -37,7 +39,7 @@ internal fun BaseStatsCard(pokemon: PokemonDto, statPercentiles: Map<String, Dou
                 val percentile = statPercentiles[stat.stat.name] ?: 0.5
                 StatBar(statName = stat.stat.name, value = stat.baseStat, color = StatColors.forPercentile(percentile))
             }
-            val total = pokemon.stats.orEmpty().sumOf { it.baseStat }
+            val total = pokemon.baseStatTotal()
             Text(
                 stringResource(R.string.detail_stat_total, total),
                 fontWeight = FontWeight.Bold,
@@ -47,7 +49,7 @@ internal fun BaseStatsCard(pokemon: PokemonDto, statPercentiles: Map<String, Dou
             // number people actually compare Pokémon by — was a bare figure with nothing to
             // judge it against, even though its percentile was already being computed and
             // then thrown away.
-            statPercentiles["total"]?.let { percentile ->
+            statPercentiles[TOTAL]?.let { percentile ->
                 Text(
                     stringResource(R.string.detail_stronger_than, (percentile * 100).roundToInt()),
                     style = MaterialTheme.typography.bodySmall,

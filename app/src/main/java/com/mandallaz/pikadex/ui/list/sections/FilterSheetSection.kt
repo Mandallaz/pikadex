@@ -29,9 +29,9 @@ import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.ui.components.localizedLabel
 import com.mandallaz.pikadex.ui.components.localizedTierLabel
 import com.mandallaz.pikadex.ui.list.PokedexListUiState
-import com.mandallaz.pikadex.ui.list.STAT_KEY_TOTAL
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.toDisplayName
+import com.mandallaz.pikadex.util.TOTAL
 
 /** Bottom sheet holding every filter control except Sort — Types as one wrapping row (was two
  * independently-scrolling rows split by id, with no visible way to tell which row had e.g. Steel),
@@ -178,13 +178,13 @@ internal fun FilterSheetContent(
             }
             // Outside the loop above on purpose: SortStat.TOTAL.apiName is null (it's a derived
             // sum, not a raw GraphQL field), which is exactly what the mapNotNull loop excludes it
-            // for — see STAT_KEY_TOTAL's KDoc.
-            val totalMinimum = uiState.statMinimums[STAT_KEY_TOTAL] ?: 0
+            // for — see TOTAL's KDoc.
+            val totalMinimum = uiState.statMinimums[TOTAL] ?: 0
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(SortStat.TOTAL.localizedLabel(), modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodyMedium)
                 Slider(
                     value = totalMinimum.toFloat(),
-                    onValueChange = { onStatMinimumChanged(STAT_KEY_TOTAL, it.toInt()) },
+                    onValueChange = { onStatMinimumChanged(TOTAL, it.toInt()) },
                     valueRange = 0f..720f,
                     steps = 71, // 10-point increments, the same range-to-step ratio as the per-stat sliders above
                     enabled = uiState.baseStats.isNotEmpty(),
