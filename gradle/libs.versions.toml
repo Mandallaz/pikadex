@@ -16,6 +16,14 @@ coilCompose = "2.7.0"
 androidxBrowser = "1.8.0"
 kotlinxCoroutinesTest = "1.9.0"
 androidxWork = "2.10.0"
+# F112 — androidx.benchmark's group covers both the baselineprofile Gradle plugin and the
+# macrobenchmark test library; kept as one version since they're released together and expected
+# to stay in lockstep. 1.5.0-rc01 verified as the latest available on Google's Maven (2026-08-14),
+# matching AGP 9.3.1/AGT — a prior attempt (see issue #138/F101) landed on the same version for the
+# same reason.
+baselineProfile = "1.5.0-rc01"
+profileinstaller = "1.4.1"
+uiautomator = "2.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,9 +52,14 @@ androidx-browser = { group = "androidx.browser", name = "browser", version.ref =
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "androidxWork" }
 androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "androidxWork" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "baselineProfile" }
+androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+android-test = { id = "com.android.test", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 test-retry = { id = "org.gradle.test-retry", version = "1.6.5" }
+androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineProfile" }
 

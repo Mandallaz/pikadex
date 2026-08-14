@@ -12,6 +12,7 @@
 *.dex
 /app/build
 /app/release
+/baselineprofile/build
 .kotlin
 /keystore.properties
 *.jks
