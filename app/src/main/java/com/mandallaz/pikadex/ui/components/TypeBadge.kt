@@ -50,11 +50,21 @@ import androidx.compose.ui.unit.dp
 import com.mandallaz.pikadex.util.TypeColors
 import com.mandallaz.pikadex.util.toDisplayName
 import com.mandallaz.pikadex.util.typeNameRes
+import com.mandallaz.pikadex.util.resolvedTypeNames
 
 /** B39 — [typeName]'s localized display name, or [toDisplayName]'s formatted raw name for a type
  *  with no dedicated translation (see [typeNameRes]). */
 @Composable
 fun String.localizedTypeName(): String = typeNameRes(this)?.let { stringResource(it) } ?: toDisplayName()
+
+/** B45 — resolves and localizes a list of raw PokeAPI type names. */
+@Composable
+fun List<String>.localizedTypeNames(): List<String> = resolvedTypeNames().map {
+    when (it) {
+        is Int -> stringResource(it)
+        else -> it as String
+    }
+}
 
 // F88 — a local vector icon per type, distinct from B39's old PokeAPI sprite badge (English baked
 // into the image, no per-locale variant — that's what B39 removed). These are plain

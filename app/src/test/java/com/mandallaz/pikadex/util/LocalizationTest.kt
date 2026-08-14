@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.util
 
+import com.mandallaz.pikadex.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -79,5 +80,27 @@ class LocalizationTest {
     @Test
     fun `an empty map falls back to the formatted raw name for any language`() {
         assertEquals("Nidoran♀", "nidoran-f".localizedDisplayName(emptyMap(), "fr"))
+    }
+
+    // --- resolvedTypeNames (B45) -------------------------------------------------------
+
+    @Test
+    fun `resolvedTypeNames resolves weaknesses and gaps to localized string resource IDs`() {
+        val weaknesses = listOf("fire", "water")
+        val resolved = weaknesses.resolvedTypeNames()
+
+        // Before the fix, they would have been formatted to "Fire" and "Water" Strings.
+        // After the fix, they are resolved to R.string.type_fire and R.string.type_water resource IDs (Ints).
+        assertEquals(listOf(R.string.type_fire, R.string.type_water), resolved)
+    }
+
+    @Test
+    fun `resolvedTypeNames resolves suggestion tile resistances and hits to localized resource IDs or falls back`() {
+        val suggestionTypes = listOf("fairy", "unknown-type")
+        val resolved = suggestionTypes.resolvedTypeNames()
+
+        // Before the fix, they would have been formatted to "Fairy" and "Unknown Type" Strings.
+        // After the fix, standard types are resolved to resource IDs (Ints), and others fall back to displayName.
+        assertEquals(listOf(R.string.type_fairy, "Unknown Type"), resolved)
     }
 }

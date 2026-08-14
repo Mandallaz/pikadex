@@ -30,6 +30,7 @@ import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.ui.components.localizedTierLabel
+import com.mandallaz.pikadex.ui.components.localizedTypeNames
 import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.localizedDisplayName
@@ -152,8 +153,8 @@ private fun SuggestionTile(
         Text(
             stringResource(
                 R.string.team_suggestion_resists_hits,
-                suggestion.weaknessesResisted.joinToString(", ") { it.toDisplayName() },
-                suggestion.gapsHit.joinToString(", ") { it.toDisplayName() }
+                suggestion.weaknessesResisted.localizedTypeNames().joinToString(", "),
+                suggestion.gapsHit.localizedTypeNames().joinToString(", ")
             ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
