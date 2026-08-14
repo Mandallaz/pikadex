@@ -12,6 +12,7 @@ import com.mandallaz.pikadex.util.Cries
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.Sprites
 import com.mandallaz.pikadex.util.TypeIds
+import com.mandallaz.pikadex.util.UrlValidator
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -215,7 +216,7 @@ object PrefetchManager {
      *  [PrefetchTier.SPRITES_EXTRA]. */
     private fun imagePrefetchUnits(context: Context, urls: List<String>): List<suspend () -> Unit> {
         val imageLoader = context.imageLoader
-        return urls.map { url ->
+        return urls.filter { UrlValidator.isValid(it) }.map { url ->
             suspend {
                 val request = ImageRequest.Builder(context)
                     .data(url)
