@@ -245,38 +245,10 @@ class PokedexDetailViewModelLoadTest {
     // is used (not overridden with the test dispatcher). In that case, load() suspends on a real-time
     // background thread pool, meaning advanceUntilIdle() on the test scheduler does not wait for it.
     // Consequently, uiState.value.pokemon is still null when loadTeamImpact() is called, so it returns early (no-op).
-    @Test
-    fun `reproduce loadTeamImpact timing race when defaultDispatcher is not overridden`() = runTest(dispatcher) {
-        // Construct the ViewModel WITHOUT the test dispatcher (so it uses real Dispatchers.Default)
-        val vmWithRace = PokedexDetailViewModel(repository) // uses Dispatchers.Default
-
-        TeamRepository.replaceAll(listOf(NamedApiResource("squirtle", "https://pokeapi.co/api/v2/pokemon/7/")))
-        repository.detailBundle = bundleFor("charmander")
-        repository.typeDetailByName = mapOf(
-            "fire" to fakeTypeDetailDto("fire"),
-            "water" to fakeTypeDetailDto("water")
-        )
-        repository.pokemonTypes = listOf("water")
-        repository.pokemonLevelUpMoveNames = emptyList()
-        repository.allMoveInfo = emptyMap()
-
-        // Call load() which launches a coroutine that suspends on a real-time thread (Dispatchers.Default)
-        vmWithRace.load("charmander")
-
-        // Immediately calling loadTeamImpact() (before real-time thread finishes)
-        vmWithRace.loadTeamImpact()
-
-        // At this point, the load() coroutine is still in progress, so uiState.pokemon is null,
-        // and loadTeamImpact() gets skipped.
-        val state = vmWithRace.uiState.value
-        assertNull("Expected teamImpact to be null because of the timing race skip", state.teamImpact)
-
-        // However, with the properly configured viewModel (which overrides defaultDispatcher with test dispatcher),
-        // we can run a deterministic version of this test and assert it compiles and finishes successfully.
-        viewModel.load("charmander")
-        dispatcher.scheduler.advanceUntilIdle()
-        viewModel.loadTeamImpact()
-        dispatcher.scheduler.advanceUntilIdle()
-        assertNotNull("Expected teamImpact to be computed under deterministic test dispatcher", viewModel.uiState.value.teamImpact)
-    }
+    // B42 / issue #111 regression coverage lives in `loadTeamImpact computes an impact summary
+    // when the team has room` above: it already drives both load() and loadTeamImpact() through
+    // the injected test dispatcher end to end, which is exactly the path that was broken when
+    // defaultDispatcher wasn't overridable. A separate test attempting to reproduce the original
+    // race (real Dispatchers.Default, or a second unadvanced test dispatcher) is itself
+    // timing-dependent and was dropped rather than risk reintroducing flakiness.
 }
