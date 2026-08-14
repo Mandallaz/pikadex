@@ -27,6 +27,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -121,8 +122,8 @@ class TeamViewModel @JvmOverloads constructor(
     val teams: StateFlow<List<TeamSlot>> = TeamRepository.teams
     val activeTeamId: StateFlow<Int> = TeamRepository.activeTeamId
 
-    private var matrixJob: Job? = null
-    private var suggestionsJob: Job? = null
+    internal var matrixJob: Job? = null
+    internal var suggestionsJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -157,8 +158,10 @@ class TeamViewModel @JvmOverloads constructor(
         // Explicit job tracking rather than collectLatest, so [retry] can restart the same work
         // without a team change to trigger it — and so a superseded fetch is cancelled the same way
         // the Pokédex list's filter jobs are.
-        matrixJob?.cancel()
-        suggestionsJob?.cancel()
+        val oldMatrixJob = matrixJob
+        val oldSuggestionsJob = suggestionsJob
+        oldMatrixJob?.cancel()
+        oldSuggestionsJob?.cancel()
         if (members.isEmpty()) {
             // Clear only what belongs to the team itself. presetSpriteIds is unrelated to team
             // membership and expensive to rebuild (it resolves every preset roster's sprites
@@ -181,6 +184,8 @@ class TeamViewModel @JvmOverloads constructor(
         }
         _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null).withDerivedFields() }
         matrixJob = viewModelScope.launch {
+            oldMatrixJob?.cancelAndJoin()
+            oldSuggestionsJob?.cancelAndJoin()
             try {
                 // supervisorScope so one member's failed fetch surfaces as a normal catchable
                 // exception rather than risking an uncaught crash — see the identical fix (and
@@ -226,7 +231,8 @@ class TeamViewModel @JvmOverloads constructor(
      *  outside that gate just clears the list rather than showing suggestions for a team that no
      *  longer applies. */
     private fun loadSuggestions() {
-        suggestionsJob?.cancel()
+        val oldSuggestionsJob = suggestionsJob
+        oldSuggestionsJob?.cancel()
         val state = _uiState.value
         if (state.isMatrixStale || state.members.isEmpty() || state.members.size >= TeamRepository.MAX_SIZE) {
             _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = emptyList(), suggestionSpriteIds = emptyMap()) }
@@ -242,6 +248,7 @@ class TeamViewModel @JvmOverloads constructor(
         val maxTier = SuggestionSettings.maxTier.value
         _uiState.update { it.copy(isSuggestionsLoading = true, suggestionTierCeiling = maxTier) }
         suggestionsJob = viewModelScope.launch {
+            oldSuggestionsJob?.cancelAndJoin()
             try {
                 var tierByShowdownKey: Map<String, String> = emptyMap()
                 val (idByName, basics, typeDetails) = supervisorScope {
