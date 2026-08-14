@@ -154,6 +154,7 @@
     <string name="detail_play_cry">Riproduci verso</string>
     <string name="detail_legendary">Leggendario</string>
     <string name="detail_mythical">Fantastico</string>
+    <string name="detail_ordinary">Ordinario</string>
     <string name="detail_height">Altezza</string>
     <string name="detail_weight">Peso</string>
     <string name="detail_egg_groups">Gruppi Uovo</string>

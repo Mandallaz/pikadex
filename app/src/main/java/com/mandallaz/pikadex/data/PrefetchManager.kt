@@ -181,13 +181,13 @@ object PrefetchManager {
             addAll(imagePrefetchUnits(context, typeIconUrls))
         }
         PrefetchTier.SPRITES -> {
-            val ids = repository.getMasterList().mapNotNull { it.id }
+            val ids = repository.masterIdByName().values
             imagePrefetchUnits(context, ids.flatMap { id ->
                 listOf(Sprites.officialArtworkUrl(id), Sprites.defaultSpriteUrl(id))
             })
         }
         PrefetchTier.SPRITES_EXTRA -> {
-            val ids = repository.getMasterList().mapNotNull { it.id }
+            val ids = repository.masterIdByName().values
             imagePrefetchUnits(context, ids.flatMap { id ->
                 listOf(
                     // B32 — shinySpriteUrl dropped: no composable ever requests it.
@@ -206,7 +206,7 @@ object PrefetchManager {
         }
         // Cry URLs are built by convention (Cries.latestCryUrl), same as SPRITES above — this
         // avoids ~1300 individual REST calls just to read PokemonDto.cries.latest for each entry.
-        PrefetchTier.CRIES -> repository.getMasterList().mapNotNull { it.id }.map { id ->
+        PrefetchTier.CRIES -> repository.masterIdByName().values.map { id ->
             suspend { CryCache.download(context, id, Cries.latestCryUrl(id)); Unit }
         }
     }

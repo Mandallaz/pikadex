@@ -38,6 +38,10 @@ data class PokemonDetailBundle(
  *  ever being called, which is exactly what a JVM unit test that never touches Android does. */
 interface PokedexRepositoryApi {
     suspend fun getMasterList(): List<NamedApiResource>
+    /** F108 — master species name -> dex id, built once from the cached [getMasterList]. Several
+     *  screens (team suggestions, preset previews, prefetch tiers, detail-screen name lookups)
+     *  used to rebuild this same name->id map themselves via `mapNotNull { it.id }` blocks. */
+    suspend fun masterIdByName(): Map<String, Int>
     suspend fun getTypes(): List<NamedApiResource>
     suspend fun getMoveNames(): List<String>
     suspend fun getAbilityNames(): List<String>
@@ -71,6 +75,7 @@ interface PokedexRepositoryApi {
 class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi {
 
     private val masterListCache = AsyncValueCache<List<NamedApiResource>>()
+    private val masterIdByNameCache = AsyncValueCache<Map<String, Int>>()
     private val moveNamesCache = AsyncValueCache<List<String>>()
     private val abilityNamesCache = AsyncValueCache<List<String>>()
     private val typesCache = AsyncValueCache<List<NamedApiResource>>()
@@ -99,6 +104,13 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
 
     override suspend fun getMasterList(): List<NamedApiResource> =
         masterListCache.get { api.getPokemonList(limit = 100000).results }
+
+    /** F108 — derived once from [getMasterList] and cached: the mapping itself is immutable (it
+     *  only changes when a new game generation ships a species, same cadence as the master list),
+     *  so building it fresh on every caller that wants name->id was pure duplicated work. */
+    override suspend fun masterIdByName(): Map<String, Int> = masterIdByNameCache.get {
+        getMasterList().mapNotNull { r -> r.id?.let { r.name to it } }.toMap()
+    }
 
     override suspend fun getTypes(): List<NamedApiResource> = typesCache.get {
         val order = TypeIds.standardTypeNames

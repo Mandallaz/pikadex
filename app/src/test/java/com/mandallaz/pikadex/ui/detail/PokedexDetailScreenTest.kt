@@ -268,4 +268,42 @@ class PokedexDetailScreenTest {
     fun `no Showdown sprite data at all means nothing to toggle to`() {
         assertFalse(hasAnimatedSprite(null))
     }
+
+    // --- MoveLabels coverage (F103) -----------------------------------------------------------
+
+    @Test
+    fun `MoveLabels can be constructed with custom values`() {
+        val customLabels = MoveLabels(
+            physical = "PHYS",
+            special = "SPEC",
+            status = "STAT",
+            dash = "DASH",
+            line = "LINE",
+            lineWithPriority = "LINE_PRIO",
+            always = "ALWAYS",
+            ailmentChance = "CHANCE",
+            statChangeChance = "STAT_CHANCE",
+            critRate = "CRIT",
+            drains = "DRAIN",
+            recoil = "RECOIL",
+            heals = "HEAL",
+            flinchChance = "FLINCH",
+            statNames = mapOf("hp" to "HP_CUSTOM")
+        )
+        assertEquals("PHYS", customLabels.physical)
+        assertEquals("SPEC", customLabels.special)
+        assertEquals("STAT", customLabels.status)
+        assertEquals("DASH", customLabels.dash)
+        assertEquals("LINE", customLabels.line)
+        assertEquals("LINE_PRIO", customLabels.lineWithPriority)
+        assertEquals("ALWAYS", customLabels.always)
+        assertEquals("CHANCE", customLabels.ailmentChance)
+        assertEquals("STAT_CHANCE", customLabels.statChangeChance)
+        assertEquals("CRIT", customLabels.critRate)
+        assertEquals("DRAIN", customLabels.drains)
+        assertEquals("RECOIL", customLabels.recoil)
+        assertEquals("HEAL", customLabels.heals)
+        assertEquals("FLINCH", customLabels.flinchChance)
+        assertEquals("HP_CUSTOM", customLabels.statNames["hp"])
+    }
 }

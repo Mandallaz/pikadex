@@ -32,20 +32,22 @@ private fun qualification(
     types: List<String>,
     sharedWeaknesses: List<String>,
     coverageGaps: List<String>,
-    typeDetailsByType: Map<String, TypeDetailDto>
+    typeDetailsByType: Map<String, TypeDetailDto>,
+    offensiveByTypeCache: Map<String, Map<String, Double>>,
+    defensiveCache: MutableMap<List<String>, Map<String, Double>>
 ): Qualification? {
     val details = types.mapNotNull { typeDetailsByType[it] }
 
     val weaknessesResisted = if (sharedWeaknesses.isNotEmpty()) {
-        val defensive = computeDefensiveMultipliers(details)
+        val cacheKey = details.map { it.name }.sorted()
+        val defensive = defensiveCache.getOrPut(cacheKey) { computeDefensiveMultipliers(details) }
         sharedWeaknesses.filter { (defensive[it] ?: 1.0) < 1.0 }
     } else {
         emptyList()
     }
 
     val gapsHit = if (coverageGaps.isNotEmpty()) {
-        val offensiveByType = details.associate { it.name to computeOffensiveMultipliers(it) }
-        val bestOffense = bestOffensiveMultipliers(types, offensiveByType)
+        val bestOffense = bestOffensiveMultipliers(types, offensiveByTypeCache)
         coverageGaps.filter { (bestOffense[it] ?: 0.0) > 1.0 }
     } else {
         emptyList()
@@ -104,10 +106,26 @@ fun rankSuggestions(
     limit: Int = 6
 ): List<TeamSuggestion> {
     if (sharedWeaknesses.isEmpty() && coverageGaps.isEmpty()) return emptyList()
+
+    val offensiveByTypeCache = if (coverageGaps.isNotEmpty()) {
+        typeDetailsByType.mapValues { (_, detail) -> computeOffensiveMultipliers(detail) }
+    } else {
+        emptyMap()
+    }
+
+    val defensiveCache = mutableMapOf<List<String>, Map<String, Double>>()
+
     return candidates.asSequence()
         .filter { it.name !in excludeNames }
         .mapNotNull { candidate ->
-            val q = qualification(candidate.types, sharedWeaknesses, coverageGaps, typeDetailsByType) ?: return@mapNotNull null
+            val q = qualification(
+                candidate.types,
+                sharedWeaknesses,
+                coverageGaps,
+                typeDetailsByType,
+                offensiveByTypeCache,
+                defensiveCache
+            ) ?: return@mapNotNull null
             TeamSuggestion(candidate.name, candidate.statTotal, candidate.types, q.weaknessesResisted, q.gapsHit)
         }
         .sortedWith(
