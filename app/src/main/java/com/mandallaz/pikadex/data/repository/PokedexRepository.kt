@@ -1,6 +1,7 @@
 package com.mandallaz.pikadex.data.repository
 
 import com.google.gson.reflect.TypeToken
+import com.squareup.moshi.Types
 import com.mandallaz.pikadex.data.AsyncCache
 import com.mandallaz.pikadex.data.AsyncValueCache
 import com.mandallaz.pikadex.data.JsonDiskCache
@@ -358,11 +359,11 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         val DISK_CACHE_MAX_AGE_MILLIS = TimeUnit.DAYS.toMillis(180)
 
         val BASICS_TYPE: java.lang.reflect.Type =
-            object : TypeToken<Map<String, PokeApiGraphQLDataSource.PokemonBasics>>() {}.type
+            Types.newParameterizedType(Map::class.java, String::class.java, PokeApiGraphQLDataSource.PokemonBasics::class.java)
         val MOVE_INFO_TYPE: java.lang.reflect.Type =
-            object : TypeToken<Map<String, PokeApiGraphQLDataSource.MoveInfo>>() {}.type
+            Types.newParameterizedType(Map::class.java, String::class.java, PokeApiGraphQLDataSource.MoveInfo::class.java)
         val SPECIES_NAMES_TYPE: java.lang.reflect.Type =
-            object : TypeToken<Map<String, Map<String, String>>>() {}.type
+            Types.newParameterizedType(Map::class.java, String::class.java, Types.newParameterizedType(Map::class.java, String::class.java, String::class.java))
         val POKEMON_DETAIL_BUNDLE_TYPE: java.lang.reflect.Type =
             object : TypeToken<PokemonDetailBundle>() {}.type
     }

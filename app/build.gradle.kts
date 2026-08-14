@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.test.retry)
+    alias(libs.plugins.ksp)
 }
 
 // Release signing key material lives outside the repo (see .gitignore: keystore.properties,
@@ -118,6 +119,9 @@ dependencies {
     // Networking: calls to PokeAPI
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
+    implementation(libs.moshi)
+    implementation(libs.moshi.adapters)
+    ksp(libs.moshi.kotlin.codegen)
     // okhttp3 classes (OkHttpClient, Interceptor, Cache...) are imported directly across several
     // data/remote files — this used to rely entirely on retrofit's transitive okhttp dependency,
     // with no guarantee retrofit keeps pulling in a compatible version.
