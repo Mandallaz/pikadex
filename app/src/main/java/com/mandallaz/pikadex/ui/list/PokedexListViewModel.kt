@@ -156,60 +156,87 @@ data class PokedexListUiState(
  *  once per actual state change, off the main thread (see [PokedexListViewModel.displayedPokemon]). */
 // internal, not private: lets PokedexListViewModelTest exercise the filter/sort pipeline directly,
 // pure-function-style, rather than only through the ViewModel's coroutine/StateFlow machinery.
-internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String, language: String = SupportedLanguages.DEFAULT_CODE): List<NamedApiResource> {
+internal fun filterValidPokemon(list: List<NamedApiResource>): List<NamedApiResource> {
     // A resource with no id can't render a card (no sprite, no #number) — the grid used to filter
     // these out one at a time with an early return inside each item, re-running the same check on
     // every recomposition instead of once here.
-    var list = state.allPokemon.filter { it.id != null }
-    if (debouncedQuery.isNotBlank()) {
-        val trimmed = debouncedQuery.trim().lowercase()
-        // Cards display the zero-padded dex number ("#0004"), but the old exact string match
-        // (`it.id?.toString() == q`) only matched the *unpadded* form — searching the exact text
-        // on screen ("0004") returned nothing. Comparing as Int handles both: "4".toIntOrNull()
-        // and "0004".toIntOrNull() are both 4.
-        val numericQuery = trimmed.toIntOrNull()
-        // Cards display names via toDisplayName() ("Mr. Mime", "Ho-Oh", "Deoxys Attack"), which
-        // inserts spaces/hyphens/punctuation the raw API name ("mr-mime") doesn't have — typing
-        // exactly what's on screen used to match nothing for any hyphenated name. Stripping hyphens
-        // from both sides (same normalization SearchableListDialog already uses for moves/abilities)
-        // makes either form find it.
-        val normalizedQuery = trimmed.replace(" ", "").replace("-", "")
-        list = list.filter { resource ->
-            // B10 — search must match what's actually on screen, in the picked language, not a
-            // union with the raw/English name: a first pass at this fix matched *both*, which
-            // still surfaced e.g. Mudbray for "ray" in German even though its German name
-            // "Pampuli" has nothing to do with "ray" — the English match alone doesn't belong once
-            // a language-specific name exists to search against instead. localizedDisplayName
-            // already falls back to the English-formatted name on its own when a species has no
-            // translation for the current language, which is the only case English should still be
-            // searchable in — not as a second, always-on match path.
-            //
-            // English itself keeps matching the raw API name (not toDisplayName()'s formatted
-            // output, which localizedDisplayName would route it through) — toDisplayName() adds
-            // punctuation raw names don't have (e.g. "mr-mime" -> "Mr. Mime"), and normalizedQuery
-            // only strips spaces/hyphens, not periods/apostrophes, so a typed "mrmime" would stop
-            // matching "Mr. Mime" if this went through the same path. Unchanged from before B10.
-            val nameMatches = if (language == SupportedLanguages.DEFAULT_CODE) {
-                resource.name.replace("-", "").contains(normalizedQuery)
-            } else {
-                resource.name.localizedDisplayName(state.speciesNames, language)
-                    .lowercase().replace(" ", "").replace("-", "").contains(normalizedQuery)
-            }
-            nameMatches || (numericQuery != null && resource.id == numericQuery)
-        }
-    }
-    state.typeFilterNames?.let { set -> list = list.filter { it.name in set } }
-    state.moveFilterNames?.let { set -> list = list.filter { it.name in set } }
-    state.abilityFilterNames?.let { set -> list = list.filter { it.name in set } }
-    state.formatFilterNames?.let { set -> list = list.filter { it.name in set } }
-    if (state.showFavoritesOnly) list = list.filter { it.name in state.favorites }
+    return list.filter { it.id != null }
+}
 
+internal fun filterBySearch(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState,
+    debouncedQuery: String,
+    language: String = SupportedLanguages.DEFAULT_CODE
+): List<NamedApiResource> {
+    if (debouncedQuery.isBlank()) return list
+    val trimmed = debouncedQuery.trim().lowercase()
+    // Cards display the zero-padded dex number ("#0004"), but the old exact string match
+    // (`it.id?.toString() == q`) only matched the *unpadded* form — searching the exact text
+    // on screen ("0004") returned nothing. Comparing as Int handles both: "4".toIntOrNull()
+    // and "0004".toIntOrNull() are both 4.
+    val numericQuery = trimmed.toIntOrNull()
+    // Cards display names via toDisplayName() ("Mr. Mime", "Ho-Oh", "Deoxys Attack"), which
+    // inserts spaces/hyphens/punctuation the raw API name ("mr-mime") doesn't have — typing
+    // exactly what's on screen used to match nothing for any hyphenated name. Stripping hyphens
+    // from both sides (same normalization SearchableListDialog already uses for moves/abilities)
+    // makes either form find it.
+    val normalizedQuery = trimmed.replace(" ", "").replace("-", "")
+    return list.filter { resource ->
+        // B10 — search must match what's actually on screen, in the picked language, not a
+        // union with the raw/English name: a first pass at this fix matched *both*, which
+        // still surfaced e.g. Mudbray for "ray" in German even though its German name
+        // "Pampuli" has nothing to do with "ray" — the English match alone doesn't belong once
+        // a language-specific name exists to search against instead. localizedDisplayName
+        // already falls back to the English-formatted name on its own when a species has no
+        // translation for the current language, which is the only case English should still be
+        // searchable in — not as a second, always-on match path.
+        //
+        // English itself keeps matching the raw API name (not toDisplayName()'s formatted
+        // output, which localizedDisplayName would route it through) — toDisplayName() adds
+        // punctuation raw names don't have (e.g. "mr-mime" -> "Mr. Mime"), and normalizedQuery
+        // only strips spaces/hyphens, not periods/apostrophes, so a typed "mrmime" would stop
+        // matching "Mr. Mime" if this went through the same path. Unchanged from before B10.
+        val nameMatches = if (language == SupportedLanguages.DEFAULT_CODE) {
+            resource.name.replace("-", "").contains(normalizedQuery)
+        } else {
+            resource.name.localizedDisplayName(state.speciesNames, language)
+                .lowercase().replace(" ", "").replace("-", "").contains(normalizedQuery)
+        }
+        nameMatches || (numericQuery != null && resource.id == numericQuery)
+    }
+}
+
+internal fun applyTypeFilters(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState
+): List<NamedApiResource> {
+    var result = list
+    state.typeFilterNames?.let { set -> result = result.filter { it.name in set } }
+    state.moveFilterNames?.let { set -> result = result.filter { it.name in set } }
+    state.abilityFilterNames?.let { set -> result = result.filter { it.name in set } }
+    state.formatFilterNames?.let { set -> result = result.filter { it.name in set } }
+    return result
+}
+
+internal fun applyFavoritesFilter(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState
+): List<NamedApiResource> {
+    if (!state.showFavoritesOnly) return list
+    return list.filter { it.name in state.favorites }
+}
+
+internal fun applyRarityFilter(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState
+): List<NamedApiResource> {
     // Same reasoning as the stat-sort guard below: legendaryNames/mythicalNames come from the same
     // bulk fetch as baseStats, so both empty means "not loaded yet", not "no legendaries exist" —
     // applying the filter against that would silently empty the whole grid instead of just not
     // filtering yet.
     if (state.rarityFilter != null && (state.legendaryNames.isNotEmpty() || state.mythicalNames.isNotEmpty())) {
-        list = list.filter { resource ->
+        return list.filter { resource ->
             when (state.rarityFilter) {
                 RarityFilter.LEGENDARY -> resource.name in state.legendaryNames
                 RarityFilter.MYTHICAL -> resource.name in state.mythicalNames
@@ -217,23 +244,35 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String,
             }
         }
     }
+    return list
+}
 
+internal fun applyCounterFilter(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState
+): List<NamedApiResource> {
     // Same "no data yet, don't filter" guard as rarity above — typesByName comes from the same bulk
     // fetch as legendaryNames/mythicalNames, so empty means "not loaded yet", not "no Pokémon counter
     // any triangle".
     if (state.counterFilterActive && state.typesByName.isNotEmpty()) {
-        list = list.filter { resource ->
+        return list.filter { resource ->
             val types = state.typesByName[resource.name] ?: return@filter false
             TypeTriangles.isPerfectCounter(types)
         }
     }
+    return list
+}
 
+internal fun applyStatMinimums(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState
+): List<NamedApiResource> {
     // Same "no data yet, don't filter" guard as rarity/sort above — statMinimums is only ever set
     // from the same sheet that already triggered loadBaseStatsIfNeeded, so this window is brief,
     // but a Pokémon whose own entry is missing from an otherwise-loaded map (a partial/stale fetch)
     // still can't prove it satisfies a minimum, so it's excluded rather than assumed to pass.
     if (state.statMinimums.isNotEmpty() && state.baseStats.isNotEmpty()) {
-        list = list.filter { resource ->
+        return list.filter { resource ->
             val stats = state.baseStats[resource.name] ?: return@filter false
             state.statMinimums.all { (key, minimum) ->
                 // TOTAL is a derived sum, not a raw stat name — never present in `stats`
@@ -243,46 +282,65 @@ internal fun computeDisplayed(state: PokedexListUiState, debouncedQuery: String,
             }
         }
     }
+    return list
+}
 
-    state.sortStat?.let { stat ->
-        if (stat == SortStat.NAME) {
-            // decorate-sort-undecorate again: toDisplayName() does real work (special-case lookup,
-            // hyphen splitting/joining), no reason to redo it on every comparison.
-            val decorated = list.map { it to it.name.toDisplayName() }
-            val comparator = compareBy(NAME_COLLATOR) { pair: Pair<NamedApiResource, String> -> pair.second }
-            list = decorated.sortedWith(if (state.sortAscending) comparator else comparator.reversed()).map { it.first }
-            return@let
-        }
-        // A stat sort with no bulk stats loaded used to compute an all-equal Int.MIN_VALUE key set,
-        // which a stable sort leaves untouched — the grid silently ignored the sort while the chip
-        // still claimed "Sort: Attack", with no indication anything was wrong. Dex-number sort needs
-        // no stats and is unaffected by this early return.
-        if (stat != SortStat.DEX_NUMBER && state.baseStats.isEmpty()) return@let
-        val keyOf: (NamedApiResource) -> Int = { resource ->
-            // Checked before the stats lookup, not inside it: sorting by dex number doesn't need
-            // the bulk stats map at all, so it must not fall into the "no stats loaded -> every key
-            // is MIN_VALUE" branch below and silently do nothing.
-            if (stat == SortStat.DEX_NUMBER) {
-                resource.id ?: Int.MIN_VALUE
-            } else {
-                val stats = state.baseStats[resource.name]
-                when {
-                    stats == null -> Int.MIN_VALUE
-                    stat == SortStat.TOTAL -> stats.statTotal()
-                    else -> stats[stat.apiName] ?: Int.MIN_VALUE
-                }
+internal fun applySort(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState
+): List<NamedApiResource> {
+    val stat = state.sortStat ?: return list
+    if (stat == SortStat.NAME) {
+        // decorate-sort-undecorate again: toDisplayName() does real work (special-case lookup,
+        // hyphen splitting/joining), no reason to redo it on every comparison.
+        val decorated = list.map { it to it.name.toDisplayName() }
+        val comparator = compareBy(NAME_COLLATOR) { pair: Pair<NamedApiResource, String> -> pair.second }
+        return decorated.sortedWith(if (state.sortAscending) comparator else comparator.reversed()).map { it.first }
+    }
+    // A stat sort with no bulk stats loaded used to compute an all-equal Int.MIN_VALUE key set,
+    // which a stable sort leaves untouched — the grid silently ignored the sort while the chip
+    // still claimed "Sort: Attack", with no indication anything was wrong. Dex-number sort needs
+    // no stats and is unaffected by this early return.
+    if (stat != SortStat.DEX_NUMBER && state.baseStats.isEmpty()) return list
+    val keyOf: (NamedApiResource) -> Int = { resource ->
+        // Checked before the stats lookup, not inside it: sorting by dex number doesn't need
+        // the bulk stats map at all, so it must not fall into the "no stats loaded -> every key
+        // is MIN_VALUE" branch below and silently do nothing.
+        if (stat == SortStat.DEX_NUMBER) {
+            resource.id ?: Int.MIN_VALUE
+        } else {
+            val stats = state.baseStats[resource.name]
+            when {
+                stats == null -> Int.MIN_VALUE
+                stat == SortStat.TOTAL -> stats.statTotal()
+                else -> stats[stat.apiName] ?: Int.MIN_VALUE
             }
         }
-        // sortedBy/sortedByDescending call the key selector on every *comparison*, not once per
-        // element (~27k calls for a ~1300-item sort instead of 1300) — decorate-sort-undecorate
-        // computes each key exactly once.
-        val decorated = list.map { it to keyOf(it) }
-        list = if (state.sortAscending) {
-            decorated.sortedBy { it.second }
-        } else {
-            decorated.sortedByDescending { it.second }
-        }.map { it.first }
     }
+    // sortedBy/sortedByDescending call the key selector on every *comparison*, not once per
+    // element (~27k calls for a ~1300-item sort instead of 1300) — decorate-sort-undecorate
+    // computes each key exactly once.
+    val decorated = list.map { it to keyOf(it) }
+    return if (state.sortAscending) {
+        decorated.sortedBy { it.second }
+    } else {
+        decorated.sortedByDescending { it.second }
+    }.map { it.first }
+}
+
+internal fun computeDisplayed(
+    state: PokedexListUiState,
+    debouncedQuery: String,
+    language: String = SupportedLanguages.DEFAULT_CODE
+): List<NamedApiResource> {
+    var list = filterValidPokemon(state.allPokemon)
+    list = filterBySearch(list, state, debouncedQuery, language)
+    list = applyTypeFilters(list, state)
+    list = applyFavoritesFilter(list, state)
+    list = applyRarityFilter(list, state)
+    list = applyCounterFilter(list, state)
+    list = applyStatMinimums(list, state)
+    list = applySort(list, state)
     return list
 }
 

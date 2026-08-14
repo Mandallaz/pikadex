@@ -343,4 +343,86 @@ class PokedexListViewModelTest {
 
         assertNotEquals(base.toListAffectingState(), withDifferentFilter.toListAffectingState())
     }
+
+    // --- Direct tests for extracted helper functions (issue #141) ------------------------------
+
+    @Test
+    fun `filterValidPokemon directly filters out items with null id`() {
+        val idless = NamedApiResource("weird-form", "https://pokeapi.co/api/v2/pokemon/not-a-number/")
+        val result = filterValidPokemon(unsorted + idless)
+        assertEquals(unsorted, result)
+    }
+
+    @Test
+    fun `filterBySearch directly matches by query`() {
+        val state = PokedexListUiState()
+        val result = filterBySearch(unsorted, state, "char")
+        assertEquals(listOf("charmander"), result.map { it.name })
+    }
+
+    @Test
+    fun `applyTypeFilters directly filters by selected type sets`() {
+        val state = PokedexListUiState(
+            typeFilterNames = setOf("charmander", "bulbasaur"),
+            moveFilterNames = setOf("charmander")
+        )
+        val result = applyTypeFilters(unsorted, state)
+        assertEquals(listOf("charmander"), result.map { it.name })
+    }
+
+    @Test
+    fun `applyFavoritesFilter directly keeps only favorited names`() {
+        val state = PokedexListUiState(showFavoritesOnly = true, favorites = setOf("squirtle"))
+        val result = applyFavoritesFilter(unsorted, state)
+        assertEquals(listOf("squirtle"), result.map { it.name })
+    }
+
+    @Test
+    fun `applyRarityFilter directly filters by rarity`() {
+        val state = PokedexListUiState(
+            rarityFilter = RarityFilter.LEGENDARY,
+            legendaryNames = setOf("charmander")
+        )
+        val result = applyRarityFilter(unsorted, state)
+        assertEquals(listOf("charmander"), result.map { it.name })
+    }
+
+    @Test
+    fun `applyCounterFilter directly filters by triangle counters`() {
+        val state = PokedexListUiState(
+            counterFilterActive = true,
+            typesByName = mapOf(
+                "charmander" to listOf("fire", "flying"),
+                "squirtle" to listOf("water")
+            )
+        )
+        val result = applyCounterFilter(unsorted, state)
+        assertEquals(listOf("charmander"), result.map { it.name })
+    }
+
+    @Test
+    fun `applyStatMinimums directly filters by minimum stats`() {
+        val state = PokedexListUiState(
+            baseStats = statBaseline,
+            statMinimums = mapOf("attack" to 50)
+        )
+        val result = applyStatMinimums(unsorted, state)
+        assertEquals(listOf("charmander"), result.map { it.name })
+    }
+
+    @Test
+    fun `applySort directly sorts list by stat`() {
+        val stats = mapOf(
+            "charmander" to mapOf("attack" to 52),
+            "bulbasaur" to mapOf("attack" to 49),
+            "squirtle" to mapOf("attack" to 48)
+        )
+        val state = PokedexListUiState(
+            sortStat = SortStat.ATTACK,
+            sortAscending = true,
+            baseStats = stats
+        )
+        val result = applySort(unsorted, state)
+        assertEquals(listOf("squirtle", "bulbasaur", "charmander"), result.map { it.name })
+    }
 }
