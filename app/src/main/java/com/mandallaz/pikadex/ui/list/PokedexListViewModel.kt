@@ -317,9 +317,6 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     /** The filtered/sorted list, recomputed once per actual state change (not once per
      *  recomposition) and off the main thread — see [computeDisplayed]. */
-    // Visible for testing to verify computeDisplayed execution counts and avoid regression
-    internal var computeDisplayedCount = 0
-
     @OptIn(FlowPreview::class)
     val displayedPokemon: StateFlow<List<NamedApiResource>> =
         combine(
@@ -338,10 +335,7 @@ class PokedexListViewModel @JvmOverloads constructor(
             // changes: switching language mid-search should re-filter against the new language's
             // names without the user having to retype anything.
             LanguageSettings.currentLanguage
-        ) { state, query, language ->
-            computeDisplayedCount++
-            computeDisplayed(state, query, language)
-        }
+        ) { state, query, language -> computeDisplayed(state, query, language) }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

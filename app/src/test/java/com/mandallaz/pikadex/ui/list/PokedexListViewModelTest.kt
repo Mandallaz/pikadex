@@ -1,9 +1,12 @@
 package com.mandallaz.pikadex.ui.list
 
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
+import com.mandallaz.pikadex.ui.UiText
 import com.mandallaz.pikadex.util.RarityFilter
 import com.mandallaz.pikadex.util.SortStat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
@@ -304,5 +307,39 @@ class PokedexListViewModelTest {
         val mrMime = resource("mr-mime", 122)
         val state = PokedexListUiState(allPokemon = listOf(mrMime), speciesNames = mudbraySpeciesNames)
         assertEquals(listOf("mr-mime"), computeDisplayed(state, "mrmime", language = "en").map { it.name })
+    }
+
+    // --- toListAffectingState (issue #133) -----------------------------------------------------
+    //
+    // displayedPokemon's combine() is scoped to toListAffectingState() so that fields unrelated to
+    // the displayed list (isLoading, errorMessage, isFilterLoading, isStatsLoading, and the various
+    // *Options lists, which are UI-facing only) don't trigger a full recompute via
+    // distinctUntilChanged(). Proven here as a plain equality check on the pure function itself,
+    // rather than by counting recomputes through the real coroutine pipeline — that approach (an
+    // earlier version of this test, plus a computeDisplayedCount instrumentation var in
+    // PokedexListViewModel) was flaky: displayedPokemon's upstream flowOn(Dispatchers.Default) runs
+    // on a real thread, not the test's virtual scheduler, so nothing could deterministically wait
+    // for it before asserting.
+
+    @Test
+    fun `toListAffectingState is unchanged when only unrelated fields differ`() {
+        val base = PokedexListUiState(allPokemon = listOf(resource("bulbasaur", 1)))
+        val withUnrelatedChanges = base.copy(
+            isLoading = true,
+            errorMessage = UiText(R.string.list_error_load_pokedex),
+            searchQuery = "char",
+            isFilterLoading = true,
+            isStatsLoading = true
+        )
+
+        assertEquals(base.toListAffectingState(), withUnrelatedChanges.toListAffectingState())
+    }
+
+    @Test
+    fun `toListAffectingState changes when a list-affecting field changes`() {
+        val base = PokedexListUiState(allPokemon = listOf(resource("bulbasaur", 1)))
+        val withDifferentFilter = base.copy(rarityFilter = RarityFilter.LEGENDARY)
+
+        assertNotEquals(base.toListAffectingState(), withDifferentFilter.toListAffectingState())
     }
 }
