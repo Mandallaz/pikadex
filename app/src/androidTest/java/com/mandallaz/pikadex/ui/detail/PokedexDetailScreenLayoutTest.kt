@@ -54,29 +54,14 @@ class PokedexDetailScreenLayoutTest {
     fun spriteToggleButtonsAreRenderedByDetailContent() {
         composeTestRule.setContent {
             DetailContent(
-                pokemon = fakePokemon(),
-                species = fakeSpecies(),
-                evolutionChain = null,
-                typeMatchups = emptyMap(),
-                abilityDescriptions = emptyMap(),
-                counteredTriangles = emptyList(),
-                partiallyCounteredTriangles = emptyList(),
-                moveInfo = emptyMap(),
-                statPercentiles = emptyMap(),
-                formVersionGroup = null,
-                groupedMoves = emptyMap(),
-                shiny = false,
-                animated = false,
-                frontBackSprites = false,
+                data = DetailData(
+                    pokemon = fakePokemon(),
+                    species = fakeSpecies()
+                ),
                 onToggleShiny = {},
                 onToggleAnimated = {},
                 onToggleFrontBackSprites = {},
-                isCryPlaying = false,
                 onPlayCry = {},
-                showTeamImpactCard = false,
-                isTeamImpactLoading = false,
-                teamImpactError = null,
-                teamImpact = null,
                 onPokemonClick = {},
                 onViewTypeTriangles = {}
             )
