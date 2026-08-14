@@ -23,9 +23,12 @@ import com.mandallaz.pikadex.util.rankSuggestions
 import com.mandallaz.pikadex.util.sharedWeaknesses
 import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -108,7 +111,8 @@ internal fun TeamUiState.withDerivedFields(): TeamUiState {
 }
 
 class TeamViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepositoryApi = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TeamUiState())
@@ -255,18 +259,21 @@ class TeamViewModel @JvmOverloads constructor(
                     tierByShowdownKey = tiersDeferred?.await().orEmpty()
                     Triple(masterDeferred.await(), basicsDeferred.await(), typeDetailsDeferred.mapValues { it.value.await() })
                 }
-                val candidates = basics.mapNotNull { (name, basic) ->
-                    val id = idByName[name] ?: return@mapNotNull null
-                    // Alternate forms (mega/gmax/regional/...) — same id-range heuristic as
-                    // PokedexRepository.getPokemonDetailBundle's comment.
-                    if (id >= 10000) return@mapNotNull null
-                    val total = basic.stats.values.sum()
-                    if (total < 300) return@mapNotNull null
-                    SuggestionCandidate(name, basic.types, total)
+                val (ranked, spriteIds) = withContext(defaultDispatcher) {
+                    val candidates = basics.mapNotNull { (name, basic) ->
+                        val id = idByName[name] ?: return@mapNotNull null
+                        // Alternate forms (mega/gmax/regional/...) — same id-range heuristic as
+                        // PokedexRepository.getPokemonDetailBundle's comment.
+                        if (id >= 10000) return@mapNotNull null
+                        val total = basic.stats.values.sum()
+                        if (total < 300) return@mapNotNull null
+                        SuggestionCandidate(name, basic.types, total)
+                    }
+                    val tierFilteredCandidates = filterByTierCeiling(candidates, maxTier, tierByShowdownKey)
+                    val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, tierFilteredCandidates, typeDetails, excludeNames)
+                    val spriteIds = ranked.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
+                    ranked to spriteIds
                 }
-                val tierFilteredCandidates = filterByTierCeiling(candidates, maxTier, tierByShowdownKey)
-                val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, tierFilteredCandidates, typeDetails, excludeNames)
-                val spriteIds = ranked.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
                 _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = ranked, suggestionSpriteIds = spriteIds) }
             } catch (e: CancellationException) {
                 throw e
