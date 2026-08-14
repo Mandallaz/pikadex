@@ -266,8 +266,17 @@ class PokedexListViewModelLoadTest {
 
         dispatcher.scheduler.advanceUntilIdle()
 
-        // Wait for background computeDisplayed on Dispatchers.Default to complete the initial load
+        // displayedPokemon's flowOn(Dispatchers.Default) computation runs on a real background
+        // thread, so advanceUntilIdle() on the virtual test dispatcher above can't wait for it
+        // (same root cause as B42/#111). Poll with a bound rather than looping forever: an
+        // unbounded loop would hang the whole CI job on a real regression instead of failing this
+        // one test with a clear assertion.
+        val deadline = System.currentTimeMillis() + 5_000
         while (viewModel.displayedPokemon.value.isEmpty()) {
+            assertTrue(
+                "displayedPokemon never populated within 5s of the initial load",
+                System.currentTimeMillis() < deadline
+            )
             Thread.sleep(10)
         }
 
