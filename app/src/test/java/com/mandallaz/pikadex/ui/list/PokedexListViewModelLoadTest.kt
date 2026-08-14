@@ -168,6 +168,10 @@ class PokedexListViewModelLoadTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf("grass", "poison"), freshViewModel.uiState.value.typesByName["bulbasaur"])
+
+        // B53 — this ViewModel isn't the one setUp()/tearDown() tracks, so its own displayedPokemon
+        // collector (flowOn(Dispatchers.Default)) leaks past this test unless cleared here too.
+        freshViewModel.clearForTest(dispatcher.scheduler)
     }
 
     @Test
@@ -297,6 +301,10 @@ class PokedexListViewModelLoadTest {
             trackingDispatcher.blocksDispatched > initialDispatches
         )
         assertEquals(listOf("grass", "poison"), testViewModel.uiState.value.typesByName["bulbasaur"])
+
+        // B53 — same as freshViewModel above: this instance isn't tracked by tearDown(), so clear
+        // it explicitly or its displayedPokemon collector leaks into later tests.
+        testViewModel.clearForTest(dispatcher.scheduler)
     }
 
     // A sibling test for the same defaultDispatcher-injection pattern (PokedexListContext.update's
