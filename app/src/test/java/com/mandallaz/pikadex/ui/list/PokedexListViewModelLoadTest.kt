@@ -266,6 +266,11 @@ class PokedexListViewModelLoadTest {
 
         dispatcher.scheduler.advanceUntilIdle()
 
+        // Wait for background computeDisplayed on Dispatchers.Default to complete the initial load
+        while (viewModel.displayedPokemon.value.isEmpty()) {
+            Thread.sleep(10)
+        }
+
         // Capture initial computeDisplayedCount
         val initialCount = viewModel.computeDisplayedCount
 
