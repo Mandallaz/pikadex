@@ -1,9 +1,6 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -50,21 +47,22 @@ object LanguageSettings {
     private const val PREFS_NAME = "language_settings"
     private const val KEY_LANGUAGE = "language_code"
 
-    private var prefs: SharedPreferences? = null
-
-    private val _currentLanguage = MutableStateFlow(SupportedLanguages.DEFAULT_CODE)
-    val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
+    private val store = PrefsStore(SupportedLanguages.DEFAULT_CODE)
+    val currentLanguage: StateFlow<String> = store.flow.asStateFlow()
 
     fun init(context: Context) {
-        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs = sharedPrefs
-        _currentLanguage.value = resolveLanguage(sharedPrefs.getString(KEY_LANGUAGE, null))
+        store.init(
+            context = context,
+            name = PREFS_NAME,
+            key = KEY_LANGUAGE,
+            default = SupportedLanguages.DEFAULT_CODE,
+            encode = { key, value -> putString(key, value) },
+            decode = { key, default -> resolveLanguage(getString(key, default)) }
+        )
     }
 
     fun setLanguage(code: String) {
-        val p = prefs ?: return
-        _currentLanguage.value = code
-        p.edit { putString(KEY_LANGUAGE, code) }
+        store.set(code)
     }
 
     /** A stored code that's no longer in [SupportedLanguages.ALL] (a future picker-list change

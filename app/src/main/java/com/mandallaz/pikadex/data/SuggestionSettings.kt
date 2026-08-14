@@ -1,9 +1,6 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -25,21 +22,22 @@ object SuggestionSettings {
      *  collide with an actual selection. */
     private const val NO_LIMIT_SENTINEL = ""
 
-    private var prefs: SharedPreferences? = null
-
-    private val _maxTier = MutableStateFlow<String?>(DEFAULT_MAX_TIER)
-    val maxTier: StateFlow<String?> = _maxTier.asStateFlow()
+    private val store = PrefsStore<String?>(DEFAULT_MAX_TIER)
+    val maxTier: StateFlow<String?> = store.flow.asStateFlow()
 
     fun init(context: Context) {
-        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs = sharedPrefs
-        _maxTier.value = resolveMaxTier(sharedPrefs.getString(KEY_MAX_TIER, DEFAULT_MAX_TIER))
+        store.init(
+            context = context,
+            name = PREFS_NAME,
+            key = KEY_MAX_TIER,
+            default = DEFAULT_MAX_TIER,
+            encode = { key, value -> putString(key, value ?: NO_LIMIT_SENTINEL) },
+            decode = { key, default -> resolveMaxTier(getString(key, default)) }
+        )
     }
 
     fun setMaxTier(tier: String?) {
-        val p = prefs ?: return
-        _maxTier.value = tier
-        p.edit { putString(KEY_MAX_TIER, tier ?: NO_LIMIT_SENTINEL) }
+        store.set(tier)
     }
 
     /** Translates a raw stored value (already defaulted to [DEFAULT_MAX_TIER] by [init]'s own
