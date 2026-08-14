@@ -44,7 +44,31 @@ class CryPlayerAudioFocusTest {
         val ifBranch = errorListener.substringBefore("} else {")
         assertTrue(
             "the fallback branch should re-enter play(), not call abandonAudioFocus() itself",
-            ifBranch.contains("play(context, fallbackSource)") && !ifBranch.contains("abandonAudioFocus()")
+            ifBranch.contains("play(context, cleanFallback)") && !ifBranch.contains("abandonAudioFocus()")
+        )
+    }
+
+    @Test
+    fun `the synchronous catch block fallback retry path posts fallback`() {
+        val catchBlock = source.substringAfter("catch (e: Exception) {").substringBefore("}\n        }")
+        assertTrue(
+            "the synchronous catch block should handle fallback retry correctly when cleanFallback is present " +
+                "(the URL-validated fallback, not the raw fallbackSource parameter — see UrlValidator/#147)",
+            catchBlock.contains("cleanFallback != null") && catchBlock.contains("play(context, cleanFallback)")
+        )
+    }
+
+    @Test
+    fun `the synchronous catch block no-fallback path abandons audio focus and updates state`() {
+        val catchBlock = source.substringAfter("catch (e: Exception) {").substringBefore("}\n        }")
+        val elseBranch = catchBlock.substringAfter("} else {").substringBefore("}")
+        assertTrue(
+            "the synchronous catch block no-fallback branch should call abandonAudioFocus()",
+            elseBranch.contains("abandonAudioFocus()")
+        )
+        assertTrue(
+            "the synchronous catch block no-fallback branch should set isPlaying to false",
+            elseBranch.contains("_isPlaying.value = false")
         )
     }
 }

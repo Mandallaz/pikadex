@@ -1,9 +1,6 @@
 package com.mandallaz.pikadex.data
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -15,22 +12,17 @@ object FavoritesRepository {
     private const val PREFS_NAME = "favorites"
     private const val KEY_FAVORITE_NAMES = "favorite_names"
 
-    private var prefs: SharedPreferences? = null
-    private val _favorites = MutableStateFlow<Set<String>>(emptySet())
-    val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
+    private val store = PrefsStore(emptySet<String>())
+    val favorites: StateFlow<Set<String>> = store.flow.asStateFlow()
 
     fun init(context: Context) {
-        val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs = sharedPrefs
-        _favorites.value = sharedPrefs.getStringSet(KEY_FAVORITE_NAMES, emptySet()).orEmpty().toSet()
+        store.init(context, PREFS_NAME, KEY_FAVORITE_NAMES, emptySet())
     }
 
-    fun isFavorite(name: String): Boolean = _favorites.value.contains(name)
+    fun isFavorite(name: String): Boolean = favorites.value.contains(name)
 
     fun toggle(name: String) {
-        val p = prefs ?: return
-        val updated = if (_favorites.value.contains(name)) _favorites.value - name else _favorites.value + name
-        _favorites.value = updated
-        p.edit { putStringSet(KEY_FAVORITE_NAMES, updated) }
+        val updated = if (favorites.value.contains(name)) favorites.value - name else favorites.value + name
+        store.set(updated)
     }
 }

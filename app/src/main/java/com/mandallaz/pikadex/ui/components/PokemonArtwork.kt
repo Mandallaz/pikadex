@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.mandallaz.pikadex.util.Sprites
+import com.mandallaz.pikadex.util.UrlValidator
 
 /**
  * Pokémon imagery, degrading through the pictures that actually exist for a given entry.
@@ -134,17 +135,20 @@ private fun FallbackImage(
     contentScale: ContentScale,
     modifier: Modifier
 ) {
-    // Keyed on the candidates so a recycled grid cell showing a different Pokémon restarts at the
+    val validCandidates = remember(candidates) {
+        candidates.filter { UrlValidator.isValid(it) }
+    }
+    // Keyed on the validCandidates so a recycled grid cell showing a different Pokémon restarts at the
     // first option rather than inheriting the previous occupant's fallback.
-    var attempt by remember(candidates) { mutableIntStateOf(0) }
+    var attempt by remember(validCandidates) { mutableIntStateOf(0) }
     AsyncImage(
-        model = candidates.getOrNull(attempt),
+        model = validCandidates.getOrNull(attempt),
         contentDescription = contentDescription,
         contentScale = contentScale,
         // `size - 1`, not `size`: incrementing on the last candidate's failure handed AsyncImage a
         // null model, which Coil reports as another error — an extra recomposition to reach the
         // same settled state (a permanently empty cell) instead of stopping there directly.
-        onError = { if (attempt < candidates.size - 1) attempt++ },
+        onError = { if (attempt < validCandidates.size - 1) attempt++ },
         modifier = modifier
     )
 }

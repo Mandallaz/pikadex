@@ -3,11 +3,13 @@ package com.mandallaz.pikadex.ui.team
 import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.clearForTest
+import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.DamageRelations
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.fakeTypeDetailDto
+import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.clearForTest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +51,7 @@ class TeamViewModelTest {
         repository.typeDetailByName = mapOf("water" to fakeTypeDetailDto("water"))
         repository.pokemonLevelUpMoveNames = emptyList()
         repository.allMoveInfo = emptyMap()
-        viewModel = TeamViewModel(repository)
+        viewModel = TeamViewModel(repository, dispatcher)
     }
 
     @After
@@ -58,6 +60,7 @@ class TeamViewModelTest {
         // so the reset below doesn't try to wake a dead coroutine on an already-reset dispatcher
         // (see clearForTest's doc) or leak that collector into a later, unrelated test.
         viewModel.clearForTest()
+        dispatcher.scheduler.advanceUntilIdle()
         TeamRepository.replaceAll(emptyList())
         // B35 — LocalizedNames is a JVM-wide singleton whose cache, once warmed by this test's
         // own `species names load into state...` test, would otherwise stay stale for every other
@@ -226,12 +229,107 @@ class TeamViewModelTest {
     @Test
     fun `species names load into state for the Team screen to localize with`() = runTest(dispatcher) {
         repository.allSpeciesNames = mapOf("squirtle" to mapOf("fr" to "Carapuce"))
-        val freshViewModel = TeamViewModel(repository)
+        val freshViewModel = TeamViewModel(repository, dispatcher)
 
         TeamRepository.replaceAll(listOf(squirtle))
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(mapOf("fr" to "Carapuce"), freshViewModel.uiState.value.speciesNames["squirtle"])
         freshViewModel.clearForTest()
+    }
+
+    @Test
+    fun `loadSuggestions computes and updates suggestions state on success`() = runTest(dispatcher) {
+        val pikachu = NamedApiResource("pikachu", "https://pokeapi.co/api/v2/pokemon/25/")
+        val charmander = NamedApiResource("charmander", "https://pokeapi.co/api/v2/pokemon/4/")
+
+        repository.masterList = listOf(squirtle, pikachu, charmander)
+        val stats = mapOf(
+            "hp" to 100,
+            "attack" to 100,
+            "defense" to 100,
+            "special-attack" to 100,
+            "special-defense" to 100,
+            "speed" to 100
+        )
+        repository.allBasics = mapOf(
+            "squirtle" to PokeApiGraphQLDataSource.PokemonBasics(stats, listOf("water"), false, false),
+            "pikachu" to PokeApiGraphQLDataSource.PokemonBasics(stats, listOf("electric"), false, false),
+            "charmander" to PokeApiGraphQLDataSource.PokemonBasics(stats, listOf("fire"), false, false)
+        )
+        val allTypeDetails = TypeIds.standardTypeNames.associateWith { name ->
+            when (name) {
+                "electric" -> TypeDetailDto(
+                    id = 1,
+                    name = "electric",
+                    damageRelations = DamageRelations(
+                        doubleDamageFrom = null,
+                        doubleDamageTo = listOf(NamedApiResource("water", "")),
+                        halfDamageFrom = null,
+                        halfDamageTo = null,
+                        noDamageFrom = null,
+                        noDamageTo = null
+                    ),
+                    pokemon = null
+                )
+                "fire" -> TypeDetailDto(
+                    id = 1,
+                    name = "fire",
+                    damageRelations = DamageRelations(
+                        doubleDamageFrom = null,
+                        doubleDamageTo = listOf(NamedApiResource("grass", "")),
+                        halfDamageFrom = null,
+                        halfDamageTo = null,
+                        noDamageFrom = null,
+                        noDamageTo = null
+                    ),
+                    pokemon = null
+                )
+                else -> fakeTypeDetailDto(name)
+            }
+        }
+        repository.typeDetailByName = allTypeDetails + repository.typeDetailByName
+
+        TeamRepository.replaceAll(listOf(squirtle))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isSuggestionsLoading)
+        assertTrue(state.suggestions.isNotEmpty())
+        assertEquals(mapOf("pikachu" to 25, "charmander" to 4), state.suggestionSpriteIds)
+    }
+
+    @Test
+    fun `a team change mid-fetch joins the cancelled computation before starting the new one`() = runTest(dispatcher) {
+        var firstJobRef: kotlinx.coroutines.Job? = null
+        val repositorySpy = object : com.mandallaz.pikadex.data.repository.PokedexRepositoryApi by repository {
+            override suspend fun getPokemonTypes(nameOrId: String): List<String> {
+                if (nameOrId == "charmander") {
+                    val job = firstJobRef
+                    assertNotNull("firstJobRef must be set", job)
+                    assertTrue("The previous matrixJob must be completed before the new one starts its fetch!", job!!.isCompleted)
+                }
+                return repository.getPokemonTypes(nameOrId)
+            }
+        }
+
+        val spyViewModel = TeamViewModel(repositorySpy, dispatcher)
+        val gate = CompletableDeferred<Unit>()
+        repository.gate = gate
+
+        TeamRepository.replaceAll(listOf(squirtle))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val firstJob = spyViewModel.matrixJob
+        assertNotNull(firstJob)
+        firstJobRef = firstJob
+
+        val charmander = NamedApiResource("charmander", "https://pokeapi.co/api/v2/pokemon/4/")
+        TeamRepository.replaceAll(listOf(charmander))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        gate.complete(Unit)
+        dispatcher.scheduler.advanceUntilIdle()
+        spyViewModel.clearForTest()
     }
 }

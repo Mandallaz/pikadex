@@ -23,9 +23,13 @@ import com.mandallaz.pikadex.util.rankSuggestions
 import com.mandallaz.pikadex.util.sharedWeaknesses
 import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -108,7 +112,8 @@ internal fun TeamUiState.withDerivedFields(): TeamUiState {
 }
 
 class TeamViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepositoryApi = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TeamUiState())
@@ -117,8 +122,8 @@ class TeamViewModel @JvmOverloads constructor(
     val teams: StateFlow<List<TeamSlot>> = TeamRepository.teams
     val activeTeamId: StateFlow<Int> = TeamRepository.activeTeamId
 
-    private var matrixJob: Job? = null
-    private var suggestionsJob: Job? = null
+    internal var matrixJob: Job? = null
+    internal var suggestionsJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -153,8 +158,10 @@ class TeamViewModel @JvmOverloads constructor(
         // Explicit job tracking rather than collectLatest, so [retry] can restart the same work
         // without a team change to trigger it — and so a superseded fetch is cancelled the same way
         // the Pokédex list's filter jobs are.
-        matrixJob?.cancel()
-        suggestionsJob?.cancel()
+        val oldMatrixJob = matrixJob
+        val oldSuggestionsJob = suggestionsJob
+        oldMatrixJob?.cancel()
+        oldSuggestionsJob?.cancel()
         if (members.isEmpty()) {
             // Clear only what belongs to the team itself. presetSpriteIds is unrelated to team
             // membership and expensive to rebuild (it resolves every preset roster's sprites
@@ -177,6 +184,8 @@ class TeamViewModel @JvmOverloads constructor(
         }
         _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null).withDerivedFields() }
         matrixJob = viewModelScope.launch {
+            oldMatrixJob?.cancelAndJoin()
+            oldSuggestionsJob?.cancelAndJoin()
             try {
                 // supervisorScope so one member's failed fetch surfaces as a normal catchable
                 // exception rather than risking an uncaught crash — see the identical fix (and
@@ -222,7 +231,8 @@ class TeamViewModel @JvmOverloads constructor(
      *  outside that gate just clears the list rather than showing suggestions for a team that no
      *  longer applies. */
     private fun loadSuggestions() {
-        suggestionsJob?.cancel()
+        val oldSuggestionsJob = suggestionsJob
+        oldSuggestionsJob?.cancel()
         val state = _uiState.value
         if (state.isMatrixStale || state.members.isEmpty() || state.members.size >= TeamRepository.MAX_SIZE) {
             _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = emptyList(), suggestionSpriteIds = emptyMap()) }
@@ -238,6 +248,7 @@ class TeamViewModel @JvmOverloads constructor(
         val maxTier = SuggestionSettings.maxTier.value
         _uiState.update { it.copy(isSuggestionsLoading = true, suggestionTierCeiling = maxTier) }
         suggestionsJob = viewModelScope.launch {
+            oldSuggestionsJob?.cancelAndJoin()
             try {
                 var tierByShowdownKey: Map<String, String> = emptyMap()
                 val (idByName, basics, typeDetails) = supervisorScope {
@@ -255,18 +266,21 @@ class TeamViewModel @JvmOverloads constructor(
                     tierByShowdownKey = tiersDeferred?.await().orEmpty()
                     Triple(masterDeferred.await(), basicsDeferred.await(), typeDetailsDeferred.mapValues { it.value.await() })
                 }
-                val candidates = basics.mapNotNull { (name, basic) ->
-                    val id = idByName[name] ?: return@mapNotNull null
-                    // Alternate forms (mega/gmax/regional/...) — same id-range heuristic as
-                    // PokedexRepository.getPokemonDetailBundle's comment.
-                    if (id >= 10000) return@mapNotNull null
-                    val total = basic.stats.values.sum()
-                    if (total < 300) return@mapNotNull null
-                    SuggestionCandidate(name, basic.types, total)
+                val (ranked, spriteIds) = withContext(defaultDispatcher) {
+                    val candidates = basics.mapNotNull { (name, basic) ->
+                        val id = idByName[name] ?: return@mapNotNull null
+                        // Alternate forms (mega/gmax/regional/...) — same id-range heuristic as
+                        // PokedexRepository.getPokemonDetailBundle's comment.
+                        if (id >= 10000) return@mapNotNull null
+                        val total = basic.stats.values.sum()
+                        if (total < 300) return@mapNotNull null
+                        SuggestionCandidate(name, basic.types, total)
+                    }
+                    val tierFilteredCandidates = filterByTierCeiling(candidates, maxTier, tierByShowdownKey)
+                    val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, tierFilteredCandidates, typeDetails, excludeNames)
+                    val spriteIds = ranked.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
+                    ranked to spriteIds
                 }
-                val tierFilteredCandidates = filterByTierCeiling(candidates, maxTier, tierByShowdownKey)
-                val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, tierFilteredCandidates, typeDetails, excludeNames)
-                val spriteIds = ranked.mapNotNull { s -> idByName[s.name]?.let { s.name to it } }.toMap()
                 _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = ranked, suggestionSpriteIds = spriteIds) }
             } catch (e: CancellationException) {
                 throw e

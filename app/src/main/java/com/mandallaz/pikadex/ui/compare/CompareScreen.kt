@@ -51,9 +51,11 @@ import com.mandallaz.pikadex.ui.components.StatBar
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.StatColors
 import com.mandallaz.pikadex.util.localizedDisplayName
+import com.mandallaz.pikadex.util.BASE_STATS
+import com.mandallaz.pikadex.util.TOTAL
+import com.mandallaz.pikadex.util.baseStatTotal
 
 private val SIDE_BY_SIDE_MIN_WIDTH = 500.dp
-private val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
 
 private enum class Side { LEFT, RIGHT }
 
@@ -179,7 +181,7 @@ private fun CompareContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        BASE_STAT_KEYS.forEach { key ->
+                        BASE_STATS.forEach { key ->
                             StatCompareRow(
                                 statKey = key,
                                 leftValue = left.pokemon.stats.orEmpty().firstOrNull { it.stat.name == key }?.baseStat ?: 0,
@@ -189,14 +191,14 @@ private fun CompareContent(
                                 sideBySide = sideBySide
                             )
                         }
-                        val leftTotal = left.pokemon.stats.orEmpty().sumOf { it.baseStat }
-                        val rightTotal = right.pokemon.stats.orEmpty().sumOf { it.baseStat }
+                        val leftTotal = left.pokemon.baseStatTotal()
+                        val rightTotal = right.pokemon.baseStatTotal()
                         StatCompareRow(
-                            statKey = "total",
+                            statKey = TOTAL,
                             leftValue = leftTotal,
                             rightValue = rightTotal,
-                            leftPercentile = left.statPercentiles["total"] ?: 0.5,
-                            rightPercentile = right.statPercentiles["total"] ?: 0.5,
+                            leftPercentile = left.statPercentiles[TOTAL] ?: 0.5,
+                            rightPercentile = right.statPercentiles[TOTAL] ?: 0.5,
                             sideBySide = sideBySide
                         )
                     }

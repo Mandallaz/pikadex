@@ -19,6 +19,9 @@ import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.localizedOrEnglish
 import com.mandallaz.pikadex.util.movesForCategory
 import com.mandallaz.pikadex.util.TypeIds
+import com.mandallaz.pikadex.util.BASE_STATS
+import com.mandallaz.pikadex.util.TOTAL
+import com.mandallaz.pikadex.util.statTotal
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
@@ -258,16 +261,16 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
      *  7 times over is real CPU work, not just a cache lookup. */
     private suspend fun getSortedStatArrays(): Map<String, IntArray> = sortedStatArraysCache.get {
         val allStats = getAllBaseStats()
-        BASE_STAT_KEYS.associateWith { key ->
+        BASE_STATS.associateWith { key ->
             allStats.values.mapNotNull { it[key] }.sorted().toIntArray()
         } + mapOf(
-            "total" to allStats.values.map { stats -> BASE_STAT_KEYS.sumOf { stats[it] ?: 0 } }.sorted().toIntArray()
+            TOTAL to allStats.values.map { stats -> stats.statTotal() }.sorted().toIntArray()
         )
     }
 
     /** Fraction of every other pokemon's same stat that [value] is greater-or-equal to (0.0..1.0)
      *  — ties split evenly so a value shared by many pokemon doesn't get pushed to either extreme.
-     *  [statKey] is one of [BASE_STAT_KEYS] or the synthetic "total". */
+     *  [statKey] is one of [BASE_STATS] or the synthetic [TOTAL]. */
     override suspend fun getStatPercentile(statKey: String, value: Int): Double {
         val sorted = getSortedStatArrays()[statKey] ?: return 0.5
         if (sorted.isEmpty()) return 0.5
@@ -337,7 +340,6 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         }
 
     private companion object {
-        val BASE_STAT_KEYS = listOf("hp", "attack", "defense", "special-attack", "special-defense", "speed")
         // New key (not base_stats_v2 renamed): the payload shape changed (stats+types+rarity, not
         // just stats), so an upgrading install must re-fetch rather than trying to read the old
         // shape back as the new one.

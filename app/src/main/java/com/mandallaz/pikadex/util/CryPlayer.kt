@@ -11,6 +11,7 @@ import android.media.MediaPlayer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.mandallaz.pikadex.util.UrlValidator
 
 /** Thin wrapper around [MediaPlayer] for F34's cry playback — the one place in the app that plays
  *  audio, so there's no existing player abstraction to reuse. Owned by `PokedexDetailViewModel`,
@@ -47,6 +48,26 @@ class CryPlayer {
      *  inside its own callback. Posting the retry to the next main-thread loop iteration avoids
      *  that unsupported re-entrant call pattern. */
     fun play(context: Context, source: String, fallbackSource: String? = null) {
+        val isSourceRemote = UrlValidator.isRemoteUrl(source)
+        val isSourceValid = !isSourceRemote || UrlValidator.isValid(source)
+
+        val isFallbackRemote = fallbackSource?.let { UrlValidator.isRemoteUrl(it) } ?: false
+        val isFallbackValid = fallbackSource == null || !isFallbackRemote || UrlValidator.isValid(fallbackSource)
+
+        val cleanSource = if (isSourceValid) source else {
+            if (isFallbackValid && fallbackSource != null) fallbackSource else null
+        }
+        val cleanFallback = if (isSourceValid) {
+            if (isFallbackValid) fallbackSource else null
+        } else {
+            null
+        }
+
+        if (cleanSource == null) {
+            _isPlaying.value = false
+            return
+        }
+
         release()
         requestAudioFocus(context)
         _isPlaying.value = true
@@ -62,10 +83,10 @@ class CryPlayer {
                 abandonAudioFocus()
             }
             setOnErrorListener { _, _, _ ->
-                if (fallbackSource != null) {
-                    // Not abandoned here — play(fallbackSource) immediately re-enters and calls
+                if (cleanFallback != null) {
+                    // Not abandoned here — play(cleanFallback) immediately re-enters and calls
                     // release() (which abandons focus) then requestAudioFocus() again itself.
-                    mainHandler.post { play(context, fallbackSource) }
+                    mainHandler.post { play(context, cleanFallback) }
                 } else {
                     _isPlaying.value = false
                     abandonAudioFocus()
@@ -73,10 +94,15 @@ class CryPlayer {
                 true
             }
             try {
-                setDataSource(source)
+                setDataSource(cleanSource)
                 prepareAsync()
             } catch (e: Exception) {
-                _isPlaying.value = false
+                if (cleanFallback != null) {
+                    mainHandler.post { play(context, cleanFallback) }
+                } else {
+                    _isPlaying.value = false
+                    abandonAudioFocus()
+                }
             }
         }
     }
