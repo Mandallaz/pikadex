@@ -123,10 +123,34 @@ class TeamSuggestionsTest {
     }
 
     @Test
-    fun `no shared weaknesses or no coverage gaps means nothing to suggest`() {
+    fun `when both weaknesses and gaps are empty nothing is suggested`() {
         val candidates = listOf(SuggestionCandidate("victreebel", listOf("grass"), statTotal = 490))
-        assertEquals(emptyList<String>(), rankSuggestions(emptyList(), coverageGaps, candidates, typeDetails, emptySet()).map { it.name })
-        assertEquals(emptyList<String>(), rankSuggestions(sharedWeaknesses, emptyList(), candidates, typeDetails, emptySet()).map { it.name })
+        val result = rankSuggestions(emptyList(), emptyList(), candidates, typeDetails, excludeNames = emptySet())
+        assertEquals(emptyList<String>(), result.map { it.name })
+    }
+
+    @Test
+    fun `when only coverage gaps exist, candidates hitting the gaps are suggested`() {
+        val candidates = listOf(
+            SuggestionCandidate("victreebel", listOf("grass"), statTotal = 490),
+            SuggestionCandidate("alakazam", listOf("psychic"), statTotal = 500)
+        )
+        val result = rankSuggestions(emptyList(), coverageGaps, candidates, typeDetails, excludeNames = emptySet())
+        assertEquals(listOf("victreebel"), result.map { it.name })
+        assertEquals(emptyList<String>(), result.first().weaknessesResisted)
+        assertEquals(listOf("ground"), result.first().gapsHit)
+    }
+
+    @Test
+    fun `when only shared weaknesses exist, candidates resisting the weaknesses are suggested`() {
+        val candidates = listOf(
+            SuggestionCandidate("alakazam", listOf("psychic"), statTotal = 500),
+            SuggestionCandidate("gyarados", listOf("water"), statTotal = 540)
+        )
+        val result = rankSuggestions(sharedWeaknesses, emptyList(), candidates, typeDetails, excludeNames = emptySet())
+        assertEquals(listOf("alakazam"), result.map { it.name })
+        assertEquals(listOf("water"), result.first().weaknessesResisted)
+        assertEquals(emptyList<String>(), result.first().gapsHit)
     }
 
     // --- Tier ceiling filter (issue #11) ---------------------------------
