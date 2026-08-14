@@ -153,6 +153,34 @@ class TeamSuggestionsTest {
         assertEquals(emptyList<String>(), result.first().gapsHit)
     }
 
+    // --- Ability-granted immunities (F79) ---------------------------------
+
+    @Test
+    fun `a candidate immune to a weakness via ability qualifies even when neutral by typing alone`() {
+        // "normal" has no special relations to ground here — neutral (1.0) defensively without an
+        // ability, which would NOT qualify on its own against a weakness-only gate.
+        val normal = type("normal")
+        val details = typeDetails + ("normal" to normal)
+        val candidate = SuggestionCandidate("bronzong", listOf("normal"), statTotal = 500, abilities = listOf("levitate"))
+
+        val result = rankSuggestions(listOf("ground"), emptyList(), listOf(candidate), details, excludeNames = emptySet())
+
+        assertEquals(listOf("bronzong"), result.map { it.name })
+        assertEquals(listOf("ground"), result.single().weaknessesResisted)
+    }
+
+    @Test
+    fun `a candidate with no immunity-granting ability does not qualify on typing alone`() {
+        val normal = type("normal")
+        val details = typeDetails + ("normal" to normal)
+        // Same as above but without the ability — must not qualify.
+        val candidate = SuggestionCandidate("porygon", listOf("normal"), statTotal = 500)
+
+        val result = rankSuggestions(listOf("ground"), emptyList(), listOf(candidate), details, excludeNames = emptySet())
+
+        assertEquals(emptyList<String>(), result.map { it.name })
+    }
+
     // --- Tier ceiling filter (issue #11) ---------------------------------
 
     @Test

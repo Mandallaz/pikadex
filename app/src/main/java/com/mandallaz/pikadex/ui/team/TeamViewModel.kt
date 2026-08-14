@@ -46,6 +46,11 @@ data class TeamUiState(
      *  that type, across every attacking type it has access to. Computed in the same pass as
      *  [matrix] and stale under exactly the same conditions. */
     val offensiveMatrix: Map<String, Map<String, Double>> = emptyMap(),
+    /** F79 — same shape as [matrix], with ability-granted type immunities applied for members
+     *  whose species can learn an immunity-granting ability (see [adjustDefensiveMultipliersForAbilities]).
+     *  Only [sharedWeaknesses] reads from this — [matrix] itself stays type-only and is what
+     *  actually renders on screen, per the issue's confirmed scope. */
+    val suggestionsMatrix: Map<String, Map<String, Double>> = emptyMap(),
     // Which member names [matrix] was actually computed for — a member missing from a type's row
     // is otherwise indistinguishable from "genuinely neutral (x1)" to a plain `row[name] ?: 1.0`
     // lookup. Whenever this doesn't match the current [members] (mid-fetch, or the fetch just
@@ -101,7 +106,7 @@ data class TeamUiState(
  *  none of the four can change when those do. */
 internal fun TeamUiState.withDerivedFields(): TeamUiState {
     val stale = matrixComputedFor != members.map { it.name }.toSet()
-    val weaknesses = if (members.isEmpty() || stale) emptyList() else sharedWeaknesses(matrix, members.map { it.name })
+    val weaknesses = if (members.isEmpty() || stale) emptyList() else sharedWeaknesses(suggestionsMatrix, members.map { it.name })
     val gaps = if (members.isEmpty() || stale) emptyList() else coverageGaps(offensiveMatrix, members.map { it.name })
     return copy(
         isMatrixStale = stale,
@@ -175,6 +180,7 @@ class TeamViewModel @JvmOverloads constructor(
                     errorMessage = null,
                     matrix = emptyMap(),
                     offensiveMatrix = emptyMap(),
+                    suggestionsMatrix = emptyMap(),
                     matrixComputedFor = emptySet(),
                     suggestions = emptyList(),
                     suggestionSpriteIds = emptyMap()
@@ -196,6 +202,7 @@ class TeamViewModel @JvmOverloads constructor(
                         isLoading = false,
                         matrix = result.defensive,
                         offensiveMatrix = result.offensive,
+                        suggestionsMatrix = result.suggestionsDefensive,
                         matrixComputedFor = members.map { m -> m.name }.toSet()
                     ).withDerivedFields()
                 }
@@ -274,7 +281,7 @@ class TeamViewModel @JvmOverloads constructor(
                         if (id >= 10000) return@mapNotNull null
                         val total = basic.stats.values.sum()
                         if (total < 300) return@mapNotNull null
-                        SuggestionCandidate(name, basic.types, total)
+                        SuggestionCandidate(name, basic.types, total, basic.abilities)
                     }
                     val tierFilteredCandidates = filterByTierCeiling(candidates, maxTier, tierByShowdownKey)
                     val ranked = rankSuggestions(sharedWeaknesses, coverageGaps, tierFilteredCandidates, typeDetails, excludeNames)

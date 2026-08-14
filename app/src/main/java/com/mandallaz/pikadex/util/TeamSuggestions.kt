@@ -8,7 +8,11 @@ import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 data class SuggestionCandidate(
     val name: String,
     val types: List<String>,
-    val statTotal: Int
+    val statTotal: Int,
+    // F79 — every possible ability (standard or hidden) for this species, so qualification() can
+    // count an ability-granted type immunity as resisting a shared weakness. Defaulted so every
+    // existing call site (and every test not exercising this feature) doesn't need updating.
+    val abilities: List<String> = emptyList()
 )
 
 data class TeamSuggestion(
@@ -30,6 +34,7 @@ private data class Qualification(val weaknessesResisted: List<String>, val gapsH
 
 private fun qualification(
     types: List<String>,
+    abilities: List<String>,
     sharedWeaknesses: List<String>,
     coverageGaps: List<String>,
     typeDetailsByType: Map<String, TypeDetailDto>,
@@ -41,7 +46,11 @@ private fun qualification(
     val weaknessesResisted = if (sharedWeaknesses.isNotEmpty()) {
         val cacheKey = details.map { it.name }.sorted()
         val defensive = defensiveCache.getOrPut(cacheKey) { computeDefensiveMultipliers(details) }
-        sharedWeaknesses.filter { (defensive[it] ?: 1.0) < 1.0 }
+        // F79 — an ability-granted immunity counts as resisting (<1.0) a shared weakness, same as
+        // this candidate's typing would; see adjustDefensiveMultipliersForAbilities's own doc for
+        // why this stays out of the *displayed* matrix and only applies to suggestion ranking.
+        val adjusted = adjustDefensiveMultipliersForAbilities(defensive, abilities)
+        sharedWeaknesses.filter { (adjusted[it] ?: 1.0) < 1.0 }
     } else {
         emptyList()
     }
@@ -120,6 +129,7 @@ fun rankSuggestions(
         .mapNotNull { candidate ->
             val q = qualification(
                 candidate.types,
+                candidate.abilities,
                 sharedWeaknesses,
                 coverageGaps,
                 typeDetailsByType,

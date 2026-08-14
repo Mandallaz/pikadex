@@ -40,7 +40,11 @@ class PokeApiGraphQLDataSourceTest {
                   { "type": { "name": "grass" } },
                   { "type": { "name": "poison" } }
                 ],
-                "pokemonspecy": { "is_legendary": false, "is_mythical": false }
+                "pokemonspecy": { "is_legendary": false, "is_mythical": false },
+                "pokemonabilities": [
+                  { "ability": { "name": "overgrow" } },
+                  { "ability": { "name": "chlorophyll" } }
+                ]
               },
               {
                 "name": "mewtwo",
@@ -50,13 +54,17 @@ class PokeApiGraphQLDataSourceTest {
                 "pokemontypes": [
                   { "type": { "name": "psychic" } }
                 ],
-                "pokemonspecy": { "is_legendary": true, "is_mythical": false }
+                "pokemonspecy": { "is_legendary": true, "is_mythical": false },
+                "pokemonabilities": [
+                  { "ability": { "name": "pressure" } }
+                ]
               },
               {
                 "name": "missingno",
                 "pokemonstats": [],
                 "pokemontypes": null,
-                "pokemonspecy": null
+                "pokemonspecy": null,
+                "pokemonabilities": null
               }
             ]
           }
@@ -72,6 +80,7 @@ class PokeApiGraphQLDataSourceTest {
         assertEquals(listOf("grass", "poison"), bulbasaur.types)
         assertFalse(bulbasaur.isLegendary)
         assertFalse(bulbasaur.isMythical)
+        assertEquals(listOf("overgrow", "chlorophyll"), bulbasaur.abilities)
     }
 
     @Test
@@ -88,6 +97,7 @@ class PokeApiGraphQLDataSourceTest {
         assertEquals(emptyList<String>(), entry.types)
         assertFalse(entry.isLegendary)
         assertFalse(entry.isMythical)
+        assertEquals(emptyList<String>(), entry.abilities)
     }
 
     // --- fetchAllMoveInfo / parseMoveInfo (F37: priority + movemeta) --------------------

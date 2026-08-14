@@ -11,13 +11,18 @@ import kotlinx.coroutines.supervisorScope
  *  *deal* to that type, across every attacking type it has access to. */
 data class TeamMatrixResult(
     val defensive: Map<String, Map<String, Double>>,
-    val offensive: Map<String, Map<String, Double>>
+    val offensive: Map<String, Map<String, Double>>,
+    /** F79 — same shape as [defensive], but with ability-granted type immunities applied (see
+     *  [adjustDefensiveMultipliersForAbilities]). Used only by the Team Suggestions calculation
+     *  ([sharedWeaknesses]) — the displayed matrix stays [defensive], type-only, on purpose. */
+    val suggestionsDefensive: Map<String, Map<String, Double>>
 )
 
 /** One member's raw inputs, gathered concurrently before the two matrices are assembled. */
 private data class MemberMatchups(
     val name: String,
     val defensive: Map<String, Double>,
+    val suggestionsDefensive: Map<String, Double>,
     val stabTypes: List<String>,
     val moveNames: List<String>
 )
@@ -47,9 +52,13 @@ suspend fun computeTeamMatrices(
             val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
             // Same cache entry as getPokemonTypes above, so this is free.
             val moveNames = repository.getPokemonLevelUpMoveNames(member.name)
+            // F79 — also free: shares pokemonDetailCache with getPokemonTypes/getPokemonLevelUpMoveNames.
+            val abilities = repository.getPokemonAbilities(member.name)
+            val defensive = computeDefensiveMultipliers(typeDetails)
             MemberMatchups(
                 name = member.name,
-                defensive = computeDefensiveMultipliers(typeDetails),
+                defensive = defensive,
+                suggestionsDefensive = adjustDefensiveMultipliersForAbilities(defensive, abilities),
                 stabTypes = types,
                 moveNames = moveNames
             )
@@ -73,14 +82,19 @@ suspend fun computeTeamMatrices(
         .awaitAll().toMap()
 
     val defensive = mutableMapOf<String, MutableMap<String, Double>>()
+    val suggestionsDefensive = mutableMapOf<String, MutableMap<String, Double>>()
     val offensive = mutableMapOf<String, MutableMap<String, Double>>()
     TypeIds.standardTypeNames.forEach {
         defensive[it] = mutableMapOf()
+        suggestionsDefensive[it] = mutableMapOf()
         offensive[it] = mutableMapOf()
     }
     memberResults.forEach { member ->
         member.defensive.forEach { (attackType, multiplier) ->
             defensive.getOrPut(attackType) { mutableMapOf() }[member.name] = multiplier
+        }
+        member.suggestionsDefensive.forEach { (attackType, multiplier) ->
+            suggestionsDefensive.getOrPut(attackType) { mutableMapOf() }[member.name] = multiplier
         }
         val best = bestOffensiveMultipliers(
             attackingTypesByMember[member.name].orEmpty(),
@@ -90,5 +104,5 @@ suspend fun computeTeamMatrices(
             offensive.getOrPut(defendingType) { mutableMapOf() }[member.name] = multiplier
         }
     }
-    TeamMatrixResult(defensive, offensive)
+    TeamMatrixResult(defensive, offensive, suggestionsDefensive)
 }

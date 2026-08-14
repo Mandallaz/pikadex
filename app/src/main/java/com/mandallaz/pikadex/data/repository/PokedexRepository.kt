@@ -55,6 +55,11 @@ interface PokedexRepositoryApi {
     suspend fun getPokemonNamesForAbility(ability: String): Set<String>
     suspend fun getAbilityDescription(ability: String): String?
     suspend fun getPokemonTypes(nameOrId: String): List<String>
+    /** F79 — every possible ability (standard or hidden) for a single, already-known Pokémon (a
+     *  team member), so [computeTeamMatrices][com.mandallaz.pikadex.util.computeTeamMatrices] can
+     *  check ability-granted type immunities without a bulk fetch — see [PokeApiGraphQLDataSource.PokemonBasics.abilities]
+     *  for the equivalent used when scanning every dex entry (team suggestion candidates). */
+    suspend fun getPokemonAbilities(nameOrId: String): List<String>
     suspend fun getPokemonLevelUpMoveNames(nameOrId: String): List<String>
     suspend fun getSmogonTiers(genCode: String): Map<String, String>
     suspend fun getAllBasics(): Map<String, PokeApiGraphQLDataSource.PokemonBasics>
@@ -176,6 +181,13 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
     override suspend fun getPokemonTypes(nameOrId: String): List<String> {
         val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
         return pokemon.types.orEmpty().map { it.type.name }
+    }
+
+    /** Shares [pokemonDetailCache] with [getPokemonTypes]/[getPokemonLevelUpMoveNames], so asking
+     *  for any combination of the three for the same Pokémon costs one fetch. */
+    override suspend fun getPokemonAbilities(nameOrId: String): List<String> {
+        val pokemon = pokemonDetailCache.get(nameOrId) { api.getPokemon(nameOrId) }
+        return pokemon.abilities.orEmpty().map { it.ability.name }
     }
 
     /**
@@ -343,7 +355,11 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         // New key (not base_stats_v2 renamed): the payload shape changed (stats+types+rarity, not
         // just stats), so an upgrading install must re-fetch rather than trying to read the old
         // shape back as the new one.
-        const val BASICS_CACHE_KEY = "pokemon_basics_v1"
+        // _v2 (F79): PokemonBasics gained an `abilities` field — bumped so an upgrading install
+        // re-fetches instead of reading back an old cached payload with `abilities` missing
+        // (Gson's reflection-based deserialization doesn't apply Kotlin default parameter values
+        // for an absent field, so it would land as null despite the non-null List<String> type).
+        const val BASICS_CACHE_KEY = "pokemon_basics_v2"
         // _v3: MoveInfo gained a `pp` field — bumped so an upgrading install re-fetches instead of
         // reading back an old cached payload with no pp in it and showing "—" for every move.
         const val MOVE_INFO_CACHE_KEY = "move_info_v3"

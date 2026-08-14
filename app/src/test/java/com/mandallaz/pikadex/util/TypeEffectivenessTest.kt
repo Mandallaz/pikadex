@@ -382,4 +382,36 @@ class TypeEffectivenessTest {
         assertEquals(effective, display)
         assertTrue(removed.isEmpty())
     }
+
+    // --- Ability-granted immunities (F79) ----------------------------------
+
+    @Test
+    fun `an immunity-granting ability overrides its type's multiplier to zero`() {
+        val defensive = mapOf("ground" to 2.0, "water" to 0.5)
+        val adjusted = adjustDefensiveMultipliersForAbilities(defensive, listOf("levitate"))
+        assertEquals(0.0, adjusted.getValue("ground"), 0.0)
+        assertEquals(0.5, adjusted.getValue("water"), 0.0)
+    }
+
+    @Test
+    fun `an ability not in the curated list is a no-op`() {
+        // Dry Skin is deliberately excluded (resistance/heal effect, not a type immunity).
+        val defensive = mapOf("water" to 2.0)
+        val adjusted = adjustDefensiveMultipliersForAbilities(defensive, listOf("dry-skin"))
+        assertEquals(defensive, adjusted)
+    }
+
+    @Test
+    fun `no abilities is a no-op`() {
+        val defensive = mapOf("ground" to 2.0)
+        assertEquals(defensive, adjustDefensiveMultipliersForAbilities(defensive, emptyList()))
+    }
+
+    @Test
+    fun `any one of a type's several immunity-granting abilities applies`() {
+        val defensive = mapOf("electric" to 2.0)
+        // Lightning Rod, not Volt Absorb — either should immunize against electric.
+        val adjusted = adjustDefensiveMultipliersForAbilities(defensive, listOf("lightning-rod"))
+        assertEquals(0.0, adjusted.getValue("electric"), 0.0)
+    }
 }

@@ -40,7 +40,8 @@ class TeamMatrixCalculatorTest {
             // through fire/water/fighting.
             "fire" to typeDetail("fire", doubleTo = listOf("grass"), doubleFrom = listOf("water")),
             "water" to typeDetail("water", doubleTo = listOf("fire")),
-            "fighting" to typeDetail("fighting", doubleTo = listOf("normal"))
+            "fighting" to typeDetail("fighting", doubleTo = listOf("normal")),
+            "electric" to typeDetail("electric", doubleFrom = listOf("ground"))
         )
     }
 
@@ -103,6 +104,25 @@ class TeamMatrixCalculatorTest {
         // the status move, this assertion would still likely hold, but the test would already
         // have failed above resolving the (deliberately absent) "steel" type detail.
         assertEquals(1.0, result.offensive.getValue("fire").getValue("torkoal"), 0.0)
+    }
+
+    // F79 — a member whose species can learn an immunity-granting ability (Levitate vs. Ground)
+    // must have that weakness zeroed out in suggestionsDefensive (the shared-weakness input), but
+    // the displayed defensive matrix stays type-only and unaffected — confirmed unchanged with the
+    // user during grooming.
+    @Test
+    fun `suggestionsDefensive matrix overrides weaknesses for immune-ability members but leaves defensive matrix unaffected`() = runTest {
+        val repo = repository().apply {
+            pokemonTypesByName = mapOf("bronzong" to listOf("electric"))
+            pokemonLevelUpMoveNamesByName = mapOf("bronzong" to emptyList())
+            pokemonAbilitiesByName = mapOf("bronzong" to listOf("levitate", "heatproof"))
+            allMoveInfo = emptyMap()
+        }
+
+        val result = computeTeamMatrices(repo, listOf(NamedApiResource("bronzong", "")))
+
+        assertEquals(2.0, result.defensive.getValue("ground").getValue("bronzong"), 0.0)
+        assertEquals(0.0, result.suggestionsDefensive.getValue("ground").getValue("bronzong"), 0.0)
     }
 
     @Test

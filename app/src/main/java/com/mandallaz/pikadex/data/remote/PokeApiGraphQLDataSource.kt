@@ -52,6 +52,9 @@ object PokeApiGraphQLDataSource {
               is_legendary
               is_mythical
             }
+            pokemonabilities {
+              ability { name }
+            }
           }
         }
     """
@@ -150,7 +153,11 @@ object PokeApiGraphQLDataSource {
         val stats: Map<String, Int>,
         val types: List<String>,
         val isLegendary: Boolean,
-        val isMythical: Boolean
+        val isMythical: Boolean,
+        // F79 — every possible ability (standard or hidden), not just the ones an actual instance
+        // has — the app has no per-member ability selection yet (see F81), so team suggestions
+        // treat a species as immunity-eligible whenever any of its possible abilities grants one.
+        val abilities: List<String> = emptyList()
     )
 
     /** pokemonName -> [PokemonBasics], e.g. "bulbasaur" -> stats={"hp" to 45, ...}, types=[grass,
@@ -168,7 +175,8 @@ object PokeApiGraphQLDataSource {
                 stats = p.pokemonstats.associate { it.stat.name to it.baseStat },
                 types = p.pokemontypes.orEmpty().mapNotNull { it.type?.name },
                 isLegendary = p.pokemonspecy?.isLegendary ?: false,
-                isMythical = p.pokemonspecy?.isMythical ?: false
+                isMythical = p.pokemonspecy?.isMythical ?: false,
+                abilities = p.pokemonabilities.orEmpty().mapNotNull { it.ability?.name }
             )
         }
     }
@@ -179,7 +187,8 @@ object PokeApiGraphQLDataSource {
         val name: String,
         val pokemonstats: List<GraphQLStat>,
         val pokemontypes: List<GraphQLPokemonType>?,
-        val pokemonspecy: GraphQLSpecy?
+        val pokemonspecy: GraphQLSpecy?,
+        val pokemonabilities: List<GraphQLPokemonAbility>?
     )
     private data class GraphQLStat(
         @SerializedName("base_stat") val baseStat: Int,
@@ -192,6 +201,8 @@ object PokeApiGraphQLDataSource {
         @SerializedName("is_legendary") val isLegendary: Boolean?,
         @SerializedName("is_mythical") val isMythical: Boolean?
     )
+    private data class GraphQLPokemonAbility(val ability: GraphQLAbilityName?)
+    private data class GraphQLAbilityName(val name: String)
 
     /** A move's type, damage class (physical/special = an attack, status = a buff/debuff/other
      *  non-damaging effect), power and accuracy — null power/accuracy is normal for status moves.

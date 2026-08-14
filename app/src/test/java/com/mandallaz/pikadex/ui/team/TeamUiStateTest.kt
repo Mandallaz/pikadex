@@ -32,6 +32,9 @@ class TeamUiStateTest {
             members = listOf(squirtle),
             matrixComputedFor = setOf("squirtle"),
             matrix = matrix,
+            // F79 — sharedWeaknesses now reads suggestionsMatrix, not matrix; no ability-immunity
+            // case is under test here, so it's simply the same values as matrix.
+            suggestionsMatrix = matrix,
             offensiveMatrix = offensiveMatrix
         ).withDerivedFields()
     }

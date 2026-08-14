@@ -38,6 +38,40 @@ fun computeOffensiveMultipliers(typeDetail: TypeDetailDto): Map<String, Double> 
     return multipliers
 }
 
+/** F79 — abilities that grant a genuine full type immunity (0x, not just a resistance), keyed by
+ *  the type they immunize against. Curated per the issue's grooming decision: excludes
+ *  resistance/redirection-without-immunity abilities like Dry Skin, and move-flag-based immunities
+ *  like Soundproof/Bulletproof/Overcoat, which aren't type immunities at all. Wonder Guard is
+ *  deliberately excluded too — it's immune to everything except super-effective hits, not tied to
+ *  one type, and was deferred to its own issue during grooming. Ability names are PokeAPI's
+ *  lower-hyphenated slugs, matching [com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource.PokemonBasics.abilities]. */
+val IMMUNITY_ABILITIES_BY_TYPE: Map<String, Set<String>> = mapOf(
+    "ground" to setOf("levitate", "earth-eater"),
+    "fire" to setOf("flash-fire", "well-baked-body"),
+    "water" to setOf("water-absorb", "storm-drain"),
+    "electric" to setOf("volt-absorb", "lightning-rod", "motor-drive"),
+    "grass" to setOf("sap-sipper")
+)
+
+/** F79 — overrides [defensive]'s multiplier to `0.0` for any attacking type [abilities] grants a
+ *  full immunity to (see [IMMUNITY_ABILITIES_BY_TYPE]), leaving every other entry untouched. Used
+ *  only for the Team Suggestions calculation ([com.mandallaz.pikadex.util.TeamMatrixResult.suggestionsDefensive]/
+ *  [SuggestionCandidate]) — the displayed type-matchup matrix stays type-only on purpose (confirmed
+ *  with the user during grooming, not changing), so this must never feed [computeDefensiveMultipliers]'s
+ *  own result back into the UI-facing matrix. Since the app has no per-member ability selection yet
+ *  (F81), [abilities] is expected to be every *possible* ability for the species (standard or
+ *  hidden), not one actually-chosen ability — an approximation, not an exact read. */
+fun adjustDefensiveMultipliersForAbilities(
+    defensive: Map<String, Double>,
+    abilities: Collection<String>
+): Map<String, Double> {
+    if (abilities.isEmpty()) return defensive
+    val abilitySet = abilities.toSet()
+    val immuneTypes = IMMUNITY_ABILITIES_BY_TYPE.filterValues { it.any { a -> a in abilitySet } }.keys
+    if (immuneTypes.isEmpty()) return defensive
+    return defensive + immuneTypes.associateWith { 0.0 }
+}
+
 /**
  * The best any of [attackingTypes] can land on each defending type — what one team member is
  * capable of, given every attacking type it has access to.
