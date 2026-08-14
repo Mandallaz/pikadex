@@ -76,6 +76,7 @@ import com.mandallaz.pikadex.ui.detail.sections.TeamImpactCard
 import com.mandallaz.pikadex.ui.detail.sections.TypeMatchupsCard
 import com.mandallaz.pikadex.ui.detail.sections.TypeTrianglesCard
 import com.mandallaz.pikadex.ui.detail.sections.moveSection
+import com.mandallaz.pikadex.ui.detail.sections.moveLabels
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.LearnedMove
@@ -435,6 +436,8 @@ internal fun DetailContent(
     // falling back to English wherever the chosen language's entry is missing.
     val gameDataLanguage by LanguageSettings.currentLanguage.collectAsState()
 
+    val labels = moveLabels()
+
     // Each category's moves are computed once per load, off the main thread, in the ViewModel
     // (see PokedexDetailUiState.groupedMoves) rather than here — this is the exact same
     // grouping/sorting work regardless of whether the section is expanded, and for a pokemon with
@@ -581,22 +584,26 @@ internal fun DetailContent(
         moveSection(
             MoveCategory.LEVEL_UP, levelUpMoves, moveInfo,
             expanded = MoveCategory.LEVEL_UP in expandedCategories,
-            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage,
+            moveLabels = labels
         ) { toggle(MoveCategory.LEVEL_UP) }
         moveSection(
             MoveCategory.MACHINE, machineMoves, moveInfo,
             expanded = MoveCategory.MACHINE in expandedCategories,
-            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage,
+            moveLabels = labels
         ) { toggle(MoveCategory.MACHINE) }
         moveSection(
             MoveCategory.EGG, eggMoves, moveInfo,
             expanded = MoveCategory.EGG in expandedCategories,
-            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage,
+            moveLabels = labels
         ) { toggle(MoveCategory.EGG) }
         moveSection(
             MoveCategory.TUTOR, tutorMoves, moveInfo,
             expanded = MoveCategory.TUTOR in expandedCategories,
-            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage
+            moveLocalizedNames = moveLocalizedNames, language = gameDataLanguage,
+            moveLabels = labels
         ) { toggle(MoveCategory.TUTOR) }
 
         item { Spacer(modifier = Modifier.size(24.dp)) }
