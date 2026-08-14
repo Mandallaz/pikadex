@@ -53,6 +53,7 @@ class PokedexListViewModelLoadTest {
     @After
     fun tearDown() {
         viewModel.clearForTest()
+        com.mandallaz.pikadex.data.PokedexListContext.update(emptyList())
         // B35 — LocalizedNames is a JVM-wide singleton this ViewModel's init{} warms via
         // loadSpeciesNamesIfNeeded; every test class that touches it must reset it or the next
         // test class sharing this worker inherits stale/wrong data (this class was the one
@@ -159,10 +160,12 @@ class PokedexListViewModelLoadTest {
             )
         )
         val freshViewModel = PokedexListViewModel(repository, dispatcher)
-
-        dispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(listOf("grass", "poison"), freshViewModel.uiState.value.typesByName["bulbasaur"])
+        try {
+            dispatcher.scheduler.advanceUntilIdle()
+            assertEquals(listOf("grass", "poison"), freshViewModel.uiState.value.typesByName["bulbasaur"])
+        } finally {
+            freshViewModel.clearForTest()
+        }
     }
 
     @Test
@@ -282,16 +285,19 @@ class PokedexListViewModelLoadTest {
         repository.masterList = listOf(NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"))
 
         val testViewModel = PokedexListViewModel(repository, trackingDispatcher)
+        try {
+            val initialDispatches = trackingDispatcher.blocksDispatched
 
-        val initialDispatches = trackingDispatcher.blocksDispatched
+            dispatcher.scheduler.advanceUntilIdle()
 
-        dispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(
-            "Expected fetchAndApplyBasics to dispatch to defaultDispatcher",
-            trackingDispatcher.blocksDispatched > initialDispatches
-        )
-        assertEquals(listOf("grass", "poison"), testViewModel.uiState.value.typesByName["bulbasaur"])
+            assertTrue(
+                "Expected fetchAndApplyBasics to dispatch to defaultDispatcher",
+                trackingDispatcher.blocksDispatched > initialDispatches
+            )
+            assertEquals(listOf("grass", "poison"), testViewModel.uiState.value.typesByName["bulbasaur"])
+        } finally {
+            testViewModel.clearForTest()
+        }
     }
 
     @Test
@@ -304,16 +310,19 @@ class PokedexListViewModelLoadTest {
 
         // Create the view model. This registers the collector.
         val testViewModel = PokedexListViewModel(repository, trackingDispatcher)
+        try {
+            dispatcher.scheduler.advanceUntilIdle()
 
-        dispatcher.scheduler.advanceUntilIdle()
+            com.mandallaz.pikadex.data.PokedexListContext.displayedNames.value.let { names ->
+                assertEquals(listOf("bulbasaur", "charmander"), names)
+            }
 
-        com.mandallaz.pikadex.data.PokedexListContext.displayedNames.value.let { names ->
-            assertEquals(listOf("bulbasaur", "charmander"), names)
+            assertTrue(
+                "Expected PokedexListContext mapping to dispatch to defaultDispatcher",
+                trackingDispatcher.blocksDispatched > 0
+            )
+        } finally {
+            testViewModel.clearForTest()
         }
-
-        assertTrue(
-            "Expected PokedexListContext mapping to dispatch to defaultDispatcher",
-            trackingDispatcher.blocksDispatched > 0
-        )
     }
 }

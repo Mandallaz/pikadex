@@ -156,11 +156,13 @@ class TeamViewModelTest {
     fun `species names load into state for the Team screen to localize with`() = runTest(dispatcher) {
         repository.allSpeciesNames = mapOf("squirtle" to mapOf("fr" to "Carapuce"))
         val freshViewModel = TeamViewModel(repository)
+        try {
+            TeamRepository.replaceAll(listOf(squirtle))
+            dispatcher.scheduler.advanceUntilIdle()
 
-        TeamRepository.replaceAll(listOf(squirtle))
-        dispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(mapOf("fr" to "Carapuce"), freshViewModel.uiState.value.speciesNames["squirtle"])
-        freshViewModel.clearForTest()
+            assertEquals(mapOf("fr" to "Carapuce"), freshViewModel.uiState.value.speciesNames["squirtle"])
+        } finally {
+            freshViewModel.clearForTest()
+        }
     }
 }
