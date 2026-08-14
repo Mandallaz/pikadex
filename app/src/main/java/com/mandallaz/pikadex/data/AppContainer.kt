@@ -6,6 +6,7 @@ import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.RetryInterceptor
 import com.mandallaz.pikadex.data.repository.PokedexRepository
 import okhttp3.Cache
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -37,6 +38,19 @@ object AppContainer {
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .cache(Cache(File(appContext.cacheDir, "http_cache"), HTTP_CACHE_SIZE_BYTES))
+            .certificatePinner(
+                CertificatePinner.Builder()
+                    .add("pokeapi.co", "sha256/vI2c4MzHEbIyjzPN4chWo00EfZeCrlu7OrQuswZxK5Q=")
+                    .add("pokeapi.co", "sha256/kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=")
+                    .add("pokeapi.co", "sha256/mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=")
+                    .add("graphql.pokeapi.co", "sha256/vI2c4MzHEbIyjzPN4chWo00EfZeCrlu7OrQuswZxK5Q=")
+                    .add("graphql.pokeapi.co", "sha256/kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=")
+                    .add("graphql.pokeapi.co", "sha256/mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=")
+                    .add("raw.githubusercontent.com", "sha256/p4MbBTfU3MTzqPxM2Cjv0q3WON8L6FqSzam65NVEkcM=")
+                    .add("raw.githubusercontent.com", "sha256/LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=")
+                    .add("raw.githubusercontent.com", "sha256/fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=")
+                    .build()
+            )
             .addInterceptor(RetryInterceptor())
             .addNetworkInterceptor(CacheControlInterceptor(HTTP_CACHE_MAX_AGE_SECONDS))
             .apply {

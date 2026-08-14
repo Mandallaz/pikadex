@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config>
+        <domain includeSubdomains="true">pokeapi.co</domain>
+        <pin-set>
+            <pin digest="SHA-256">vI2c4MzHEbIyjzPN4chWo00EfZeCrlu7OrQuswZxK5Q=</pin>
+            <pin digest="SHA-256">kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=</pin>
+            <pin digest="SHA-256">mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</pin>
+        </pin-set>
+    </domain-config>
+    <domain-config>
+        <domain includeSubdomains="true">githubusercontent.com</domain>
+        <pin-set>
+            <pin digest="SHA-256">p4MbBTfU3MTzqPxM2Cjv0q3WON8L6FqSzam65NVEkcM=</pin>
+            <pin digest="SHA-256">LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=</pin>
+            <pin digest="SHA-256">fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
