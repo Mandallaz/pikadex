@@ -52,6 +52,7 @@ import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
+import com.mandallaz.pikadex.ui.components.localizedTypeNames
 import com.mandallaz.pikadex.ui.team.sections.AddMemberChip
 import com.mandallaz.pikadex.ui.team.sections.MatrixCallout
 import com.mandallaz.pikadex.ui.team.sections.SuggestionsCard
@@ -289,7 +290,7 @@ fun TeamScreen(
                                 title = stringResource(R.string.team_weaknesses_title),
                                 body = stringResource(
                                     R.string.team_weaknesses_body,
-                                    sharedWeaknesses.joinToString(", ") { it.toDisplayName() }
+                                    sharedWeaknesses.localizedTypeNames().joinToString(", ")
                                 )
                             )
                         }
@@ -304,7 +305,7 @@ fun TeamScreen(
                                     title = stringResource(R.string.team_gaps_title),
                                     body = stringResource(
                                         R.string.team_gaps_body,
-                                        gaps.joinToString(", ") { it.toDisplayName() }
+                                        gaps.localizedTypeNames().joinToString(", ")
                                     )
                                 )
                             } else {

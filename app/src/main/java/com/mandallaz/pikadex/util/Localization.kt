@@ -30,3 +30,12 @@ fun String.localizedDisplayName(speciesNames: Map<String, Map<String, String>>, 
     val namesForSpecies = speciesNames[this] ?: return toDisplayName()
     return namesForSpecies[languageCode] ?: namesForSpecies["en"] ?: toDisplayName()
 }
+
+/**
+ * B45 — resolves a list of raw PokeAPI type names against the [typeNameRes] mapping, returning
+ * the resource ID (Int) if a translation exists, or the fallback formatted name (String) if not.
+ * This is a pure-Kotlin helper, fully testable on the JVM.
+ */
+fun List<String>.resolvedTypeNames(): List<Any> {
+    return map { typeNameRes(it) ?: it.toDisplayName() }
+}
