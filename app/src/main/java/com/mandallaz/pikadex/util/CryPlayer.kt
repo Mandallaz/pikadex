@@ -97,7 +97,12 @@ class CryPlayer {
                 setDataSource(cleanSource)
                 prepareAsync()
             } catch (e: Exception) {
-                _isPlaying.value = false
+                if (cleanFallback != null) {
+                    mainHandler.post { play(context, cleanFallback) }
+                } else {
+                    _isPlaying.value = false
+                    abandonAudioFocus()
+                }
             }
         }
     }

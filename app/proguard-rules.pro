@@ -13,11 +13,12 @@
 # All PokeAPI/GraphQL response DTOs (including the private nested data classes in
 # PokeApiGraphQLDataSource, e.g. MoveInfo, which JsonDiskCache also deserializes via a Gson
 # TypeToken) — pure data holders, nothing to gain from shrinking them. A missing field here isn't
-# a crash, just a silent null, so this rule is deliberately broad rather than tightly scoped: any
-# future DTO added under a `dto` package anywhere in the app is covered too, not just today's
-# com.mandallaz.pikadex.data.remote.* layout.
--keep class com.mandallaz.pikadex.data.remote.** { <fields>; }
+# a crash, just a silent null. To narrow down keep rules to only serialized DTO fields (F111),
+# we only keep the DTO packages, the private nested DTO classes inside PokeApiGraphQLDataSource,
+# and the persisted PokemonDetailBundle class.
 -keep class com.mandallaz.pikadex.**.dto.** { <fields>; }
+-keep class com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource$* { <fields>; }
+-keep class com.mandallaz.pikadex.data.repository.PokemonDetailBundle { <fields>; }
 
 -dontwarn sun.misc.**
 

@@ -14,9 +14,25 @@ import org.junit.Test
 class PrefetchSettingsTest {
 
     private fun swapInFakePrefs(fake: FakeSharedPreferences) {
-        val field = PrefetchSettings::class.java.getDeclaredField("prefs")
-        field.isAccessible = true
-        field.set(PrefetchSettings, fake)
+        val fields = PrefetchSettings::class.java.declaredFields
+        for (field in fields) {
+            if (PrefsStore::class.java.isAssignableFrom(field.type)) {
+                field.isAccessible = true
+                val store = field.get(PrefetchSettings) as PrefsStore<Boolean>
+                store.prefs = fake
+                val key = when (field.name) {
+                    "essentialsStore" -> "essentials_enabled"
+                    "spritesStore" -> "sprites_enabled"
+                    "spritesExtraStore" -> "sprites_extra_enabled"
+                    "fullDetailStore" -> "full_detail_enabled"
+                    "criesStore" -> "cries_enabled"
+                    "wifiOnlyStore" -> "wifi_only_enabled"
+                    else -> ""
+                }
+                store.key = key
+                store.encode = { k, v -> putBoolean(k, v) }
+            }
+        }
     }
 
     @Test
