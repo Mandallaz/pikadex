@@ -60,6 +60,7 @@ class TeamViewModelTest {
         // so the reset below doesn't try to wake a dead coroutine on an already-reset dispatcher
         // (see clearForTest's doc) or leak that collector into a later, unrelated test.
         viewModel.clearForTest()
+        dispatcher.scheduler.advanceUntilIdle()
         TeamRepository.replaceAll(emptyList())
         // B35 — LocalizedNames is a JVM-wide singleton whose cache, once warmed by this test's
         // own `species names load into state...` test, would otherwise stay stale for every other
@@ -296,5 +297,39 @@ class TeamViewModelTest {
         assertFalse(state.isSuggestionsLoading)
         assertTrue(state.suggestions.isNotEmpty())
         assertEquals(mapOf("pikachu" to 25, "charmander" to 4), state.suggestionSpriteIds)
+    }
+
+    @Test
+    fun `a team change mid-fetch joins the cancelled computation before starting the new one`() = runTest(dispatcher) {
+        var firstJobRef: kotlinx.coroutines.Job? = null
+        val repositorySpy = object : com.mandallaz.pikadex.data.repository.PokedexRepositoryApi by repository {
+            override suspend fun getPokemonTypes(nameOrId: String): List<String> {
+                if (nameOrId == "charmander") {
+                    val job = firstJobRef
+                    assertNotNull("firstJobRef must be set", job)
+                    assertTrue("The previous matrixJob must be completed before the new one starts its fetch!", job!!.isCompleted)
+                }
+                return repository.getPokemonTypes(nameOrId)
+            }
+        }
+
+        val spyViewModel = TeamViewModel(repositorySpy, dispatcher)
+        val gate = CompletableDeferred<Unit>()
+        repository.gate = gate
+
+        TeamRepository.replaceAll(listOf(squirtle))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val firstJob = spyViewModel.matrixJob
+        assertNotNull(firstJob)
+        firstJobRef = firstJob
+
+        val charmander = NamedApiResource("charmander", "https://pokeapi.co/api/v2/pokemon/4/")
+        TeamRepository.replaceAll(listOf(charmander))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        gate.complete(Unit)
+        dispatcher.scheduler.advanceUntilIdle()
+        spyViewModel.clearForTest()
     }
 }
