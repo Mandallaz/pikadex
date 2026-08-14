@@ -35,14 +35,33 @@ private fun qualification(
     typeDetailsByType: Map<String, TypeDetailDto>
 ): Qualification? {
     val details = types.mapNotNull { typeDetailsByType[it] }
-    val defensive = computeDefensiveMultipliers(details)
-    val weaknessesResisted = sharedWeaknesses.filter { (defensive[it] ?: 1.0) < 1.0 }
-    if (weaknessesResisted.isEmpty()) return null
-    val offensiveByType = details.associate { it.name to computeOffensiveMultipliers(it) }
-    val bestOffense = bestOffensiveMultipliers(types, offensiveByType)
-    val gapsHit = coverageGaps.filter { (bestOffense[it] ?: 0.0) > 1.0 }
-    if (gapsHit.isEmpty()) return null
-    return Qualification(weaknessesResisted, gapsHit)
+
+    val weaknessesResisted = if (sharedWeaknesses.isNotEmpty()) {
+        val defensive = computeDefensiveMultipliers(details)
+        sharedWeaknesses.filter { (defensive[it] ?: 1.0) < 1.0 }
+    } else {
+        emptyList()
+    }
+
+    val gapsHit = if (coverageGaps.isNotEmpty()) {
+        val offensiveByType = details.associate { it.name to computeOffensiveMultipliers(it) }
+        val bestOffense = bestOffensiveMultipliers(types, offensiveByType)
+        coverageGaps.filter { (bestOffense[it] ?: 0.0) > 1.0 }
+    } else {
+        emptyList()
+    }
+
+    val hasWeaknessAxis = sharedWeaknesses.isNotEmpty()
+    val hasGapAxis = coverageGaps.isNotEmpty()
+
+    val qualified = when {
+        hasWeaknessAxis && hasGapAxis -> weaknessesResisted.isNotEmpty() && gapsHit.isNotEmpty()
+        hasWeaknessAxis -> weaknessesResisted.isNotEmpty()
+        hasGapAxis -> gapsHit.isNotEmpty()
+        else -> false
+    }
+
+    return if (qualified) Qualification(weaknessesResisted, gapsHit) else null
 }
 
 /**
@@ -84,7 +103,7 @@ fun rankSuggestions(
     excludeNames: Set<String>,
     limit: Int = 6
 ): List<TeamSuggestion> {
-    if (sharedWeaknesses.isEmpty() || coverageGaps.isEmpty()) return emptyList()
+    if (sharedWeaknesses.isEmpty() && coverageGaps.isEmpty()) return emptyList()
     return candidates.asSequence()
         .filter { it.name !in excludeNames }
         .mapNotNull { candidate ->

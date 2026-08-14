@@ -272,16 +272,20 @@
     <string name="team_no_gaps_title">No coverage gaps</string>
     <string name="team_no_gaps_body">Every type can be hit for super-effective damage by at least one member.</string>
     <string name="team_no_suggestions_title">No suggestions right now</string>
-    <string name="team_no_suggestions_body">A pick would need to fix both a shared weakness and a coverage gap at once, and your team currently only has one of the two.</string>
+    <string name="team_no_suggestions_body">No suggestions are available that would help with your team\'s shared weaknesses or coverage gaps.</string>
     <string name="team_new_team_default_name">New Team</string>
     <string name="team_remove_member_cd">Remove %1$s from team</string>
     <string name="team_add_member_cd">Add a Pokémon to your team</string>
     <string name="team_add_label">Add</string>
     <string name="team_suggestions_title">Suggestions</string>
     <string name="team_suggestions_subtitle">Would help both your team-wide weaknesses and coverage gaps.</string>
+    <string name="team_suggestions_subtitle_defense">Would help your team-wide weaknesses.</string>
+    <string name="team_suggestions_subtitle_offense">Would help your coverage gaps.</string>
     <string name="team_suggestions_tier_limited">Limited to %1$s and below (Settings).</string>
     <string name="team_suggestions_swipe_all">Swipe to see all %1$d</string>
     <string name="team_suggestion_bst">BST %1$d</string>
+    <string name="team_suggestion_resists">Resists %1$s</string>
+    <string name="team_suggestion_hits">Hits %1$s</string>
     <string name="team_suggestion_resists_hits">Resists %1$s · Hits %2$s</string>
     <string name="team_suggestion_add_cd">Add %1$s to team</string>
 

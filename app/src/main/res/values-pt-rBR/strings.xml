@@ -422,4 +422,8 @@
     <string name="type_steel">Aço</string>
     <string name="type_fairy">Fada</string>
     <string name="type_stellar">Estelar</string>
+    <string name="team_suggestions_subtitle_defense">Would help your team-wide weaknesses.</string>
+    <string name="team_suggestions_subtitle_offense">Would help your coverage gaps.</string>
+    <string name="team_suggestion_resists">Resists %1$s</string>
+    <string name="team_suggestion_hits">Hits %1$s</string>
 </resources>

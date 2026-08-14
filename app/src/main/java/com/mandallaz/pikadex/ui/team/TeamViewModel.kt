@@ -222,7 +222,7 @@ class TeamViewModel @JvmOverloads constructor(
         }
         val sharedWeaknesses = state.sharedWeaknesses
         val coverageGaps = state.coverageGaps
-        if (sharedWeaknesses.isEmpty() || coverageGaps.isEmpty()) {
+        if (sharedWeaknesses.isEmpty() && coverageGaps.isEmpty()) {
             _uiState.update { it.copy(isSuggestionsLoading = false, suggestions = emptyList(), suggestionSpriteIds = emptyMap()) }
             return
         }
