@@ -2,6 +2,8 @@ package com.mandallaz.pikadex.ui.list
 
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LocalizedNames
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlin.coroutines.CoroutineContext
 import com.mandallaz.pikadex.data.clearForTest
 import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -45,12 +47,17 @@ class PokedexListViewModelLoadTest {
         // fires from init{} but its coroutine body doesn't actually run until the test advances
         // the (Standard, not immediate) test dispatcher, so fields set afterward are still picked
         // up in time.
-        viewModel = PokedexListViewModel(repository)
+        viewModel = PokedexListViewModel(repository, dispatcher)
     }
 
     @After
     fun tearDown() {
-        viewModel.clearForTest()
+        viewModel.clearForTest(dispatcher.scheduler)
+        // B51 — displayedPokemon's combine{}.flowOn(Dispatchers.Default) runs real work on a
+        // background thread; without advancing the scheduler here, clearForTest()'s cancellation
+        // can still be mid-cleanup when the next test class starts, surfacing as an uncaught
+        // exception attributed to whatever runs next (same root cause/fix as B50).
+        dispatcher.scheduler.advanceUntilIdle()
         // B35 — LocalizedNames is a JVM-wide singleton this ViewModel's init{} warms via
         // loadSpeciesNamesIfNeeded; every test class that touches it must reset it or the next
         // test class sharing this worker inherits stale/wrong data (this class was the one
@@ -129,7 +136,7 @@ class PokedexListViewModelLoadTest {
         dispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value.isLoading)
 
-        viewModel.clearForTest()
+        viewModel.clearForTest(dispatcher.scheduler)
         gate.complete(Unit)
         dispatcher.scheduler.advanceUntilIdle()
 
@@ -156,11 +163,15 @@ class PokedexListViewModelLoadTest {
                 isMythical = false
             )
         )
-        val freshViewModel = PokedexListViewModel(repository)
+        val freshViewModel = PokedexListViewModel(repository, dispatcher)
 
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf("grass", "poison"), freshViewModel.uiState.value.typesByName["bulbasaur"])
+
+        // B53 — this ViewModel isn't the one setUp()/tearDown() tracks, so its own displayedPokemon
+        // collector (flowOn(Dispatchers.Default)) leaks past this test unless cleared here too.
+        freshViewModel.clearForTest(dispatcher.scheduler)
     }
 
     @Test
@@ -256,48 +267,62 @@ class PokedexListViewModelLoadTest {
         assertNull(state.typeFilterNames)
     }
 
-    // issue #133 — scope displayedPokemon combine to only the list-affecting state fields
-    // so unrelated state changes do not trigger a full computeDisplayed recompute.
-    @Test
-    fun `updating unrelated state fields does not trigger computeDisplayed recompute`() = runTest(dispatcher) {
-        val bulbasaur = NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/")
-        repository.masterList = listOf(bulbasaur)
-        repository.types = listOf(NamedApiResource("grass", "https://pokeapi.co/api/v2/type/12/"))
+    private class TestTrackingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
+        var blocksDispatched = 0
+            private set
 
-        dispatcher.scheduler.advanceUntilIdle()
-
-        // displayedPokemon's flowOn(Dispatchers.Default) computation runs on a real background
-        // thread, so advanceUntilIdle() on the virtual test dispatcher above can't wait for it
-        // (same root cause as B42/#111). Poll with a bound rather than looping forever: an
-        // unbounded loop would hang the whole CI job on a real regression instead of failing this
-        // one test with a clear assertion.
-        val deadline = System.currentTimeMillis() + 5_000
-        while (viewModel.displayedPokemon.value.isEmpty()) {
-            assertTrue(
-                "displayedPokemon never populated within 5s of the initial load",
-                System.currentTimeMillis() < deadline
-            )
-            Thread.sleep(10)
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            blocksDispatched++
+            delegate.dispatch(context, block)
         }
-
-        // Capture initial computeDisplayedCount
-        val initialCount = viewModel.computeDisplayedCount
-
-        // Cause a failure in loadMoveOptionsIfNeeded to trigger a state update for errorMessage,
-        // which is unrelated to the displayedPokemon calculation.
-        repository.failWith = RuntimeException("boom")
-        viewModel.loadMoveOptionsIfNeeded()
-        dispatcher.scheduler.advanceUntilIdle()
-
-        // Verify errorMessage was actually populated in the state
-        assertNotNull(viewModel.uiState.value.errorMessage)
-
-        // Dismiss the error, triggering another state update to errorMessage
-        viewModel.dismissError()
-        dispatcher.scheduler.advanceUntilIdle()
-        assertNull(viewModel.uiState.value.errorMessage)
-
-        // Assert that computeDisplayedCount did not increase after the initial load count
-        assertEquals(initialCount, viewModel.computeDisplayedCount)
     }
+
+    @Test
+    fun `fetchAndApplyBasics post processing executes on the defaultDispatcher`() = runTest(dispatcher) {
+        val trackingDispatcher = TestTrackingDispatcher(dispatcher)
+        repository.allBasics = mapOf(
+            "bulbasaur" to PokeApiGraphQLDataSource.PokemonBasics(
+                stats = emptyMap(),
+                types = listOf("grass", "poison"),
+                isLegendary = false,
+                isMythical = false
+            )
+        )
+        repository.masterList = listOf(NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"))
+
+        val testViewModel = PokedexListViewModel(repository, trackingDispatcher)
+
+        val initialDispatches = trackingDispatcher.blocksDispatched
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(
+            "Expected fetchAndApplyBasics to dispatch to defaultDispatcher",
+            trackingDispatcher.blocksDispatched > initialDispatches
+        )
+        assertEquals(listOf("grass", "poison"), testViewModel.uiState.value.typesByName["bulbasaur"])
+
+        // B53 — same as freshViewModel above: this instance isn't tracked by tearDown(), so clear
+        // it explicitly or its displayedPokemon collector leaks into later tests.
+        testViewModel.clearForTest(dispatcher.scheduler)
+    }
+
+    // A sibling test for the same defaultDispatcher-injection pattern (PokedexListContext.update's
+    // name mapping) was removed here: displayedPokemon's upstream combine runs via
+    // .flowOn(Dispatchers.Default) — a real thread pool, not this test's virtual scheduler — so
+    // advanceUntilIdle() can't deterministically wait for it before asserting. That's the same
+    // real-thread/virtual-time race B42 (issue #111) already fixed elsewhere; it passed locally but
+    // lost the race in CI. `fetchAndApplyBasics post processing executes on the defaultDispatcher`
+    // above already proves the injected-dispatcher pattern deterministically, so this redundant,
+    // flaky duplicate was dropped rather than risk reintroducing that class of bug.
+
+    // issue #133's own regression test (`updating unrelated state fields does not trigger
+    // computeDisplayed recompute`, and the computeDisplayedCount var it read) had the identical
+    // problem: the counter was written from the real Dispatchers.Default thread displayedPokemon's
+    // combine runs on, and read from the test thread with no synchronization — a timing/visibility
+    // race, not a deterministic assertion. Replaced with a plain unit test of
+    // PokedexListUiState.toListAffectingState() below, in PokedexListViewModelTest.kt, which proves
+    // the same guarantee (unrelated field changes don't change the scoped state distinctUntilChanged
+    // keys on) without touching the coroutine pipeline at all.
+
 }
