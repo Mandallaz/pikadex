@@ -38,6 +38,7 @@ import com.mandallaz.pikadex.util.teamQuadWeaknesses
 import com.mandallaz.pikadex.util.teamResistances
 import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -134,7 +135,8 @@ private inline fun <T> orNullUnlessCancelled(block: () -> T): T? = try {
 }
 
 class PokedexDetailViewModel @JvmOverloads constructor(
-    private val repository: PokedexRepositoryApi = AppContainer.repository
+    private val repository: PokedexRepositoryApi = AppContainer.repository,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PokedexDetailUiState())
@@ -197,7 +199,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     val bundle = repository.getPokemonDetailBundle(nameOrId)
                     // Off Dispatchers.Default, not the caller's dispatcher (Main.immediate): this
                     // is pure CPU work over a pokemon's full moveset, not I/O.
-                    val groupedMovesDeferred = async(Dispatchers.Default) {
+                    val groupedMovesDeferred = async(defaultDispatcher) {
                         MoveCategory.entries.associateWith { bundle.pokemon.movesForCategory(it) }
                     }
                     val typeDetails = bundle.pokemon.types.orEmpty()

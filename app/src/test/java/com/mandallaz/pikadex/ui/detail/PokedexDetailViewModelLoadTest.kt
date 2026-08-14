@@ -49,7 +49,7 @@ class PokedexDetailViewModelLoadTest {
         // bug regress once already (see the issue) despite this class's own @After already doing it.
         LocalizedNames.clearForTest()
         repository = FakePokedexRepository()
-        viewModel = PokedexDetailViewModel(repository)
+        viewModel = PokedexDetailViewModel(repository, dispatcher)
     }
 
     @After
@@ -240,4 +240,15 @@ class PokedexDetailViewModelLoadTest {
         assertNull(state.teamImpactError)
         assertEquals(false, state.isTeamImpactLoading)
     }
+
+    // Regression test for B42 / issue #111: reproduces the timing race when the default Dispatchers.Default
+    // is used (not overridden with the test dispatcher). In that case, load() suspends on a real-time
+    // background thread pool, meaning advanceUntilIdle() on the test scheduler does not wait for it.
+    // Consequently, uiState.value.pokemon is still null when loadTeamImpact() is called, so it returns early (no-op).
+    // B42 / issue #111 regression coverage lives in `loadTeamImpact computes an impact summary
+    // when the team has room` above: it already drives both load() and loadTeamImpact() through
+    // the injected test dispatcher end to end, which is exactly the path that was broken when
+    // defaultDispatcher wasn't overridable. A separate test attempting to reproduce the original
+    // race (real Dispatchers.Default, or a second unadvanced test dispatcher) is itself
+    // timing-dependent and was dropped rather than risk reintroducing flakiness.
 }
