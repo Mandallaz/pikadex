@@ -129,7 +129,7 @@ internal fun FilterSheetContent(
                 onClick = onOpenTier
             )
             SelectableChip(
-                label = uiState.rarityFilter?.label ?: stringResource(R.string.list_rarity_title),
+                label = uiState.rarityFilter?.let { stringResource(it.labelResId) } ?: stringResource(R.string.list_rarity_title),
                 selected = uiState.rarityFilter != null,
                 onClick = onOpenRarity
             )

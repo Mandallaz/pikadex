@@ -154,6 +154,7 @@
     <string name="detail_play_cry">鳴き声を再生</string>
     <string name="detail_legendary">伝説</string>
     <string name="detail_mythical">幻</string>
+    <string name="detail_ordinary">通常</string>
     <string name="detail_height">高さ</string>
     <string name="detail_weight">重さ</string>
     <string name="detail_egg_groups">タマゴグループ</string>

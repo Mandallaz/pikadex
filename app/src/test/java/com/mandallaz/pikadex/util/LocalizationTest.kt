@@ -103,4 +103,28 @@ class LocalizationTest {
         // After the fix, standard types are resolved to resource IDs (Ints), and others fall back to displayName.
         assertEquals(listOf(R.string.type_fairy, "Unknown Type"), resolved)
     }
+
+    // --- RarityFilter Localization (B46) ------------------------------------------------
+
+    @Test
+    fun `RarityFilter entries store string resource IDs rather than hardcoded string labels`() {
+        // Asserting that the enum uses valid string resource IDs rather than any hardcoded string label.
+        // It should have no label property of type String, and all entries should point to valid, distinct, non-zero resource IDs.
+        val entries = RarityFilter.entries
+        assertEquals(3, entries.size)
+
+        val legendaryResId = RarityFilter.LEGENDARY.labelResId
+        val mythicalResId = RarityFilter.MYTHICAL.labelResId
+        val ordinaryResId = RarityFilter.ORDINARY.labelResId
+
+        // Assert they are valid non-zero resource IDs
+        assert(legendaryResId != 0)
+        assert(mythicalResId != 0)
+        assert(ordinaryResId != 0)
+
+        // Assert they are distinct resource IDs
+        assert(legendaryResId != mythicalResId)
+        assert(legendaryResId != ordinaryResId)
+        assert(mythicalResId != ordinaryResId)
+    }
 }
