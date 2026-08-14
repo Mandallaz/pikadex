@@ -62,6 +62,34 @@ private val TYPE_NAME_RES = mapOf(
 @StringRes
 fun typeNameRes(typeName: String): Int? = TYPE_NAME_RES[typeName.lowercase()]
 
+/** F114 — hand-picked short forms for the English type names, used by [com.mandallaz.pikadex.ui.components.TypeBadge]
+ *  when the full name doesn't fit the space available for it. English-only by design (per the
+ *  issue's scope): other locales keep showing their full translated name regardless of fit, same
+ *  as before this feature existed. Plain strings, not @StringRes, since these never need
+ *  translation themselves. */
+private val TYPE_SHORT_NAME_EN = mapOf(
+    "normal" to "Normal",
+    "fire" to "Fire",
+    "water" to "Water",
+    "electric" to "Elect",
+    "grass" to "Grass",
+    "ice" to "Ice",
+    "fighting" to "Fight",
+    "poison" to "Poison",
+    "ground" to "Ground",
+    "flying" to "Flying",
+    "psychic" to "Psy",
+    "bug" to "Bug",
+    "rock" to "Rock",
+    "ghost" to "Ghost",
+    "dragon" to "Dragon",
+    "dark" to "Dark",
+    "steel" to "Steel",
+    "fairy" to "Fairy"
+)
+
+fun typeShortNameEn(typeName: String): String? = TYPE_SHORT_NAME_EN[typeName.lowercase()]
+
 /**
  * Colors a base-stat bar by how that value ranks against every other Pokemon's same stat,
  * rather than a fixed per-stat hue (which said nothing about whether e.g. a Speed of 5 was good

@@ -115,15 +115,21 @@ fun TypeTriangleDiagram(types: List<String>, modifier: Modifier = Modifier) {
 
             TypeBadge(
                 types[0], TypeIds.idOrNull(types[0]), height = BADGE_HEIGHT,
-                modifier = Modifier.offset(x = clampBadgeX(w * TOP_ANCHOR.x, w), y = h * TOP_ANCHOR.y - BADGE_HEIGHT / 2)
+                modifier = Modifier
+                    .width(BADGE_WIDTH)
+                    .offset(x = clampBadgeX(w * TOP_ANCHOR.x, w), y = h * TOP_ANCHOR.y - BADGE_HEIGHT / 2)
             )
             TypeBadge(
                 types[1], TypeIds.idOrNull(types[1]), height = BADGE_HEIGHT,
-                modifier = Modifier.offset(x = clampBadgeX(w * BOTTOM_LEFT_ANCHOR.x, w), y = h * BOTTOM_LEFT_ANCHOR.y - BADGE_HEIGHT / 2)
+                modifier = Modifier
+                    .width(BADGE_WIDTH)
+                    .offset(x = clampBadgeX(w * BOTTOM_LEFT_ANCHOR.x, w), y = h * BOTTOM_LEFT_ANCHOR.y - BADGE_HEIGHT / 2)
             )
             TypeBadge(
                 types[2], TypeIds.idOrNull(types[2]), height = BADGE_HEIGHT,
-                modifier = Modifier.offset(x = clampBadgeX(w * BOTTOM_RIGHT_ANCHOR.x, w), y = h * BOTTOM_RIGHT_ANCHOR.y - BADGE_HEIGHT / 2)
+                modifier = Modifier
+                    .width(BADGE_WIDTH)
+                    .offset(x = clampBadgeX(w * BOTTOM_RIGHT_ANCHOR.x, w), y = h * BOTTOM_RIGHT_ANCHOR.y - BADGE_HEIGHT / 2)
             )
         }
     }
