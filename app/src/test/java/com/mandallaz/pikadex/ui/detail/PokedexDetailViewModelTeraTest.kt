@@ -45,7 +45,7 @@ class PokedexDetailViewModelTeraTest {
 
     @After
     fun tearDown() {
-        viewModel.clearForTest()
+        viewModel.clearForTest(dispatcher.scheduler)
         TeamRepository.replaceAll(emptyList())
         LocalizedNames.clearForTest()
         Dispatchers.resetMain()

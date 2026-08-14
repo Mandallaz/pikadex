@@ -59,7 +59,7 @@ class TeamViewModelTest {
         // Order matters: clearing the ViewModel first cancels its TeamRepository.team collector,
         // so the reset below doesn't try to wake a dead coroutine on an already-reset dispatcher
         // (see clearForTest's doc) or leak that collector into a later, unrelated test.
-        viewModel.clearForTest()
+        viewModel.clearForTest(dispatcher.scheduler)
         dispatcher.scheduler.advanceUntilIdle()
         TeamRepository.replaceAll(emptyList())
         // B35 — LocalizedNames is a JVM-wide singleton whose cache, once warmed by this test's
@@ -235,7 +235,7 @@ class TeamViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(mapOf("fr" to "Carapuce"), freshViewModel.uiState.value.speciesNames["squirtle"])
-        freshViewModel.clearForTest()
+        freshViewModel.clearForTest(dispatcher.scheduler)
     }
 
     @Test
@@ -330,6 +330,6 @@ class TeamViewModelTest {
 
         gate.complete(Unit)
         dispatcher.scheduler.advanceUntilIdle()
-        spyViewModel.clearForTest()
+        spyViewModel.clearForTest(dispatcher.scheduler)
     }
 }

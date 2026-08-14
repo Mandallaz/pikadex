@@ -52,7 +52,7 @@ class PokedexListViewModelLoadTest {
 
     @After
     fun tearDown() {
-        viewModel.clearForTest()
+        viewModel.clearForTest(dispatcher.scheduler)
         // B51 — displayedPokemon's combine{}.flowOn(Dispatchers.Default) runs real work on a
         // background thread; without advancing the scheduler here, clearForTest()'s cancellation
         // can still be mid-cleanup when the next test class starts, surfacing as an uncaught
@@ -136,7 +136,7 @@ class PokedexListViewModelLoadTest {
         dispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value.isLoading)
 
-        viewModel.clearForTest()
+        viewModel.clearForTest(dispatcher.scheduler)
         gate.complete(Unit)
         dispatcher.scheduler.advanceUntilIdle()
 

@@ -56,7 +56,7 @@ class PokedexDetailViewModelLoadTest {
     fun tearDown() {
         // Order matters — see TeamViewModelTest.tearDown's identical comment: clearing first
         // avoids waking a dead collector on an already-reset Main dispatcher.
-        viewModel.clearForTest()
+        viewModel.clearForTest(dispatcher.scheduler)
         // Global singleton state — reset so other test classes in the same JVM worker don't
         // inherit whatever team/species-name cache this test left behind (B35 for the latter).
         TeamRepository.replaceAll(emptyList())
