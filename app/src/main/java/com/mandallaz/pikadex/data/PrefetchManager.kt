@@ -28,7 +28,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -122,15 +125,25 @@ object PrefetchManager {
             cancel()
             return
         }
-        val data = workDataOf("tiers" to tiers.map { it.name }.toTypedArray())
-        val workRequest = OneTimeWorkRequestBuilder<PrefetchWorker>()
-            .setInputData(data)
-            .build()
+        val workRequest = buildWorkRequest(tiers)
         WorkManager.getInstance(context).enqueueUniqueWork(
             UNIQUE_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
+    }
+
+    internal fun buildWorkRequest(tiers: List<PrefetchTier>): OneTimeWorkRequest {
+        val data = workDataOf("tiers" to tiers.map { it.name }.toTypedArray())
+        val builder = OneTimeWorkRequestBuilder<PrefetchWorker>()
+            .setInputData(data)
+        if (PrefetchSettings.wifiOnlyEnabled.value) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.UNMETERED)
+                .build()
+            builder.setConstraints(constraints)
+        }
+        return builder.build()
     }
 
     fun cancel() {
