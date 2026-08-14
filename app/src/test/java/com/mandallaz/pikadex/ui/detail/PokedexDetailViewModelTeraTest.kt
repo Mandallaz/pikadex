@@ -40,7 +40,7 @@ class PokedexDetailViewModelTeraTest {
         Dispatchers.setMain(dispatcher)
         LocalizedNames.clearForTest()
         repository = FakePokedexRepository()
-        viewModel = PokedexDetailViewModel(repository)
+        viewModel = PokedexDetailViewModel(repository, dispatcher)
     }
 
     @After

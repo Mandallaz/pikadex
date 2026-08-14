@@ -1,9 +1,23 @@
 package com.mandallaz.pikadex.data.remote
 
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Timeout
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 
 /**
  * parseBasics is fed a hand-written body matching the real shape verified against the live
@@ -306,5 +320,122 @@ class PokeApiGraphQLDataSourceTest {
     fun `a null abilitynames degrades to an empty name map, not a crash`() {
         val names = PokeApiGraphQLDataSource.parseAbilityNames(abilityNamesSampleBody).getValue("no-names-ability")
         assertEquals(emptyMap<String, String>(), names)
+    }
+
+    // --- async & cancellation tests (B49) ----------------------------------------
+
+    @After
+    fun tearDown() {
+        PokeApiGraphQLDataSource.client = null
+    }
+
+    private class FakeCall(val request: Request) : Call {
+        var canceled = false
+        var executed = false
+        var callback: Callback? = null
+
+        override fun request(): Request = request
+
+        override fun execute(): Response {
+            executed = true
+            Thread.sleep(200)
+            val responseBody = "{}".toResponseBody("application/json".toMediaType())
+            return Response.Builder()
+                .request(request)
+                .protocol(Protocol.HTTP_1_1)
+                .message("OK")
+                .code(200)
+                .body(responseBody)
+                .build()
+        }
+
+        override fun enqueue(responseCallback: Callback) {
+            executed = true
+            callback = responseCallback
+        }
+
+        override fun cancel() {
+            canceled = true
+            callback?.onFailure(this, IOException("Canceled"))
+        }
+
+        override fun isExecuted(): Boolean = executed
+        override fun isCanceled(): Boolean = canceled
+        override fun timeout(): Timeout = Timeout.NONE
+        override fun clone(): Call = this
+    }
+
+    @Test
+    fun `test runQuery observes coroutine cancellation and cancels OkHttp Call`() = runTest {
+        var createdCall: FakeCall? = null
+        val fakeFactory = object : Call.Factory {
+            override fun newCall(request: Request): Call {
+                val call = FakeCall(request)
+                createdCall = call
+                return call
+            }
+        }
+
+        PokeApiGraphQLDataSource.client = fakeFactory
+
+        val job = launch {
+            try {
+                PokeApiGraphQLDataSource.fetchAllBasics()
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+
+        while (createdCall?.executed != true) {
+            yield()
+        }
+
+        assertFalse(createdCall!!.canceled)
+
+        job.cancelAndJoin()
+
+        assertTrue("OkHttp Call should have been cancelled", createdCall!!.canceled)
+    }
+
+    @Test
+    fun `test runQuery handles successful async response`() = runTest {
+        var createdCall: FakeCall? = null
+        val fakeFactory = object : Call.Factory {
+            override fun newCall(request: Request): Call {
+                val call = FakeCall(request)
+                createdCall = call
+                return call
+            }
+        }
+
+        PokeApiGraphQLDataSource.client = fakeFactory
+
+        val job = launch {
+            val basics = PokeApiGraphQLDataSource.fetchAllBasics()
+            assertEquals(emptyMap<String, Any>(), basics)
+        }
+
+        while (createdCall?.executed != true) {
+            yield()
+        }
+
+        val responseBody = """
+            {
+              "data": {
+                "pokemon": []
+              }
+            }
+        """.trimIndent().toResponseBody("application/json".toMediaType())
+        val response = Response.Builder()
+            .request(createdCall!!.request)
+            .protocol(Protocol.HTTP_1_1)
+            .message("OK")
+            .code(200)
+            .body(responseBody)
+            .build()
+
+        createdCall!!.callback!!.onResponse(createdCall!!, response)
+
+        job.join()
     }
 }

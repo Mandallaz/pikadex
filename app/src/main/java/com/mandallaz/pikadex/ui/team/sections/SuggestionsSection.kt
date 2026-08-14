@@ -30,6 +30,7 @@ import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.ui.components.PokemonSprite
 import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.ui.components.localizedTierLabel
+import com.mandallaz.pikadex.ui.components.localizedTypeNames
 import com.mandallaz.pikadex.util.TeamSuggestion
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.localizedDisplayName
@@ -49,11 +50,18 @@ internal fun SuggestionsCard(
     onAdd: (String) -> Unit,
     onPokemonClick: (String) -> Unit
 ) {
+    val subtitleRes = when {
+        suggestions.any { it.weaknessesResisted.isNotEmpty() && it.gapsHit.isNotEmpty() } -> R.string.team_suggestions_subtitle
+        suggestions.any { it.weaknessesResisted.isNotEmpty() } -> R.string.team_suggestions_subtitle_defense
+        suggestions.any { it.gapsHit.isNotEmpty() } -> R.string.team_suggestions_subtitle_offense
+        else -> R.string.team_suggestions_subtitle
+    }
+
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(stringResource(R.string.team_suggestions_title), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
             Text(
-                stringResource(R.string.team_suggestions_subtitle),
+                stringResource(subtitleRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
@@ -149,12 +157,30 @@ private fun SuggestionTile(
         // subtitle ("would help both...") never ties back to any one tile, and the user has to
         // work it out by eye from the type badges above. Also what [rankSuggestions] sorts by, so
         // it doubles as an explanation for the tile's position in the row.
+        val whyText = when {
+            suggestion.weaknessesResisted.isNotEmpty() && suggestion.gapsHit.isNotEmpty() -> {
+                stringResource(
+                    R.string.team_suggestion_resists_hits,
+                    suggestion.weaknessesResisted.localizedTypeNames().joinToString(", "),
+                    suggestion.gapsHit.localizedTypeNames().joinToString(", ")
+                )
+            }
+            suggestion.weaknessesResisted.isNotEmpty() -> {
+                stringResource(
+                    R.string.team_suggestion_resists,
+                    suggestion.weaknessesResisted.localizedTypeNames().joinToString(", ")
+                )
+            }
+            suggestion.gapsHit.isNotEmpty() -> {
+                stringResource(
+                    R.string.team_suggestion_hits,
+                    suggestion.gapsHit.localizedTypeNames().joinToString(", ")
+                )
+            }
+            else -> ""
+        }
         Text(
-            stringResource(
-                R.string.team_suggestion_resists_hits,
-                suggestion.weaknessesResisted.joinToString(", ") { it.toDisplayName() },
-                suggestion.gapsHit.joinToString(", ") { it.toDisplayName() }
-            ),
+            text = whyText,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
