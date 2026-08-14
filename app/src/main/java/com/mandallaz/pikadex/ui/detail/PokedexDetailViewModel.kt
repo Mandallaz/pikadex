@@ -257,7 +257,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                     // instant regardless of which of the two orders namesForAdjacency picks.
                     val (previousName, nextName) = orNullUnlessCancelled {
                         val displayedNames = PokedexListContext.displayedNames.value
-                        val masterNames = repository.getMasterList().map { it.name }
+                        val masterNames = repository.masterIdByName().keys.toList()
                         val orderedNames = namesForAdjacency(displayedNames, masterNames, bundle.pokemon.name)
                         adjacentNames(orderedNames, bundle.pokemon.name)
                     } ?: (null to null)
@@ -409,7 +409,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         if (_uiState.value.compareCandidates.isNotEmpty()) return
         viewModelScope.launch {
             try {
-                val names = repository.getMasterList().map { it.name }
+                val names = repository.masterIdByName().keys.toList()
                 _uiState.update { it.copy(compareCandidates = names) }
             } catch (e: CancellationException) {
                 throw e

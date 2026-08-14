@@ -46,7 +46,7 @@ import com.mandallaz.pikadex.data.SupportedLanguages
 import com.mandallaz.pikadex.ui.components.OptionsDialog
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
 import com.mandallaz.pikadex.ui.components.localizedTierLabel
-import kotlin.math.roundToInt
+import com.mandallaz.pikadex.util.formatBytes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -394,11 +394,4 @@ private fun PrefetchTierRow(
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
-}
-
-/** Binary units (KiB/MiB, "1024-based"), matching what Android's own storage settings show. */
-private fun formatBytes(bytes: Long): String = when {
-    bytes >= 1024 * 1024 -> "${(bytes / (1024.0 * 1024.0) * 10).roundToInt() / 10.0} MB"
-    bytes >= 1024 -> "${(bytes / 1024.0).roundToInt()} KB"
-    else -> "$bytes B"
 }
