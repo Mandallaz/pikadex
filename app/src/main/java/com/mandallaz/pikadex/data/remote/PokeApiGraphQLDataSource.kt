@@ -5,11 +5,14 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.mandallaz.pikadex.data.AppContainer
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Fetches base stats for every Pokemon in a single request via PokeAPI's GraphQL endpoint,
@@ -93,7 +96,8 @@ object PokeApiGraphQLDataSource {
         }
     }
 
-    private val client get() = AppContainer.sharedOkHttpClient
+    internal var client: okhttp3.Call.Factory? = null
+    private val okHttpClient get() = client ?: AppContainer.sharedOkHttpClient
 
     private val gson = Gson()
 
@@ -106,12 +110,34 @@ object PokeApiGraphQLDataSource {
      *  emptiness for the rest of the process and wrote it to disk for the next week, silently
      *  breaking stat sorting and every move's type/power/accuracy line with no error anywhere. An
      *  exception instead evicts the cache entry, skips the disk write, and surfaces to the UI. */
+    @Suppress("DEPRECATION")
     private suspend fun <T> runQuery(query: String, parse: (String) -> T): T = withContext(Dispatchers.IO) {
         val requestBody = gson.toJson(mapOf("query" to query)).toRequestBody("application/json".toMediaType())
         val request = Request.Builder().url(URL).post(requestBody).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("GraphQL request failed: HTTP ${response.code}")
-            val body = response.body?.string() ?: throw IOException("GraphQL response had no body")
+        val call = okHttpClient.newCall(request)
+
+        val response = suspendCancellableCoroutine { continuation ->
+            call.enqueue(object : okhttp3.Callback {
+                override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                    continuation.resume(response) {
+                        response.close()
+                    }
+                }
+
+                override fun onFailure(call: okhttp3.Call, e: IOException) {
+                    if (continuation.isCancelled) return
+                    continuation.resumeWithException(e)
+                }
+            })
+
+            continuation.invokeOnCancellation {
+                call.cancel()
+            }
+        }
+
+        response.use { r ->
+            if (!r.isSuccessful) throw IOException("GraphQL request failed: HTTP ${r.code}")
+            val body = r.body?.string() ?: throw IOException("GraphQL response had no body")
             parse(body)
         }
     }
