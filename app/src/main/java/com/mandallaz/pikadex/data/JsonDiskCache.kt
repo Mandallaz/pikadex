@@ -3,8 +3,12 @@ package com.mandallaz.pikadex.data
 import android.content.Context
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
@@ -25,6 +29,9 @@ object JsonDiskCache {
     private const val DIR_NAME = "disk_cache"
     private val gson = Gson()
     private lateinit var cacheDir: File
+    private val locks = ConcurrentHashMap<String, Mutex>()
+
+    private fun getLock(key: String): Mutex = locks.computeIfAbsent(key) { Mutex() }
 
     fun init(context: Context) {
         cacheDir = File(context.applicationContext.filesDir, DIR_NAME).apply { mkdirs() }
@@ -34,11 +41,13 @@ object JsonDiskCache {
      *  main thread, or every cold-cache screen open freezes the UI for that long. */
     suspend fun <T> read(key: String, type: java.lang.reflect.Type, maxAgeMillis: Long): T? =
         withContext(Dispatchers.IO) {
-            val file = File(cacheDir, "$key.json.gz")
-            if (!file.exists()) return@withContext null
-            val age = System.currentTimeMillis() - file.lastModified()
-            if (age > maxAgeMillis) return@withContext null
-            readFile(file, type)
+            getLock(key).withLock {
+                val file = File(cacheDir, "$key.json.gz")
+                if (!file.exists()) return@withContext null
+                val age = System.currentTimeMillis() - file.lastModified()
+                if (age > maxAgeMillis) return@withContext null
+                readFile(file, type)
+            }
         }
 
     /** B29 — reads [key] regardless of age, ignoring the TTL entirely. Used only as a
@@ -48,9 +57,11 @@ object JsonDiskCache {
      *  when the alternative is a failed offline load. */
     suspend fun <T> readStale(key: String, type: java.lang.reflect.Type): T? =
         withContext(Dispatchers.IO) {
-            val file = File(cacheDir, "$key.json.gz")
-            if (!file.exists()) return@withContext null
-            readFile(file, type)
+            getLock(key).withLock {
+                val file = File(cacheDir, "$key.json.gz")
+                if (!file.exists()) return@withContext null
+                readFile(file, type)
+            }
         }
 
     private fun <T> readFile(file: File, type: java.lang.reflect.Type): T? =
@@ -69,16 +80,18 @@ object JsonDiskCache {
      *  bulk fetch completes). A same-directory rename is atomic, so [read] never observes a
      *  partial file: either the old complete one or the new complete one, never in between. */
     suspend fun write(key: String, value: Any) = withContext(Dispatchers.IO) {
-        val file = File(cacheDir, "$key.json.gz")
-        val tempFile = File(cacheDir, "$key.json.gz.tmp")
-        try {
-            GZIPOutputStream(tempFile.outputStream()).bufferedWriter().use { gson.toJson(value, it) }
-            if (!tempFile.renameTo(file)) {
+        getLock(key).withLock {
+            val file = File(cacheDir, "$key.json.gz")
+            val tempFile = File(cacheDir, "$key-${UUID.randomUUID()}.json.gz.tmp")
+            try {
+                GZIPOutputStream(tempFile.outputStream()).bufferedWriter().use { gson.toJson(value, it) }
+                if (!tempFile.renameTo(file)) {
+                    tempFile.delete()
+                }
+            } catch (e: Exception) {
+                // Best-effort — a failed write just means the next cold start re-fetches from network.
                 tempFile.delete()
             }
-        } catch (e: Exception) {
-            // Best-effort — a failed write just means the next cold start re-fetches from network.
-            tempFile.delete()
         }
     }
 

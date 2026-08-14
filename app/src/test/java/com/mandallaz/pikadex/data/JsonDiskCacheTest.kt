@@ -1,6 +1,8 @@
 package com.mandallaz.pikadex.data
 
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -94,5 +96,52 @@ class JsonDiskCacheTest {
     @Test
     fun `readStale returns null when nothing was ever written`() = runBlocking {
         assertEquals(null, JsonDiskCache.readStale<Map<String, Int>>("never-written", mapType))
+    }
+
+    // B47: write() uses a shared, non-unique temp filename ($key.json.gz.tmp) per key with no locking,
+    // so two concurrent writes to the same key can corrupt/truncate each other.
+    // With synchronization and unique temp files, this is now safe and the latest written data or other
+    // valid write data is correctly read without corruption.
+    @Test
+    fun `concurrent writes to the same key do not corrupt each other`() = runBlocking {
+        val jobs = List(20) { index ->
+            launch(Dispatchers.Default) {
+                JsonDiskCache.write("concurrent-key", mapOf("val" to index))
+            }
+        }
+        jobs.forEach { it.join() }
+
+        // Read back the value and verify it parsed successfully without throwing,
+        // and is one of the valid writes.
+        val result = JsonDiskCache.read<Map<String, Int>>("concurrent-key", mapType, maxAgeMillis = 60_000)
+        org.junit.Assert.assertNotNull(result)
+        org.junit.Assert.assertTrue(result!!["val"] in 0..19)
+    }
+
+    // B48: readFile() unconditionally deletes the cache file on a failed read with no locking against a concurrent write,
+    // so it can delete a file that a racing write just made valid.
+    // By synchronizing around the key, a failed read will lock the key, read/fail/delete, and only then does the
+    // concurrent write execute (or vice versa), preventing the delete from wiping out the newly written file.
+    @Test
+    fun `read failure does not delete a racing valid write`() = runBlocking {
+        // Prepare a corrupted file first
+        File(dir, "racing-key.json.gz").writeBytes(byteArrayOf(1, 2, 3, 4))
+
+        val readJob = launch(Dispatchers.Default) {
+            // This will try to read, fail, and attempt to delete. Since it locks the key,
+            // the write cannot execute in the middle or be deleted by the cleanup.
+            JsonDiskCache.read<Map<String, Int>>("racing-key", mapType, maxAgeMillis = 60_000)
+        }
+
+        val writeJob = launch(Dispatchers.Default) {
+            JsonDiskCache.write("racing-key", mapOf("a" to 1))
+        }
+
+        readJob.join()
+        writeJob.join()
+
+        // Verify the file exists and has the correct, uncorrupted value written by the racing write
+        val result = JsonDiskCache.read<Map<String, Int>>("racing-key", mapType, maxAgeMillis = 60_000)
+        assertEquals(mapOf("a" to 1), result)
     }
 }
