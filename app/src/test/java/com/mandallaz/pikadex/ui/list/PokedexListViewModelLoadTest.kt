@@ -53,6 +53,11 @@ class PokedexListViewModelLoadTest {
     @After
     fun tearDown() {
         viewModel.clearForTest()
+        // B51 — displayedPokemon's combine{}.flowOn(Dispatchers.Default) runs real work on a
+        // background thread; without advancing the scheduler here, clearForTest()'s cancellation
+        // can still be mid-cleanup when the next test class starts, surfacing as an uncaught
+        // exception attributed to whatever runs next (same root cause/fix as B50).
+        dispatcher.scheduler.advanceUntilIdle()
         // B35 — LocalizedNames is a JVM-wide singleton this ViewModel's init{} warms via
         // loadSpeciesNamesIfNeeded; every test class that touches it must reset it or the next
         // test class sharing this worker inherits stale/wrong data (this class was the one
