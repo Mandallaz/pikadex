@@ -173,4 +173,52 @@ class PokedexDetailViewModelTeraTest {
         assertEquals("grass" to 2, options.first()) // resists both x2 weaknesses (water, electric): +1 + +1
         assertEquals("rock" to -1, options.last())
     }
+
+    // B55 — opening the Tera picker before load()'s typeMatchups resolves used to permanently
+    // cache an all-zero ranking (rankTeraTypes against an empty weaknesses map), since the guard
+    // only checked teraTypeOptions.isNotEmpty() and nothing ever re-triggered once the real
+    // weaknesses arrived.
+    @Test
+    fun `opening the Tera picker before typeMatchups loads does not permanently cache an unranked result`() = runTest(dispatcher) {
+        repository.detailBundle = PokemonDetailBundle(
+            pokemon = fakePokemonDto(id = 6, name = "charizard", types = listOf("fire", "flying")),
+            species = fakePokemonSpeciesDto(id = 6, name = "charizard"),
+            evolutionChain = null
+        )
+        // charizard's real weaknesses end up water x2 and electric x2 (fire+flying combined, same
+        // fixtures loadCharizard() uses); grass resists both (best candidate), everything else
+        // neutral. Every standard type needs an entry — getTypeDetail(t) is called for all 18 to
+        // build the ranking, and a missing entry throws inside getTypeDetail, silently swallowed
+        // by loadTeraTypeOptionsIfNeeded's own best-effort catch — which looks identical to
+        // "nothing ranked yet" and would have hidden a real regression in this test.
+        repository.typeDetailByName = TypeIds.standardTypeNames.associateWith { name ->
+            when (name) {
+                "fire" -> typeDetailWithDoubleDamageFrom("fire", "water")
+                "flying" -> typeDetailWithDoubleDamageFrom("flying", "electric")
+                "water" -> typeDetailWithDoubleDamageFrom("water", "grass")
+                "grass" -> typeDetailWithHalfDamageFrom("grass", "water", "electric")
+                else -> typeDetailWithDoubleDamageFrom(name)
+            }
+        }
+
+        viewModel.load("charizard")
+        // The picker is opened here, before load()'s coroutine has resolved typeMatchups —
+        // currentMatchups is captured synchronously as empty regardless of dispatcher ordering.
+        viewModel.loadTeraTypeOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.typeMatchups.isNotEmpty())
+        assertTrue(
+            "an unranked (all-zero) result must not be cached once real weaknesses are known",
+            viewModel.uiState.value.teraTypeOptions.isEmpty()
+        )
+
+        // Reopening the picker after the load has resolved should now compute a real ranking.
+        viewModel.loadTeraTypeOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val options = viewModel.uiState.value.teraTypeOptions
+        assertEquals(TypeIds.standardTypeNames.size, options.size)
+        assertTrue("grass should resist both weaknesses and rank first", options.first().second > 0)
+    }
 }
