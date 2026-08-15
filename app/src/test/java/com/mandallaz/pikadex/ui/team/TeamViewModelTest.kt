@@ -332,4 +332,79 @@ class TeamViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
         spyViewModel.clearForTest(dispatcher.scheduler)
     }
+
+    @Test
+    fun `setting a Tera type for a member updates state and recomputes matrix`() = runTest(dispatcher) {
+        val torkoal = NamedApiResource("torkoal", "https://pokeapi.co/api/v2/pokemon/324/")
+        repository.pokemonTypesByName = mapOf("torkoal" to listOf("fire"))
+        repository.pokemonLevelUpMoveNamesByName = mapOf("torkoal" to emptyList())
+        repository.typeDetailByName = mapOf(
+            "fire" to TypeDetailDto(
+                id = 1,
+                name = "fire",
+                damageRelations = DamageRelations(
+                    doubleDamageFrom = listOf(NamedApiResource("water", "")),
+                    doubleDamageTo = listOf(NamedApiResource("grass", "")),
+                    halfDamageFrom = null,
+                    halfDamageTo = null,
+                    noDamageFrom = null,
+                    noDamageTo = null
+                ),
+                pokemon = null
+            ),
+            "water" to fakeTypeDetailDto("water")
+        )
+        repository.allMoveInfo = emptyMap()
+
+        TeamRepository.replaceAll(listOf(torkoal))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Base torkoal (Fire) is weak to Water (2.0)
+        assertEquals(2.0, viewModel.uiState.value.matrix.getValue("water").getValue("torkoal"), 0.0)
+
+        // Set Tera type to Water
+        viewModel.setTeraType("torkoal", "water")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(mapOf("torkoal" to "water"), state.teraTypes)
+        // Overridden torkoal (Water) is neutral to Water (1.0)
+        assertEquals(1.0, state.matrix.getValue("water").getValue("torkoal"), 0.0)
+    }
+
+    @Test
+    fun `clearing a member Tera type restores base matrix calculations`() = runTest(dispatcher) {
+        val torkoal = NamedApiResource("torkoal", "https://pokeapi.co/api/v2/pokemon/324/")
+        repository.pokemonTypesByName = mapOf("torkoal" to listOf("fire"))
+        repository.pokemonLevelUpMoveNamesByName = mapOf("torkoal" to emptyList())
+        repository.typeDetailByName = mapOf(
+            "fire" to TypeDetailDto(
+                id = 1,
+                name = "fire",
+                damageRelations = DamageRelations(
+                    doubleDamageFrom = listOf(NamedApiResource("water", "")),
+                    doubleDamageTo = null,
+                    halfDamageFrom = null,
+                    halfDamageTo = null,
+                    noDamageFrom = null,
+                    noDamageTo = null
+                ),
+                pokemon = null
+            ),
+            "water" to fakeTypeDetailDto("water")
+        )
+        repository.allMoveInfo = emptyMap()
+
+        TeamRepository.replaceAll(listOf(torkoal))
+        viewModel.setTeraType("torkoal", "water")
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(mapOf("torkoal" to "water"), viewModel.uiState.value.teraTypes)
+
+        viewModel.setTeraType("torkoal", null)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(emptyMap<String, String>(), state.teraTypes)
+        assertEquals(2.0, state.matrix.getValue("water").getValue("torkoal"), 0.0)
+    }
 }

@@ -20,13 +20,17 @@ import com.mandallaz.pikadex.util.computeTeamMatrices
 import com.mandallaz.pikadex.util.coverageGaps
 import com.mandallaz.pikadex.util.filterByTierCeiling
 import com.mandallaz.pikadex.util.rankSuggestions
+import com.mandallaz.pikadex.util.computeDefensiveMultipliers
+import com.mandallaz.pikadex.util.rankTeraTypes
 import com.mandallaz.pikadex.util.sharedWeaknesses
 import com.mandallaz.pikadex.ui.UiText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
@@ -96,7 +100,11 @@ data class TeamUiState(
     // B9 follow-up — same bulk fetch/shape as PokedexListViewModel's speciesNames; the Team screen
     // shows species names too (roster chips, suggestion tiles) and was still falling back to the
     // English-formatted raw name for every non-English language.
-    val speciesNames: Map<String, Map<String, String>> = emptyMap()
+    val speciesNames: Map<String, Map<String, String>> = emptyMap(),
+    /** Active Tera type overrides per team member (memberName -> teraType slug). */
+    val teraTypes: Map<String, String> = emptyMap(),
+    /** Ranked Tera type options for the currently-inspected member. */
+    val memberTeraTypeOptions: List<Pair<String, Int>> = emptyList()
 )
 
 /** F99 — recomputes the four derived fields that used to be getters on [TeamUiState], so they're
@@ -132,7 +140,11 @@ class TeamViewModel @JvmOverloads constructor(
 
     init {
         viewModelScope.launch {
-            TeamRepository.team.collect { members -> computeMatrix(members) }
+            combine(TeamRepository.team, TeamRepository.teraTypes) { members, teraTypes ->
+                members to teraTypes
+            }.collect { (members, teraTypes) ->
+                computeMatrix(members, teraTypes)
+            }
         }
         // Settings lives on a different tab, and this ViewModel survives a tab switch (bottom-nav
         // back stack entries keep their ViewModelStore) — without this, changing the tier ceiling
@@ -157,9 +169,32 @@ class TeamViewModel @JvmOverloads constructor(
     /** A failed matrix fetch used to be a dead end: the matrix was only ever recomputed when the
      *  team itself changed, so an offline failure left blank cells and an error line until the user
      *  added or removed a member. */
-    fun retry() = computeMatrix(_uiState.value.members)
+    fun retry() = computeMatrix(_uiState.value.members, TeamRepository.teraTypes.value)
 
-    private fun computeMatrix(members: List<NamedApiResource>) {
+    fun setTeraType(memberName: String, teraType: String?) {
+        TeamRepository.setTeraType(memberName, teraType)
+    }
+
+    fun loadTeraTypeOptionsForMember(memberName: String) {
+        viewModelScope.launch {
+            try {
+                val types = repository.getPokemonTypes(memberName)
+                val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
+                val baseMatchups = computeDefensiveMultipliers(typeDetails)
+                val allDetails = supervisorScope {
+                    TypeIds.standardTypeNames.map { type -> async { type to repository.getTypeDetail(type) } }.awaitAll()
+                }.toMap()
+                val ranking = rankTeraTypes(baseMatchups, allDetails)
+                _uiState.update { it.copy(memberTeraTypeOptions = ranking) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Best-effort
+            }
+        }
+    }
+
+    private fun computeMatrix(members: List<NamedApiResource>, teraTypes: Map<String, String>) {
         // Explicit job tracking rather than collectLatest, so [retry] can restart the same work
         // without a team change to trigger it — and so a superseded fetch is cancelled the same way
         // the Pokédex list's filter jobs are.
@@ -183,12 +218,13 @@ class TeamViewModel @JvmOverloads constructor(
                     suggestionsMatrix = emptyMap(),
                     matrixComputedFor = emptySet(),
                     suggestions = emptyList(),
-                    suggestionSpriteIds = emptyMap()
+                    suggestionSpriteIds = emptyMap(),
+                    teraTypes = emptyMap()
                 ).withDerivedFields()
             }
             return
         }
-        _uiState.update { it.copy(members = members, isLoading = true, errorMessage = null).withDerivedFields() }
+        _uiState.update { it.copy(members = members, teraTypes = teraTypes, isLoading = true, errorMessage = null).withDerivedFields() }
         matrixJob = viewModelScope.launch {
             oldMatrixJob?.cancelAndJoin()
             oldSuggestionsJob?.cancelAndJoin()
@@ -196,14 +232,15 @@ class TeamViewModel @JvmOverloads constructor(
                 // supervisorScope so one member's failed fetch surfaces as a normal catchable
                 // exception rather than risking an uncaught crash — see the identical fix (and
                 // full explanation) in PokedexDetailViewModel.load().
-                val result = computeTeamMatrices(repository, members)
+                val result = computeTeamMatrices(repository, members, teraTypes)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         matrix = result.defensive,
                         offensiveMatrix = result.offensive,
                         suggestionsMatrix = result.suggestionsDefensive,
-                        matrixComputedFor = members.map { m -> m.name }.toSet()
+                        matrixComputedFor = members.map { m -> m.name }.toSet(),
+                        teraTypes = teraTypes
                     ).withDerivedFields()
                 }
                 // Only worth attempting once the matrix that sharedWeaknesses/coverageGaps are

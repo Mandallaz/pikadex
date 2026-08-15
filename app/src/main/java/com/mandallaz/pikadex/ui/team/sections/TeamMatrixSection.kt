@@ -71,6 +71,7 @@ internal fun TeamMatrix(
     maxHeight: Dp,
     onAddSuggestion: (String) -> Unit,
     onPokemonClick: (String) -> Unit,
+    onTeraClick: (String) -> Unit = {},
     headerContent: @Composable () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -176,6 +177,7 @@ internal fun TeamMatrix(
                 Box(modifier = Modifier.width(TYPE_COLUMN_WIDTH))
                 Row(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
                     uiState.members.forEach { member ->
+                        val teraType = uiState.teraTypes[member.name]
                         Column(
                             modifier = Modifier.width(MEMBER_COLUMN_WIDTH),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -185,6 +187,14 @@ internal fun TeamMatrix(
                                 contentDescription = member.name,
                                 modifier = Modifier.size(48.dp).clickable { onPokemonClick(member.name) }
                             )
+                            if (teraType != null) {
+                                TypeBadge(
+                                    typeName = teraType,
+                                    height = 16.dp,
+                                    bordered = true,
+                                    modifier = Modifier.clickable { onTeraClick(member.name) }
+                                )
+                            }
                         }
                     }
                 }

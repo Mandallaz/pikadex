@@ -1,11 +1,13 @@
 package com.mandallaz.pikadex.ui.team.sections
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.components.PokemonSprite
+import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.util.localizedDisplayName
 
 @Composable
@@ -29,8 +32,10 @@ internal fun TeamMemberChip(
     member: NamedApiResource,
     speciesNames: Map<String, Map<String, String>>,
     language: String,
+    teraType: String? = null,
     onRemove: () -> Unit,
-    onSpriteClick: () -> Unit
+    onSpriteClick: () -> Unit,
+    onTeraClick: () -> Unit = {}
 ) {
     // The remove button used to be a 20dp IconButton — well under the 48dp minimum touch target
     // and overlapping the sprite. It's now a full 48dp target, offset to peek outside the chip's
@@ -45,6 +50,29 @@ internal fun TeamMemberChip(
                 modifier = Modifier.size(56.dp).clickable(onClick = onSpriteClick)
             )
             Text(member.name.localizedDisplayName(speciesNames, language), style = MaterialTheme.typography.bodyMedium)
+            if (teraType != null) {
+                TypeBadge(
+                    typeName = teraType,
+                    height = 18.dp,
+                    bordered = true,
+                    modifier = Modifier.padding(top = 2.dp).clickable(onClick = onTeraClick)
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(50))
+                        .clickable(onClick = onTeraClick)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.team_tera_type_add),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
         IconButton(
             onClick = onRemove,

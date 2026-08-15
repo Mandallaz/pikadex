@@ -329,13 +329,14 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         if (beforeMembers.any { it.name == pokemon.name }) return
         val candidate = NamedApiResource(pokemon.name, "https://pokeapi.co/api/v2/pokemon/${pokemon.id}/")
         val afterMembers = beforeMembers + candidate
+        val typeOverrides = TeamRepository.teraTypes.value
         teamImpactJob?.cancel()
         _uiState.update { it.copy(isTeamImpactLoading = true, teamImpactError = null, teamImpact = null) }
         teamImpactJob = viewModelScope.launch {
             try {
                 val (before, after) = supervisorScope {
-                    val beforeDeferred = async { computeTeamMatrices(repository, beforeMembers) }
-                    val afterDeferred = async { computeTeamMatrices(repository, afterMembers) }
+                    val beforeDeferred = async { computeTeamMatrices(repository, beforeMembers, typeOverrides) }
+                    val afterDeferred = async { computeTeamMatrices(repository, afterMembers, typeOverrides) }
                     beforeDeferred.await() to afterDeferred.await()
                 }
                 val beforeNames = beforeMembers.map { it.name }

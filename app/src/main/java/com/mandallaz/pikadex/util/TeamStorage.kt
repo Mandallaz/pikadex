@@ -31,3 +31,15 @@ internal fun decodeMembers(raw: String?): List<NamedApiResource> {
         NamedApiResource(name, "https://pokeapi.co/api/v2/pokemon/$id/")
     }
 }
+
+internal fun encodeTeraTypes(teraTypes: Map<String, String>): String =
+    teraTypes.entries.filter { it.key.isNotBlank() && it.value.isNotBlank() }
+        .joinToString(ENTRY_DELIMITER) { "${it.key}$FIELD_DELIMITER${it.value}" }
+
+internal fun decodeTeraTypes(raw: String?): Map<String, String> {
+    if (raw.isNullOrBlank()) return emptyMap()
+    return raw.split(ENTRY_DELIMITER).mapNotNull { entry ->
+        val (name, teraType) = entry.split(FIELD_DELIMITER).takeIf { it.size == 2 } ?: return@mapNotNull null
+        if (name.isBlank() || teraType.isBlank()) null else name to teraType
+    }.toMap()
+}

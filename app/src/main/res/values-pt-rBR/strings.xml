@@ -269,6 +269,8 @@
     <string name="team_remove_member_cd">Remover %1$s do time</string>
     <string name="team_add_member_cd">Adicionar um Pokémon ao seu time</string>
     <string name="team_add_label">Adicionar</string>
+    <string name="team_tera_type_add">+ Tera</string>
+    <string name="team_tera_type_dialog_title">Escolher tipo Tera para %1$s</string>
     <string name="team_suggestions_title">Sugestões</string>
     <string name="team_suggestions_subtitle">Ajudaria tanto as fraquezas do time quanto as lacunas de cobertura.</string>
     <string name="team_suggestions_tier_limited">Limitado a %1$s e abaixo (Configurações).</string>

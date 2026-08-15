@@ -147,4 +147,25 @@ class TeamMatrixCalculatorTest {
         // Both members' entries exist side by side in the same row.
         assertEquals(setOf("torkoal", "poliwrath"), result.defensive.getValue("water").keys)
     }
+
+    @Test
+    fun `typeOverrides parameter replaces defensive typing and adds STAB for specified member`() = runTest {
+        val repo = repository().apply {
+            pokemonTypesByName = mapOf("torkoal" to listOf("fire"))
+            pokemonLevelUpMoveNamesByName = mapOf("torkoal" to emptyList())
+            allMoveInfo = emptyMap()
+        }
+
+        // Torkoal is Fire, but overridden with Tera type "water".
+        val result = computeTeamMatrices(
+            repo,
+            listOf(NamedApiResource("torkoal", "")),
+            typeOverrides = mapOf("torkoal" to "water")
+        )
+
+        // Defensively, torkoal is now pure Water: Water does not take x2 from Water.
+        assertEquals(1.0, result.defensive.getValue("water").getValue("torkoal"), 0.0)
+        // Offensively, torkoal gained Water STAB: Water deals x2 to Fire defenders.
+        assertEquals(2.0, result.offensive.getValue("fire").getValue("torkoal"), 0.0)
+    }
 }

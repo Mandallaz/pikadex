@@ -269,6 +269,8 @@
     <string name="team_remove_member_cd">Rimuovi %1$s dalla squadra</string>
     <string name="team_add_member_cd">Aggiungi un Pokémon alla tua squadra</string>
     <string name="team_add_label">Aggiungi</string>
+    <string name="team_tera_type_add">+ Tera</string>
+    <string name="team_tera_type_dialog_title">Scegli tipo Terastal per %1$s</string>
     <string name="team_suggestions_title">Suggerimenti</string>
     <string name="team_suggestions_subtitle">Aiuterebbe sia le debolezze condivise sia le lacune di copertura della squadra.</string>
     <string name="team_suggestions_tier_limited">Limitato a %1$s e inferiori (Impostazioni).</string>
