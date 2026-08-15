@@ -269,41 +269,21 @@ class PokedexDetailScreenTest {
         assertFalse(hasAnimatedSprite(null))
     }
 
-    // --- MoveLabels coverage (F103) -----------------------------------------------------------
-
-    @Test
-    fun `MoveLabels can be constructed with custom values`() {
-        val customLabels = MoveLabels(
-            physical = "PHYS",
-            special = "SPEC",
-            status = "STAT",
-            dash = "DASH",
-            line = "LINE",
-            lineWithPriority = "LINE_PRIO",
-            always = "ALWAYS",
-            ailmentChance = "CHANCE",
-            statChangeChance = "STAT_CHANCE",
-            critRate = "CRIT",
-            drains = "DRAIN",
-            recoil = "RECOIL",
-            heals = "HEAL",
-            flinchChance = "FLINCH",
-            statNames = mapOf("hp" to "HP_CUSTOM")
-        )
-        assertEquals("PHYS", customLabels.physical)
-        assertEquals("SPEC", customLabels.special)
-        assertEquals("STAT", customLabels.status)
-        assertEquals("DASH", customLabels.dash)
-        assertEquals("LINE", customLabels.line)
-        assertEquals("LINE_PRIO", customLabels.lineWithPriority)
-        assertEquals("ALWAYS", customLabels.always)
-        assertEquals("CHANCE", customLabels.ailmentChance)
-        assertEquals("STAT_CHANCE", customLabels.statChangeChance)
-        assertEquals("CRIT", customLabels.critRate)
-        assertEquals("DRAIN", customLabels.drains)
-        assertEquals("RECOIL", customLabels.recoil)
-        assertEquals("HEAL", customLabels.heals)
-        assertEquals("FLINCH", customLabels.flinchChance)
-        assertEquals("HP_CUSTOM", customLabels.statNames["hp"])
-    }
+    // --- MoveLabels coverage (F103/B58) -------------------------------------------------------
+    // B58 — the previous test here ("MoveLabels can be constructed with custom values") only
+    // asserted the data class's own generated getters return what its constructor was given —
+    // a Kotlin-compiler guarantee, not app behavior, so it could never fail from a real regression
+    // in this codebase. What F103 actually needs verified — that a non-default MoveLabels bundle
+    // actually reaches the rendered text, not just that the class stores its fields — is already
+    // covered above by `moveStatsLabel substitutes a non-default labels bundle into the template`
+    // and `moveMetaLabel substitutes a non-default labels bundle, including stat names`: those are
+    // the exact two pure functions moveSection/MoveRow call to build what the row shows.
+    //
+    // The one part of F103's intent this file still can't verify is Compose-specific: that
+    // moveLabels() is resolved once per PokedexDetailContent composition (a single
+    // `val labels = moveLabels()` above, passed down through moveSection into MoveRow) rather than
+    // once per row. That's a call-count/composition-tree assertion, which needs a Compose UI test
+    // rule (or Robolectric) — this module has neither set up for JVM unit tests. It stays verified
+    // by code inspection (moveLabels() has exactly one call site in this file) rather than a test,
+    // same as this file's own note on loadBaseStatsIfNeeded's coroutine behavior above.
 }
