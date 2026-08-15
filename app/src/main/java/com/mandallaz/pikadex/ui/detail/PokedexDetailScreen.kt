@@ -287,44 +287,46 @@ fun PokedexDetailScreen(
                     }
                 }
                 else -> DetailContent(
-                    pokemon = pokemon,
-                    species = species,
-                    evolutionChain = uiState.evolutionChain,
-                    typeMatchups = uiState.typeMatchups,
-                    abilityDescriptions = uiState.abilityDescriptions,
-                    counteredTriangles = uiState.counteredTriangles,
-                    partiallyCounteredTriangles = uiState.partiallyCounteredTriangles,
-                    teraType = uiState.teraType,
-                    teraTypeMatchups = uiState.teraTypeMatchups,
-                    teraCounteredTriangles = uiState.teraCounteredTriangles,
-                    teraPartiallyCounteredTriangles = uiState.teraPartiallyCounteredTriangles,
+                    data = DetailData(
+                        pokemon = pokemon,
+                        species = species,
+                        evolutionChain = uiState.evolutionChain,
+                        typeMatchups = uiState.typeMatchups,
+                        abilityDescriptions = uiState.abilityDescriptions,
+                        counteredTriangles = uiState.counteredTriangles,
+                        partiallyCounteredTriangles = uiState.partiallyCounteredTriangles,
+                        teraType = uiState.teraType,
+                        teraTypeMatchups = uiState.teraTypeMatchups,
+                        teraCounteredTriangles = uiState.teraCounteredTriangles,
+                        teraPartiallyCounteredTriangles = uiState.teraPartiallyCounteredTriangles,
+                        teraTypeOptions = uiState.teraTypeOptions,
+                        moveInfo = uiState.moveInfo,
+                        statPercentiles = uiState.statPercentiles,
+                        formVersionGroup = uiState.formVersionGroup,
+                        groupedMoves = uiState.groupedMoves,
+                        shiny = shiny,
+                        animated = animated,
+                        frontBackSprites = frontBackSprites,
+                        isCryPlaying = isCryPlaying,
+                        showTeamImpactCard = shouldShowTeamImpactCard(team, isInTeam),
+                        isTeamImpactLoading = uiState.isTeamImpactLoading,
+                        teamImpactError = uiState.teamImpactError,
+                        teamImpact = uiState.teamImpact,
+                        speciesNames = uiState.speciesNames,
+                        moveLocalizedNames = uiState.moveLocalizedNames,
+                        abilityLocalizedNames = uiState.abilityLocalizedNames
+                    ),
                     onSelectTeraType = viewModel::selectTeraType,
-                    teraTypeOptions = uiState.teraTypeOptions,
                     onOpenTeraDialog = viewModel::loadTeraTypeOptionsIfNeeded,
-                    moveInfo = uiState.moveInfo,
-                    statPercentiles = uiState.statPercentiles,
-                    formVersionGroup = uiState.formVersionGroup,
-                    groupedMoves = uiState.groupedMoves,
-                    shiny = shiny,
-                    animated = animated,
-                    frontBackSprites = frontBackSprites,
                     onToggleShiny = { shiny = !shiny },
                     onToggleAnimated = { animated = !animated },
                     onToggleFrontBackSprites = { frontBackSprites = !frontBackSprites },
-                    isCryPlaying = isCryPlaying,
                     // uiState.pokemon is non-null here (this whole branch is gated on `pokemon`
                     // above), but that's `pokemon`, not `uiState.pokemon` — same underlying value,
                     // captured locally so playCry doesn't need its own null check.
                     onPlayCry = { viewModel.playCry(context, pokemon.id) },
-                    showTeamImpactCard = shouldShowTeamImpactCard(team, isInTeam),
-                    isTeamImpactLoading = uiState.isTeamImpactLoading,
-                    teamImpactError = uiState.teamImpactError,
-                    teamImpact = uiState.teamImpact,
                     onPokemonClick = onPokemonClick,
-                    onViewTypeTriangles = onViewTypeTriangles,
-                    speciesNames = uiState.speciesNames,
-                    moveLocalizedNames = uiState.moveLocalizedNames,
-                    abilityLocalizedNames = uiState.abilityLocalizedNames
+                    onViewTypeTriangles = onViewTypeTriangles
                 )
             }
 
@@ -385,53 +387,81 @@ fun PokedexDetailScreen(
 
 }
 
+/** Grouped data parameters passed to [DetailContent]. */
+internal data class DetailData(
+    val pokemon: PokemonDto,
+    val species: PokemonSpeciesDto,
+    val evolutionChain: com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto? = null,
+    val typeMatchups: Map<String, Double> = emptyMap(),
+    val abilityDescriptions: Map<String, String> = emptyMap(),
+    val counteredTriangles: List<TypeTriangle> = emptyList(),
+    val partiallyCounteredTriangles: List<TypeTriangle> = emptyList(),
+    val teraType: String? = null,
+    val teraTypeMatchups: Map<String, Double>? = null,
+    val teraCounteredTriangles: List<TypeTriangle>? = null,
+    val teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
+    val teraTypeOptions: List<Pair<String, Int>> = emptyList(),
+    val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap(),
+    val statPercentiles: Map<String, Double> = emptyMap(),
+    val formVersionGroup: String? = null,
+    val groupedMoves: Map<MoveCategory, List<LearnedMove>> = emptyMap(),
+    val shiny: Boolean = false,
+    val animated: Boolean = false,
+    val frontBackSprites: Boolean = false,
+    val isCryPlaying: Boolean = false,
+    val showTeamImpactCard: Boolean = false,
+    val isTeamImpactLoading: Boolean = false,
+    val teamImpactError: UiText? = null,
+    val teamImpact: TeamImpactSummary? = null,
+    val speciesNames: Map<String, Map<String, String>> = emptyMap(),
+    val moveLocalizedNames: Map<String, Map<String, String>> = emptyMap(),
+    val abilityLocalizedNames: Map<String, Map<String, String>> = emptyMap()
+)
+
 // Internal rather than private: instrumented tests render this directly with fake DTOs, rather
 // than driving the whole screen through a real ViewModel/network fetch.
 @Composable
 internal fun DetailContent(
-    pokemon: PokemonDto,
-    species: PokemonSpeciesDto,
-    evolutionChain: com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto?,
-    typeMatchups: Map<String, Double>,
-    abilityDescriptions: Map<String, String>,
-    counteredTriangles: List<TypeTriangle>,
-    partiallyCounteredTriangles: List<TypeTriangle>,
-    // F90 — defaulted so existing instrumented-test call sites (rendering this directly with fake
-    // DTOs, no ViewModel) keep compiling unchanged; real usage always passes the ViewModel's
-    // uiState.teraType/etc.
-    teraType: String? = null,
-    teraTypeMatchups: Map<String, Double>? = null,
-    teraCounteredTriangles: List<TypeTriangle>? = null,
-    teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
+    data: DetailData,
     onSelectTeraType: (String?) -> Unit = {},
-    teraTypeOptions: List<Pair<String, Int>> = emptyList(),
     onOpenTeraDialog: () -> Unit = {},
-    moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo>,
-    statPercentiles: Map<String, Double>,
-    formVersionGroup: String?,
-    groupedMoves: Map<MoveCategory, List<LearnedMove>>,
-    shiny: Boolean,
-    animated: Boolean,
-    frontBackSprites: Boolean,
     onToggleShiny: () -> Unit,
     onToggleAnimated: () -> Unit,
     onToggleFrontBackSprites: () -> Unit,
-    isCryPlaying: Boolean,
     onPlayCry: () -> Unit,
-    showTeamImpactCard: Boolean,
-    isTeamImpactLoading: Boolean,
-    teamImpactError: UiText?,
-    teamImpact: TeamImpactSummary?,
     onPokemonClick: (String) -> Unit,
-    onViewTypeTriangles: () -> Unit,
-    // B9 — defaulted so existing instrumented-test call sites (rendering this directly with fake
-    // DTOs, no ViewModel) keep compiling unchanged; real usage always passes the ViewModel's
-    // uiState.speciesNames.
-    speciesNames: Map<String, Map<String, String>> = emptyMap(),
-    // B11 — same defaulting reasoning as speciesNames above.
-    moveLocalizedNames: Map<String, Map<String, String>> = emptyMap(),
-    abilityLocalizedNames: Map<String, Map<String, String>> = emptyMap()
+    onViewTypeTriangles: () -> Unit
 ) {
+    val (
+        pokemon,
+        species,
+        evolutionChain,
+        typeMatchups,
+        abilityDescriptions,
+        counteredTriangles,
+        partiallyCounteredTriangles,
+        teraType,
+        teraTypeMatchups,
+        teraCounteredTriangles,
+        teraPartiallyCounteredTriangles,
+        teraTypeOptions,
+        moveInfo,
+        statPercentiles,
+        formVersionGroup,
+        groupedMoves,
+        shiny,
+        animated,
+        frontBackSprites,
+        isCryPlaying,
+        showTeamImpactCard,
+        isTeamImpactLoading,
+        teamImpactError,
+        teamImpact,
+        speciesNames,
+        moveLocalizedNames,
+        abilityLocalizedNames
+    ) = data
+
     // F35 — game-data axis: genus/flavor text below read whichever language this resolves to,
     // falling back to English wherever the chosen language's entry is missing.
     val gameDataLanguage by LanguageSettings.currentLanguage.collectAsState()
