@@ -34,4 +34,21 @@ class PokedexRepositoryDiskCacheTtlTest {
             diskCachedFn.contains("JsonDiskCache.readStale")
         )
     }
+
+    // B59 — diskCached's write call didn't pass its own `type` parameter through to
+    // JsonDiskCache.write, so `type` there defaulted to null and fell back to
+    // `moshi.adapter<Any>(value.javaClass)`, which throws for a Map instance (loses its generic
+    // parameters) and gets silently caught, sending every write through Gson instead of Moshi —
+    // no functional break (Gson round-trips fine), but the "writes via Moshi" half of F100's
+    // migration for this cache never actually happened. See [JsonDiskCacheTest] for direct
+    // coverage of JsonDiskCache.write itself; this guards the call site that has to pass the type.
+    @Test
+    fun `diskCached passes its type parameter through to JsonDiskCache write`() {
+        val diskCachedFn = source.substringAfter("private suspend fun <T : Any> diskCached(").substringBefore("\n    }")
+        assertTrue(
+            "diskCached should call JsonDiskCache.write(key, it, type) — a write with no type " +
+                "argument falls back to Gson every time",
+            diskCachedFn.contains("JsonDiskCache.write(key, it, type)")
+        )
+    }
 }
