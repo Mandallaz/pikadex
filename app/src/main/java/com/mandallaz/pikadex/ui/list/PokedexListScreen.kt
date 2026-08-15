@@ -74,6 +74,7 @@ import com.mandallaz.pikadex.ui.components.localizedTierLabel
 import com.mandallaz.pikadex.ui.list.sections.AttributionFooter
 import com.mandallaz.pikadex.ui.list.sections.EmptyResultsState
 import com.mandallaz.pikadex.ui.list.sections.FilterSheetContent
+import com.mandallaz.pikadex.ui.list.sections.ListHeader
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.SmogonGen
 import com.mandallaz.pikadex.util.RarityFilter
@@ -193,111 +194,6 @@ fun PokedexListScreen(
             // to an empty result in the first place.
             val compact = maxHeight < COMPACT_HEADER_MAX_HEIGHT
 
-            val searchField: @Composable () -> Unit = {
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = viewModel::onSearchQueryChange,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text(stringResource(R.string.list_search_placeholder)) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
-                        {
-                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.list_clear_search_cd))
-                            }
-                        }
-                    } else {
-                        null
-                    },
-                    singleLine = true
-                )
-            }
-
-            val filterChips: @Composable () -> Unit = {
-                // Search + Filters + Sort + Reset — the search field is the only thing that must
-                // always be visible; everything else used to permanently occupy ~36% of the screen
-                // above the grid (two type-chip rows plus a filter-chip row that never scrolled away).
-                // Collapsing type/move/ability/format/tier/favorites behind one "Filters" sheet gives
-                // that space back to the actual Pokémon grid.
-                // FlowRow, not Row: with a long sort label ("Sort: Dex number") plus the direction
-                // toggle plus Reset, a plain Row squeezed the last chip until its text broke mid-word
-                // ("Res/et") instead of letting it move to the next line.
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    itemVerticalAlignment = Alignment.CenterVertically
-                ) {
-                    val filterCount = uiState.activeFilterCount
-                    FilterChip(
-                        selected = filterCount > 0,
-                        onClick = {
-                            viewModel.loadBaseStatsIfNeeded()
-                            showFilterSheet = true
-                        },
-                        label = {
-                            Text(
-                                if (filterCount > 0) {
-                                    stringResource(R.string.list_filters_label_count, filterCount)
-                                } else {
-                                    stringResource(R.string.list_filters_label)
-                                }
-                            )
-                        },
-                        leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                    )
-                    // FilterChip, not AssistChip: an active sort is exactly the same kind of "a filter
-                    // control has a non-default value set" state as the Filters button next to it, so
-                    // it gets the same visual treatment (tonal fill once selected) instead of always
-                    // looking like an inert, un-set button.
-                    FilterChip(
-                        selected = uiState.sortStat != null,
-                        onClick = {
-                            viewModel.loadBaseStatsIfNeeded()
-                            activeDialog = ActiveDialog.SORT
-                        },
-                        // "Sort: " prefix once a stat is picked — a bare "Attack" next to "Filters (2)"
-                        // read as if it were itself a filter value, not what it's actually sorting by.
-                        label = {
-                            Text(
-                                uiState.sortStat?.let { stringResource(R.string.list_sort_label_with_stat, it.localizedLabel()) }
-                                    ?: stringResource(R.string.list_sort_label)
-                            )
-                        }
-                    )
-                    if (uiState.sortStat != null) {
-                        IconButton(onClick = viewModel::toggleSortDirection) {
-                            Icon(
-                                imageVector = if (uiState.sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                                contentDescription = if (uiState.sortAscending) {
-                                    stringResource(R.string.list_sort_ascending_cd)
-                                } else {
-                                    stringResource(R.string.list_sort_descending_cd)
-                                }
-                            )
-                        }
-                    }
-                    if (uiState.hasActiveFilters) {
-                        AssistChip(
-                            onClick = viewModel::clearFilters,
-                            label = { Text(stringResource(R.string.list_reset)) },
-                            leadingIcon = { Icon(Icons.Default.Clear, contentDescription = null) }
-                        )
-                    }
-                }
-            }
-
-            val resultCount: @Composable () -> Unit = {
-                if (!uiState.isLoading && uiState.allPokemon.isNotEmpty()) {
-                    Text(
-                        stringResource(R.string.list_result_count, displayedPokemon.size),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
             // Mirrors the `when` below — the grid is its last branch, so this is "a grid is what
             // is actually on screen right now".
             val showsGrid = !uiState.isLoading &&
@@ -305,11 +201,27 @@ fun PokedexListScreen(
                 displayedPokemon.isNotEmpty()
             val headerScrollsWithGrid = compact && showsGrid
 
+            val headerContent: @Composable () -> Unit = {
+                ListHeader(
+                    uiState = uiState,
+                    displayedCount = displayedPokemon.size,
+                    onSearchQueryChange = viewModel::onSearchQueryChange,
+                    onOpenFilters = {
+                        viewModel.loadBaseStatsIfNeeded()
+                        showFilterSheet = true
+                    },
+                    onOpenSort = {
+                        viewModel.loadBaseStatsIfNeeded()
+                        activeDialog = ActiveDialog.SORT
+                    },
+                    onToggleSortDirection = viewModel::toggleSortDirection,
+                    onClearFilters = viewModel::clearFilters
+                )
+            }
+
             Column(modifier = Modifier.fillMaxSize()) {
                 if (!headerScrollsWithGrid) {
-                    searchField()
-                    filterChips()
-                    resultCount()
+                    headerContent()
                 }
 
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -357,9 +269,7 @@ fun PokedexListScreen(
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 if (headerScrollsWithGrid) {
-                                    item(span = { GridItemSpan(maxLineSpan) }) { searchField() }
-                                    item(span = { GridItemSpan(maxLineSpan) }) { filterChips() }
-                                    item(span = { GridItemSpan(maxLineSpan) }) { resultCount() }
+                                    item(span = { GridItemSpan(maxLineSpan) }) { headerContent() }
                                 }
                                 items(displayedPokemon, key = { it.name }) { resource ->
                                     // Safe: computeDisplayed already filters out id-less resources,
