@@ -1,11 +1,14 @@
 package com.mandallaz.pikadex.data
 
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.Context
 import android.net.ConnectivityManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
+import androidx.work.testing.WorkManagerTestInitHelper
 import androidx.work.workDataOf
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -16,11 +19,14 @@ import com.mandallaz.pikadex.data.repository.fakePokemonSpeciesDto
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
+@Config(sdk = [34])
 class PrefetchWorkerTest {
 
     private lateinit var context: Context
@@ -29,6 +35,7 @@ class PrefetchWorkerTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        WorkManagerTestInitHelper.initializeTestWorkManager(context)
         fakeRepo = FakePokedexRepository().apply {
             masterList = listOf(NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"))
             detailBundle = PokemonDetailBundle(
@@ -53,7 +60,7 @@ class PrefetchWorkerTest {
     }
 
     @Test
-    fun `doWork succeeds and returns outputData with failed count on normal completion`() = runBlocking {
+    fun `doWork succeeds and returns outputData with failed count on normal completion`(): Unit = runBlocking {
         val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
             .setInputData(workDataOf("tiers" to arrayOf("FULL_DETAIL")))
             .build()
@@ -64,7 +71,7 @@ class PrefetchWorkerTest {
     }
 
     @Test
-    fun `doWork returns failure when inputData missing tiers key`() = runBlocking {
+    fun `doWork returns failure when inputData missing tiers key`(): Unit = runBlocking {
         val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
             .setInputData(workDataOf())
             .build()
@@ -75,7 +82,7 @@ class PrefetchWorkerTest {
     }
 
     @Test
-    fun `doWork returns success when tiers list is empty`() = runBlocking {
+    fun `doWork returns success when tiers list is empty`(): Unit = runBlocking {
         val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
             .setInputData(workDataOf("tiers" to emptyArray<String>()))
             .build()
@@ -86,7 +93,7 @@ class PrefetchWorkerTest {
     }
 
     @Test
-    fun `doWork returns failure with network error resource when repository throws exception`() = runBlocking {
+    fun `doWork returns failure with network error resource when repository throws exception`(): Unit = runBlocking {
         fakeRepo.failWith = Exception("Network connection failed")
 
         val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
@@ -99,5 +106,51 @@ class PrefetchWorkerTest {
             ListenableWorker.Result.failure(workDataOf("messageRes" to R.string.settings_prefetch_error_network)),
             result
         )
+    }
+
+    @Test
+    fun `getForegroundInfo creates foregroundInfo with expected notification channel title text and action`(): Unit = runBlocking {
+        val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
+            .setInputData(workDataOf("tiers" to arrayOf("SPRITES")))
+            .build()
+
+        val foregroundInfo = worker.getForegroundInfo()
+
+        assertEquals(PREFETCH_NOTIFICATION_ID, foregroundInfo.notificationId)
+        val notification = foregroundInfo.notification
+        assertEquals(PREFETCH_NOTIFICATION_CHANNEL_ID, notification.channelId)
+
+        val extras = notification.extras
+        val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
+        val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+
+        assertEquals(context.getString(R.string.settings_offline_data_section), title)
+        assertEquals("${context.getString(R.string.settings_tier_sprites_title)}…", text)
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = notificationManager.getNotificationChannel(PREFETCH_NOTIFICATION_CHANNEL_ID)
+        assertNotNull(channel)
+        assertEquals(NotificationManager.IMPORTANCE_LOW, channel.importance)
+        assertEquals(context.getString(R.string.settings_offline_data_section), channel.name)
+
+        val cancelAction = notification.actions?.firstOrNull()
+        assertNotNull(cancelAction)
+        assertEquals(context.getString(R.string.settings_cancel), cancelAction?.title?.toString())
+    }
+
+    @Test
+    fun `createForegroundInfo formats progress text matching in-app display`(): Unit = runBlocking {
+        val worker = TestListenableWorkerBuilder<PrefetchWorker>(context).build()
+
+        val foregroundInfo = worker.createForegroundInfo(
+            done = 1204,
+            total = 2702,
+            phaseRes = R.string.settings_tier_sprites_title
+        )
+
+        val notification = foregroundInfo.notification
+        val text = notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+
+        assertEquals("Sprites — 1204/2702", text)
     }
 }

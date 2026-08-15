@@ -8,6 +8,10 @@
          metered before a large prefetch, without needing any user-facing permission prompt (this
          is a normal, non-dangerous permission). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- F74 — promotes prefetch CoroutineWorker to a foreground service with a progress notification -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- B28 — PRIVACY_POLICY.md states favorites/teams/settings "stay on your device only" and are
          "deleted if you uninstall the app"; Android Auto Backup with allowBackup="true" (and the
@@ -35,6 +39,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 
 </manifest>
