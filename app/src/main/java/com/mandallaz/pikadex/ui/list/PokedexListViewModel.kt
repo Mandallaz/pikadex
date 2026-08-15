@@ -437,6 +437,11 @@ class PokedexListViewModel @JvmOverloads constructor(
                     val pokemonList = masterListDeferred.await()
                     val types = typesDeferred.await()
                     _uiState.update { it.copy(allPokemon = pokemonList, typeOptions = types, isLoading = false) }
+                    // B54 — a tier selected while allPokemon was still empty leaves
+                    // selectedFormatTier set but formatFilterNames null (applyTierFilter's own
+                    // "no data yet" guard, see below); nothing else re-triggers it once the list
+                    // arrives, so the filter chip stayed active over an unfiltered grid.
+                    _uiState.value.selectedFormatTier?.let { applyTierFilter(it) }
                 }
             } catch (e: CancellationException) {
                 // B34 — every other coroutine body in this file (and its sibling ViewModels)

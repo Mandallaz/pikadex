@@ -123,6 +123,37 @@ class PokedexListViewModelLoadTest {
         assertEquals(1, state.allPokemon.size)
     }
 
+    // B54 — selecting a tier while allPokemon is still empty used to leave selectedFormatTier
+    // set but formatFilterNames null, with no re-trigger once loadInitialData finished: the UI
+    // showed an active "Tier: OU" chip over a completely unfiltered grid.
+    @Test
+    fun `selecting a format tier before allPokemon finishes loading applies once the load completes`() = runTest(dispatcher) {
+        val bulbasaur = NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/")
+        val charmander = NamedApiResource("charmander", "https://pokeapi.co/api/v2/pokemon/4/")
+        repository.masterList = listOf(bulbasaur, charmander)
+        repository.types = emptyList()
+        repository.smogonTiers = mapOf("bulbasaur" to "OU", "charmander" to "UU")
+
+        val masterListGate = CompletableDeferred<Unit>()
+        repository.masterListGate = masterListGate
+
+        viewModel.onFormatTierSelected("OU")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // allPokemon is still empty (master list load held open) — the tier stays selected but
+        // nothing can be filtered yet.
+        assertEquals("OU", viewModel.uiState.value.selectedFormatTier)
+        assertNull(viewModel.uiState.value.formatFilterNames)
+        assertTrue(viewModel.uiState.value.allPokemon.isEmpty())
+
+        masterListGate.complete(Unit)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("OU", state.selectedFormatTier)
+        assertEquals(listOf("bulbasaur"), state.formatFilterNames?.toList())
+    }
+
     // B34 — loadInitialData was the one coroutine body in this file that didn't rethrow
     // CancellationException before its generic catch, so a cancellation (e.g. this ViewModel
     // being cleared mid-load) used to be caught as a normal Exception and turned into a bogus
