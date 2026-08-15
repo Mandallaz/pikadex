@@ -4,8 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.test.retry)
-    alias(libs.plugins.androidx.baselineprofile)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 // Release signing key material lives outside the repo (see .gitignore: keystore.properties,
