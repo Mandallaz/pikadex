@@ -5,6 +5,7 @@ import com.mandallaz.pikadex.data.remote.CacheControlInterceptor
 import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.RetryInterceptor
 import com.mandallaz.pikadex.data.repository.PokedexRepository
+import com.mandallaz.pikadex.data.repository.PokedexRepositoryApi
 import okhttp3.Cache
 import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
@@ -74,7 +75,19 @@ object AppContainer {
         retrofit.create(PokeApiService::class.java)
     }
 
-    val repository: PokedexRepository by lazy {
+    private val defaultRepository: PokedexRepository by lazy {
         PokedexRepository(pokeApiService)
+    }
+
+    private var _repository: PokedexRepositoryApi? = null
+
+    var repository: PokedexRepositoryApi
+        get() = _repository ?: defaultRepository
+        set(value) {
+            _repository = value
+        }
+
+    fun resetRepositoryForTest() {
+        _repository = null
     }
 }

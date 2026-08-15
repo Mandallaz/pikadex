@@ -1,67 +1,103 @@
 package com.mandallaz.pikadex.data
 
-import java.io.File
-import org.junit.Assert.assertTrue
+import android.content.Context
+import android.net.ConnectivityManager
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.ListenableWorker
+import androidx.work.testing.TestListenableWorkerBuilder
+import androidx.work.workDataOf
+import com.mandallaz.pikadex.R
+import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
+import com.mandallaz.pikadex.data.repository.FakePokedexRepository
+import com.mandallaz.pikadex.data.repository.PokemonDetailBundle
+import com.mandallaz.pikadex.data.repository.fakePokemonDto
+import com.mandallaz.pikadex.data.repository.fakePokemonSpeciesDto
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 
-/**
- * Unit test for [PrefetchWorker] verifying its implementation correctness via source text
- * and structure analysis, matching the codebase convention for classes requiring Android context.
- */
+@RunWith(AndroidJUnit4::class)
 class PrefetchWorkerTest {
 
-    private val source = File("src/main/java/com/mandallaz/pikadex/data/PrefetchWorker.kt").readText()
+    private lateinit var context: Context
+    private lateinit var fakeRepo: FakePokedexRepository
 
-    @Test
-    fun `PrefetchWorker extends CoroutineWorker`() {
-        assertTrue(
-            "PrefetchWorker must extend CoroutineWorker",
-            source.contains("class PrefetchWorker") && source.contains(": CoroutineWorker")
-        )
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        fakeRepo = FakePokedexRepository().apply {
+            masterList = listOf(NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"))
+            detailBundle = PokemonDetailBundle(
+                fakePokemonDto(),
+                fakePokemonSpeciesDto(),
+                null
+            )
+        }
+        AppContainer.repository = fakeRepo
+        PrefetchSettings.setWifiOnlyEnabled(false)
+        PrefetchManager.meteredCheck = { false }
+    }
+
+    @After
+    fun tearDown() {
+        AppContainer.resetRepositoryForTest()
+        PrefetchManager.meteredCheck = { ctx ->
+            val connectivityManager = ctx.applicationContext
+                .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            connectivityManager?.isActiveNetworkMetered ?: false
+        }
     }
 
     @Test
-    fun `PrefetchWorker uses UNIQUE_WORK_NAME defined in PrefetchManager`() {
-        val managerSource = File("src/main/java/com/mandallaz/pikadex/data/PrefetchManager.kt").readText()
-        assertTrue(
-            "PrefetchManager must define UNIQUE_WORK_NAME",
-            managerSource.contains("UNIQUE_WORK_NAME = \"pikadex_prefetch_work\"")
-        )
+    fun `doWork succeeds and returns outputData with failed count on normal completion`() = runBlocking {
+        val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
+            .setInputData(workDataOf("tiers" to arrayOf("FULL_DETAIL")))
+            .build()
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.success(workDataOf("failed" to 0)), result)
     }
 
     @Test
-    fun `PrefetchWorker deserializes tiers array from inputData`() {
-        assertTrue(
-            "PrefetchWorker must retrieve tiers from inputData",
-            source.contains("inputData.getStringArray(\"tiers\")")
-        )
+    fun `doWork returns failure when inputData missing tiers key`() = runBlocking {
+        val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
+            .setInputData(workDataOf())
+            .build()
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.failure(), result)
     }
 
     @Test
-    fun `PrefetchWorker reports progress using setProgress with correct keys`() {
-        assertTrue(
-            "PrefetchWorker must set progress with 'done' key",
-            source.contains("\"done\" to")
-        )
-        assertTrue(
-            "PrefetchWorker must set progress with 'total' key",
-            source.contains("\"total\" to")
-        )
-        assertTrue(
-            "PrefetchWorker must set progress with 'phaseRes' key",
-            source.contains("\"phaseRes\" to")
-        )
+    fun `doWork returns success when tiers list is empty`() = runBlocking {
+        val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
+            .setInputData(workDataOf("tiers" to emptyArray<String>()))
+            .build()
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.success(), result)
     }
 
     @Test
-    fun `PrefetchWorker handles failures and aborts with correct message resources`() {
-        assertTrue(
-            "PrefetchWorker must handle wifi required error",
-            source.contains("settings_prefetch_error_wifi_required")
-        )
-        assertTrue(
-            "PrefetchWorker must handle general network error",
-            source.contains("settings_prefetch_error_network")
+    fun `doWork returns failure with network error resource when repository throws exception`() = runBlocking {
+        fakeRepo.failWith = Exception("Network connection failed")
+
+        val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
+            .setInputData(workDataOf("tiers" to arrayOf("FULL_DETAIL")))
+            .build()
+
+        val result = worker.doWork()
+
+        assertEquals(
+            ListenableWorker.Result.failure(workDataOf("messageRes" to R.string.settings_prefetch_error_network)),
+            result
         )
     }
 }
