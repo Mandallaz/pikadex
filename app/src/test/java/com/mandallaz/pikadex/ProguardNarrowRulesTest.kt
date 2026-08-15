@@ -1,6 +1,8 @@
 package com.mandallaz.pikadex
 
 import com.google.gson.Gson
+import com.squareup.moshi.Moshi
+import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.repository.PokemonDetailBundle
 import com.mandallaz.pikadex.data.remote.dto.PokemonDto
 import com.mandallaz.pikadex.data.remote.dto.PokemonSpeciesDto
@@ -95,5 +97,24 @@ class ProguardNarrowRulesTest {
         assertEquals("pikachu", deserializedBundle.pokemon.name)
         assertEquals(25, deserializedBundle.species.id)
         assertEquals("pikachu", deserializedBundle.species.name)
+    }
+
+    @Test
+    fun `GraphQL DTOs can be correctly serialized and deserialized via Moshi`() {
+        val moshi = Moshi.Builder().build()
+        val adapter = moshi.adapter(PokeApiGraphQLDataSource.PokemonBasics::class.java)
+
+        val basics = PokeApiGraphQLDataSource.PokemonBasics(
+            stats = mapOf("hp" to 45, "attack" to 49),
+            types = listOf("grass", "poison"),
+            isLegendary = false,
+            isMythical = false
+        )
+
+        val json = adapter.toJson(basics)
+        val deserialized = adapter.fromJson(json)
+
+        assertNotNull(deserialized)
+        assertEquals(basics, deserialized)
     }
 }

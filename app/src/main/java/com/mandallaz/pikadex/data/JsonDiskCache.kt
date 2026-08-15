@@ -2,10 +2,14 @@ package com.mandallaz.pikadex.data
 
 import android.content.Context
 import com.google.gson.Gson
+import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okio.buffer
+import okio.sink
+import okio.source
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -27,6 +31,7 @@ import java.util.zip.GZIPOutputStream
  */
 object JsonDiskCache {
     private const val DIR_NAME = "disk_cache"
+    private val moshi = Moshi.Builder().build()
     private val gson = Gson()
     private lateinit var cacheDir: File
     private val locks = ConcurrentHashMap<String, Mutex>()
@@ -37,7 +42,7 @@ object JsonDiskCache {
         cacheDir = File(context.applicationContext.filesDir, DIR_NAME).apply { mkdirs() }
     }
 
-    /** Gunzip + Gson-reflection-parsing ~1300 entries is 150-350ms of work — must run off the
+    /** Gunzip + Moshi/Gson parsing ~1300 entries is IO work — must run off the
      *  main thread, or every cold-cache screen open freezes the UI for that long. */
     suspend fun <T> read(key: String, type: java.lang.reflect.Type, maxAgeMillis: Long): T? =
         withContext(Dispatchers.IO) {
@@ -66,7 +71,17 @@ object JsonDiskCache {
 
     private fun <T> readFile(file: File, type: java.lang.reflect.Type): T? =
         try {
-            GZIPInputStream(file.inputStream()).bufferedReader().use { gson.fromJson<T>(it, type) }
+            val adapter = try {
+                moshi.adapter<T>(type)
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+            if (adapter != null) {
+                val source = GZIPInputStream(file.inputStream()).source().buffer()
+                source.use { adapter.fromJson(it) }
+            } else {
+                GZIPInputStream(file.inputStream()).bufferedReader().use { gson.fromJson<T>(it, type) }
+            }
         } catch (e: Exception) {
             // A corrupt/truncated file would otherwise sit here and be re-read and re-fail on
             // every cold start until maxAgeMillis expires it — delete it so the next write wins.
@@ -79,12 +94,28 @@ object JsonDiskCache {
      *  half-gzipped file if the process died mid-write (e.g. backgrounded and killed right after a
      *  bulk fetch completes). A same-directory rename is atomic, so [read] never observes a
      *  partial file: either the old complete one or the new complete one, never in between. */
-    suspend fun write(key: String, value: Any) = withContext(Dispatchers.IO) {
+    suspend fun write(key: String, value: Any, type: java.lang.reflect.Type? = null) = withContext(Dispatchers.IO) {
         getLock(key).withLock {
             val file = File(cacheDir, "$key.json.gz")
             val tempFile = File(cacheDir, "$key-${UUID.randomUUID()}.json.gz.tmp")
             try {
-                GZIPOutputStream(tempFile.outputStream()).bufferedWriter().use { gson.toJson(value, it) }
+                val adapter = try {
+                    if (type != null) {
+                        moshi.adapter<Any>(type)
+                    } else {
+                        moshi.adapter<Any>(value.javaClass)
+                    }
+                } catch (e: IllegalArgumentException) {
+                    null
+                }
+
+                if (adapter != null) {
+                    val sink = GZIPOutputStream(tempFile.outputStream()).sink().buffer()
+                    sink.use { adapter.toJson(it, value) }
+                } else {
+                    GZIPOutputStream(tempFile.outputStream()).bufferedWriter().use { gson.toJson(value, it) }
+                }
+
                 if (!tempFile.renameTo(file)) {
                     tempFile.delete()
                 }

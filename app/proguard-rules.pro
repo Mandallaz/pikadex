@@ -8,6 +8,7 @@
 
 -keepclassmembers,allowobfuscation class * {
     @com.google.gson.annotations.SerializedName <fields>;
+    @com.squareup.moshi.Json <fields>;
 }
 
 # All PokeAPI/GraphQL response DTOs (including the private nested data classes in

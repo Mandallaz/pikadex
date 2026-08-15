@@ -1,8 +1,9 @@
 package com.mandallaz.pikadex.data.remote
 
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
 import com.mandallaz.pikadex.data.AppContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -102,7 +103,9 @@ object PokeApiGraphQLDataSource {
     internal var client: okhttp3.Call.Factory? = null
     private val okHttpClient get() = client ?: AppContainer.sharedOkHttpClient
 
-    private val gson = Gson()
+    private val moshi = Moshi.Builder().build()
+    @Suppress("UNCHECKED_CAST")
+    private val queryRequestAdapter = moshi.adapter(Map::class.java) as com.squareup.moshi.JsonAdapter<Map<String, String>>
 
     /** Runs [query] and hands the response body to [parse].
      *
@@ -115,7 +118,7 @@ object PokeApiGraphQLDataSource {
      *  exception instead evicts the cache entry, skips the disk write, and surfaces to the UI. */
     @Suppress("DEPRECATION")
     private suspend fun <T> runQuery(query: String, parse: (String) -> T): T = withContext(Dispatchers.IO) {
-        val requestBody = gson.toJson(mapOf("query" to query)).toRequestBody("application/json".toMediaType())
+        val requestBody = queryRequestAdapter.toJson(mapOf("query" to query)).toRequestBody("application/json".toMediaType())
         val request = Request.Builder().url(URL).post(requestBody).build()
         val call = okHttpClient.newCall(request)
 
@@ -149,6 +152,7 @@ object PokeApiGraphQLDataSource {
      *  shared prerequisite for every feature that needs typing or rarity across the whole dex
      *  (weakness/resistance filtering, legendary badges, team suggestions) without a per-pokemon
      *  REST call. */
+    @JsonClass(generateAdapter = true)
     data class PokemonBasics(
         val stats: Map<String, Int>,
         val types: List<String>,
@@ -167,7 +171,7 @@ object PokeApiGraphQLDataSource {
     /** Parses [QUERY]'s response body. A separate function (not inlined into [fetchAllBasics])
      *  purely so it's unit-testable against a hand-written JSON body, without a real network call. */
     internal fun parseBasics(body: String): Map<String, PokemonBasics> {
-        val pokemon = gson.fromJson(body, GraphQLResponse::class.java)?.data?.pokemon
+        val pokemon = moshi.adapter(GraphQLResponse::class.java).fromJson(body)?.data?.pokemon
             ?: throw IOException("GraphQL response had no pokemon data")
         logIfTruncated("pokemon", pokemon.size)
         return pokemon.associate { p ->
@@ -181,25 +185,33 @@ object PokeApiGraphQLDataSource {
         }
     }
 
-    private data class GraphQLResponse(val data: GraphQLData?)
-    private data class GraphQLData(val pokemon: List<GraphQLPokemon>?)
-    private data class GraphQLPokemon(
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLResponse(val data: GraphQLData?)
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLData(val pokemon: List<GraphQLPokemon>?)
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLPokemon(
         val name: String,
         val pokemonstats: List<GraphQLStat>,
         val pokemontypes: List<GraphQLPokemonType>?,
         val pokemonspecy: GraphQLSpecy?,
         val pokemonabilities: List<GraphQLPokemonAbility>?
     )
-    private data class GraphQLStat(
-        @SerializedName("base_stat") val baseStat: Int,
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLStat(
+        @field:Json(name = "base_stat") val baseStat: Int,
         val stat: GraphQLStatName
     )
-    private data class GraphQLStatName(val name: String)
-    private data class GraphQLPokemonType(val type: GraphQLTypeName?)
-    private data class GraphQLTypeName(val name: String)
-    private data class GraphQLSpecy(
-        @SerializedName("is_legendary") val isLegendary: Boolean?,
-        @SerializedName("is_mythical") val isMythical: Boolean?
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLStatName(val name: String)
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLPokemonType(val type: GraphQLTypeName?)
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLTypeName(val name: String)
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLSpecy(
+        @field:Json(name = "is_legendary") val isLegendary: Boolean?,
+        @field:Json(name = "is_mythical") val isMythical: Boolean?
     )
     private data class GraphQLPokemonAbility(val ability: GraphQLAbilityName?)
     private data class GraphQLAbilityName(val name: String)
@@ -214,6 +226,7 @@ object PokeApiGraphQLDataSource {
      *  effect" (verified live: Tackle's movemeta row itself reports crit_rate 0, ailment "none",
      *  not a missing row), so 0/"none" here means the same real "no effect" the API already means,
      *  not "unknown" — the UI layer decides what's worth displaying, not this data class. */
+    @JsonClass(generateAdapter = true)
     data class MoveInfo(
         val type: String,
         val damageClass: String,
@@ -236,6 +249,7 @@ object PokeApiGraphQLDataSource {
 
     /** One entry of a move's `movemetastatchanges` — [change] is signed (e.g. Swords Dance is
      *  `+2` on `attack`, Acid is `-1` on `special-defense`), not a magnitude plus a separate sign. */
+    @JsonClass(generateAdapter = true)
     data class MoveStatChange(val stat: String, val change: Int)
 
     /** moveName -> info for every move, fetched once in bulk via GraphQL, since showing this
@@ -247,7 +261,7 @@ object PokeApiGraphQLDataSource {
      *  [fetchAllMoveInfo]) purely so it's unit-testable against a hand-written JSON body, without a
      *  real network call — same reasoning as [parseBasics]. */
     internal fun parseMoveInfo(body: String): Map<String, MoveInfo> {
-        val moves = gson.fromJson(body, MoveGraphQLResponse::class.java)?.data?.move
+        val moves = moshi.adapter(MoveGraphQLResponse::class.java).fromJson(body)?.data?.move
             ?: throw IOException("GraphQL response had no move data")
         logIfTruncated("move", moves.size)
         return moves.associate { m ->
@@ -274,9 +288,12 @@ object PokeApiGraphQLDataSource {
         }
     }
 
-    private data class MoveGraphQLResponse(val data: MoveGraphQLData?)
-    private data class MoveGraphQLData(val move: List<MoveGraphQLMove>?)
-    private data class MoveGraphQLMove(
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLResponse(val data: MoveGraphQLData?)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLData(val move: List<MoveGraphQLMove>?)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLMove(
         val name: String,
         val power: Int?,
         val accuracy: Int?,
@@ -287,19 +304,24 @@ object PokeApiGraphQLDataSource {
         val movemeta: List<MoveGraphQLMeta>?,
         val movemetastatchanges: List<MoveGraphQLStatChange>?
     )
-    private data class MoveGraphQLType(val name: String)
-    private data class MoveGraphQLDamageClass(val name: String)
-    private data class MoveGraphQLMeta(
-        @SerializedName("crit_rate") val critRate: Int?,
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLType(val name: String)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLDamageClass(val name: String)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLMeta(
+        @field:Json(name = "crit_rate") val critRate: Int?,
         val drain: Int?,
         val healing: Int?,
-        @SerializedName("flinch_chance") val flinchChance: Int?,
-        @SerializedName("ailment_chance") val ailmentChance: Int?,
-        @SerializedName("stat_chance") val statChance: Int?,
+        @field:Json(name = "flinch_chance") val flinchChance: Int?,
+        @field:Json(name = "ailment_chance") val ailmentChance: Int?,
+        @field:Json(name = "stat_chance") val statChance: Int?,
         val movemetaailment: MoveGraphQLAilment?
     )
-    private data class MoveGraphQLAilment(val name: String)
-    private data class MoveGraphQLStatChange(val change: Int, val stat: GraphQLStatName)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLAilment(val name: String)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveGraphQLStatChange(val change: Int, val stat: GraphQLStatName)
 
     // B9 — verified live against graphql.pokeapi.co before being written, same as every other
     // query here: pokemonspeciesnames is the species' names relation (one row per language it has
@@ -330,7 +352,7 @@ object PokeApiGraphQLDataSource {
     /** Parses [SPECIES_NAMES_QUERY]'s response body — separate from [fetchAllSpeciesNames] so it's
      *  unit-testable against a hand-written JSON body, same reasoning as [parseBasics]. */
     internal fun parseSpeciesNames(body: String): Map<String, Map<String, String>> {
-        val pokemon = gson.fromJson(body, SpeciesNamesGraphQLResponse::class.java)?.data?.pokemon
+        val pokemon = moshi.adapter(SpeciesNamesGraphQLResponse::class.java).fromJson(body)?.data?.pokemon
             ?: throw IOException("GraphQL response had no pokemon data")
         logIfTruncated("pokemon (species names)", pokemon.size)
         return pokemon.associate { p ->
@@ -339,11 +361,16 @@ object PokeApiGraphQLDataSource {
         }
     }
 
-    private data class SpeciesNamesGraphQLResponse(val data: SpeciesNamesGraphQLData?)
-    private data class SpeciesNamesGraphQLData(val pokemon: List<SpeciesNamesGraphQLPokemon>?)
-    private data class SpeciesNamesGraphQLPokemon(val name: String, val pokemonspecy: SpeciesNamesGraphQLSpecy?)
-    private data class SpeciesNamesGraphQLSpecy(val pokemonspeciesnames: List<SpeciesNamesGraphQLName>?)
-    private data class SpeciesNamesGraphQLName(val name: String, val language: GraphQLStatName)
+    @JsonClass(generateAdapter = true)
+    internal data class SpeciesNamesGraphQLResponse(val data: SpeciesNamesGraphQLData?)
+    @JsonClass(generateAdapter = true)
+    internal data class SpeciesNamesGraphQLData(val pokemon: List<SpeciesNamesGraphQLPokemon>?)
+    @JsonClass(generateAdapter = true)
+    internal data class SpeciesNamesGraphQLPokemon(val name: String, val pokemonspecy: SpeciesNamesGraphQLSpecy?)
+    @JsonClass(generateAdapter = true)
+    internal data class SpeciesNamesGraphQLSpecy(val pokemonspeciesnames: List<SpeciesNamesGraphQLName>?)
+    @JsonClass(generateAdapter = true)
+    internal data class SpeciesNamesGraphQLName(val name: String, val language: GraphQLStatName)
 
     // B11 — same pattern as B9's SPECIES_NAMES_QUERY, verified live against graphql.pokeapi.co
     // before being written: movenames/abilitynames are the move/ability names relations, one row
@@ -385,7 +412,7 @@ object PokeApiGraphQLDataSource {
     /** Parses [MOVE_NAMES_QUERY]'s response body — separate from [fetchAllMoveNames] so it's
      *  unit-testable against a hand-written JSON body, same reasoning as [parseSpeciesNames]. */
     internal fun parseMoveNames(body: String): Map<String, Map<String, String>> {
-        val moves = gson.fromJson(body, MoveNamesGraphQLResponse::class.java)?.data?.move
+        val moves = moshi.adapter(MoveNamesGraphQLResponse::class.java).fromJson(body)?.data?.move
             ?: throw IOException("GraphQL response had no move data")
         logIfTruncated("move (names)", moves.size)
         return moves.associate { m -> m.name to m.movenames.orEmpty().associate { it.language.name to it.name } }
@@ -393,17 +420,23 @@ object PokeApiGraphQLDataSource {
 
     /** Parses [ABILITY_NAMES_QUERY]'s response body — same reasoning as [parseMoveNames]. */
     internal fun parseAbilityNames(body: String): Map<String, Map<String, String>> {
-        val abilities = gson.fromJson(body, AbilityNamesGraphQLResponse::class.java)?.data?.ability
+        val abilities = moshi.adapter(AbilityNamesGraphQLResponse::class.java).fromJson(body)?.data?.ability
             ?: throw IOException("GraphQL response had no ability data")
         logIfTruncated("ability (names)", abilities.size)
         return abilities.associate { a -> a.name to a.abilitynames.orEmpty().associate { it.language.name to it.name } }
     }
 
-    private data class MoveNamesGraphQLResponse(val data: MoveNamesGraphQLData?)
-    private data class MoveNamesGraphQLData(val move: List<MoveNamesGraphQLMove>?)
-    private data class MoveNamesGraphQLMove(val name: String, val movenames: List<SpeciesNamesGraphQLName>?)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveNamesGraphQLResponse(val data: MoveNamesGraphQLData?)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveNamesGraphQLData(val move: List<MoveNamesGraphQLMove>?)
+    @JsonClass(generateAdapter = true)
+    internal data class MoveNamesGraphQLMove(val name: String, val movenames: List<SpeciesNamesGraphQLName>?)
 
-    private data class AbilityNamesGraphQLResponse(val data: AbilityNamesGraphQLData?)
-    private data class AbilityNamesGraphQLData(val ability: List<AbilityNamesGraphQLAbility>?)
-    private data class AbilityNamesGraphQLAbility(val name: String, val abilitynames: List<SpeciesNamesGraphQLName>?)
+    @JsonClass(generateAdapter = true)
+    internal data class AbilityNamesGraphQLResponse(val data: AbilityNamesGraphQLData?)
+    @JsonClass(generateAdapter = true)
+    internal data class AbilityNamesGraphQLData(val ability: List<AbilityNamesGraphQLAbility>?)
+    @JsonClass(generateAdapter = true)
+    internal data class AbilityNamesGraphQLAbility(val name: String, val abilitynames: List<SpeciesNamesGraphQLName>?)
 }
