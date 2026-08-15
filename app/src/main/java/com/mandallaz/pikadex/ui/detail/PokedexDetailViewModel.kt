@@ -430,6 +430,13 @@ class PokedexDetailViewModel @JvmOverloads constructor(
     fun loadTeraTypeOptionsIfNeeded() {
         if (_uiState.value.teraTypeOptions.isNotEmpty()) return
         val currentMatchups = _uiState.value.typeMatchups
+        // B55 — typeMatchups isn't populated yet if the picker is opened before load() resolves
+        // (e.g. right after navigating to this Pokémon). Ranking against an empty map would score
+        // every candidate 0 and, since nothing else re-triggers this once typeMatchups arrives,
+        // that unranked result used to get cached permanently by the guard above. Bailing out here
+        // instead leaves teraTypeOptions empty, so the next time the picker opens (typeMatchups
+        // will have loaded by then in every real scenario) this actually computes a ranking.
+        if (currentMatchups.isEmpty()) return
         viewModelScope.launch {
             try {
                 val details = supervisorScope {
