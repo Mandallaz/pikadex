@@ -213,8 +213,10 @@ object PokeApiGraphQLDataSource {
         @field:Json(name = "is_legendary") val isLegendary: Boolean?,
         @field:Json(name = "is_mythical") val isMythical: Boolean?
     )
-    private data class GraphQLPokemonAbility(val ability: GraphQLAbilityName?)
-    private data class GraphQLAbilityName(val name: String)
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLPokemonAbility(val ability: GraphQLAbilityName?)
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLAbilityName(val name: String)
 
     /** A move's type, damage class (physical/special = an attack, status = a buff/debuff/other
      *  non-damaging effect), power and accuracy — null power/accuracy is normal for status moves.
