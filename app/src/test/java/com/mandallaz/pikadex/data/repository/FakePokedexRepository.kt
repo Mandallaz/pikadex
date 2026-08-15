@@ -56,13 +56,22 @@ class FakePokedexRepository : PokedexRepositoryApi {
      *  awaiting it and assert cancellation propagated instead of falling into the failure path. */
     var gate: CompletableDeferred<Unit>? = null
 
+    /** Same idea as [gate] but scoped to [getMasterList] only, so a test can hold the master list
+     *  "still loading" while other calls (e.g. a tier lookup started concurrently) resolve
+     *  normally — reproducing a filter selected before the initial load finishes without also
+     *  blocking the filter's own suspend calls. */
+    var masterListGate: CompletableDeferred<Unit>? = null
+
     private suspend fun <T> resolve(value: T): T {
         gate?.await()
         failWith?.let { throw it }
         return value
     }
 
-    override suspend fun getMasterList() = resolve(masterList)
+    override suspend fun getMasterList(): List<NamedApiResource> {
+        masterListGate?.await()
+        return resolve(masterList)
+    }
     override suspend fun masterIdByName() = resolve(masterList.mapNotNull { r -> r.id?.let { r.name to it } }.toMap())
     override suspend fun getTypes() = resolve(types)
     override suspend fun getMoveNames() = resolve(moveNames)
