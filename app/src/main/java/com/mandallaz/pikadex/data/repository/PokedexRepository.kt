@@ -231,7 +231,10 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
     private suspend fun <T : Any> diskCached(key: String, type: java.lang.reflect.Type, fetch: suspend () -> T): T {
         JsonDiskCache.read<T>(key, type, DISK_CACHE_MAX_AGE_MILLIS)?.let { return it }
         return try {
-            fetch().also { JsonDiskCache.write(key, it) }
+            // B59 — must pass `type` through: with no type, write() falls back to
+            // moshi.adapter<Any>(value.javaClass), which throws for a Map instance (loses its
+            // generic parameters) and silently sends every write through Gson instead of Moshi.
+            fetch().also { JsonDiskCache.write(key, it, type) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
