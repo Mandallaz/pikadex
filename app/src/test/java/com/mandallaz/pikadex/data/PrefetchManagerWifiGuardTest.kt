@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
+import androidx.work.testing.WorkManagerTestInitHelper
 import androidx.work.workDataOf
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
@@ -19,11 +20,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /**
  * B26 / B44 — test Wi-Fi-only guard in [PrefetchWorker] by executing doWork against test state.
  */
 @RunWith(AndroidJUnit4::class)
+@Config(sdk = [34])
 class PrefetchManagerWifiGuardTest {
 
     private lateinit var context: Context
@@ -32,6 +35,7 @@ class PrefetchManagerWifiGuardTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        WorkManagerTestInitHelper.initializeTestWorkManager(context)
         fakeRepo = FakePokedexRepository().apply {
             masterList = listOf(NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"))
             detailBundle = PokemonDetailBundle(
@@ -54,7 +58,7 @@ class PrefetchManagerWifiGuardTest {
     }
 
     @Test
-    fun `the tier loop checks the metered guard at tier boundary and aborts on metered network`() = runBlocking {
+    fun `the tier loop checks the metered guard at tier boundary and aborts on metered network`(): Unit = runBlocking {
         PrefetchSettings.setWifiOnlyEnabled(true)
         PrefetchManager.meteredCheck = { true }
 
@@ -71,7 +75,7 @@ class PrefetchManagerWifiGuardTest {
     }
 
     @Test
-    fun `the per-unit progress callback checks metered guard mid-run and aborts when network becomes metered`() = runBlocking {
+    fun `the per-unit progress callback checks metered guard mid-run and aborts when network becomes metered`(): Unit = runBlocking {
         PrefetchSettings.setWifiOnlyEnabled(true)
         var checkCount = 0
         PrefetchManager.meteredCheck = {
@@ -93,7 +97,7 @@ class PrefetchManagerWifiGuardTest {
     }
 
     @Test
-    fun `unmetered network allows prefetch to proceed and complete`() = runBlocking {
+    fun `unmetered network allows prefetch to proceed and complete`(): Unit = runBlocking {
         PrefetchSettings.setWifiOnlyEnabled(true)
         PrefetchManager.meteredCheck = { false }
 
@@ -107,7 +111,7 @@ class PrefetchManagerWifiGuardTest {
     }
 
     @Test
-    fun `disabled wifi-only setting allows prefetch to complete on metered network`() = runBlocking {
+    fun `disabled wifi-only setting allows prefetch to complete on metered network`(): Unit = runBlocking {
         PrefetchSettings.setWifiOnlyEnabled(false)
         PrefetchManager.meteredCheck = { true }
 
