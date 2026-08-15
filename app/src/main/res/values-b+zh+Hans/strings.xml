@@ -269,6 +269,8 @@
     <string name="team_remove_member_cd">将%1$s移出队伍</string>
     <string name="team_add_member_cd">将宝可梦添加到队伍</string>
     <string name="team_add_label">添加</string>
+    <string name="team_tera_type_add">+ 太晶</string>
+    <string name="team_tera_type_dialog_title">选择%1$s的太晶属性</string>
     <string name="team_suggestions_title">建议</string>
     <string name="team_suggestions_subtitle">可同时改善队伍共同弱点和覆盖缺口。</string>
     <string name="team_suggestions_tier_limited">限制为%1$s及以下（设置）。</string>

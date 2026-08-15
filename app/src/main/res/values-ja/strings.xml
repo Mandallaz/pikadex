@@ -269,6 +269,8 @@
     <string name="team_remove_member_cd">%1$sをチームから外す</string>
     <string name="team_add_member_cd">ポケモンをチームに追加</string>
     <string name="team_add_label">追加</string>
+    <string name="team_tera_type_add">+ テラス</string>
+    <string name="team_tera_type_dialog_title">%1$sのテラスタイプを選択</string>
     <string name="team_suggestions_title">おすすめ</string>
     <string name="team_suggestions_subtitle">チーム全体の弱点とカバー範囲の穴の両方の改善に役立ちます。</string>
     <string name="team_suggestions_tier_limited">%1$s以下に制限中（設定）。</string>

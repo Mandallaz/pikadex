@@ -269,6 +269,8 @@
     <string name="team_remove_member_cd">%1$s을(를) 팀에서 제거</string>
     <string name="team_add_member_cd">포켓몬을 팀에 추가</string>
     <string name="team_add_label">추가</string>
+    <string name="team_tera_type_add">+ 테라</string>
+    <string name="team_tera_type_dialog_title">%1$s의 테라 타입 선택</string>
     <string name="team_suggestions_title">추천</string>
     <string name="team_suggestions_subtitle">팀 전체 약점과 커버리지 공백을 모두 개선하는 데 도움이 됩니다.</string>
     <string name="team_suggestions_tier_limited">%1$s 이하로 제한됨(설정).</string>

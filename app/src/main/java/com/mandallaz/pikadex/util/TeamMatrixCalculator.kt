@@ -37,7 +37,8 @@ private const val STATUS_DAMAGE_CLASS = "status"
  *  `TeamViewModel.computeMatrix()` does. */
 suspend fun computeTeamMatrices(
     repository: PokedexRepositoryApi,
-    members: List<NamedApiResource>
+    members: List<NamedApiResource>,
+    typeOverrides: Map<String, String> = emptyMap()
 ): TeamMatrixResult = supervisorScope {
     // One bulk, already-cached lookup for the whole app rather than one call per
     // move: a team's six movepools run to well over a thousand entries between them.
@@ -48,8 +49,12 @@ suspend fun computeTeamMatrices(
     // members x up to 3 calls each) before the matrix could render at all.
     val memberResults = members.map { member ->
         async {
-            val types = repository.getPokemonTypes(member.name)
-            val typeDetails = types.map { async { repository.getTypeDetail(it) } }.awaitAll()
+            val originalTypes = repository.getPokemonTypes(member.name)
+            val teraType = typeOverrides[member.name]
+            val defensiveTypes = if (teraType != null) listOf(teraType) else originalTypes
+            val stabTypes = if (teraType != null) (originalTypes + teraType).distinct() else originalTypes
+
+            val typeDetails = defensiveTypes.map { async { repository.getTypeDetail(it) } }.awaitAll()
             // Same cache entry as getPokemonTypes above, so this is free.
             val moveNames = repository.getPokemonLevelUpMoveNames(member.name)
             // F79 — also free: shares pokemonDetailCache with getPokemonTypes/getPokemonLevelUpMoveNames.
@@ -59,7 +64,7 @@ suspend fun computeTeamMatrices(
                 name = member.name,
                 defensive = defensive,
                 suggestionsDefensive = adjustDefensiveMultipliersForAbilities(defensive, abilities),
-                stabTypes = types,
+                stabTypes = stabTypes,
                 moveNames = moveNames
             )
         }

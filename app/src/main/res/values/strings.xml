@@ -278,6 +278,8 @@
     <string name="team_remove_member_cd">Remove %1$s from team</string>
     <string name="team_add_member_cd">Add a Pokémon to your team</string>
     <string name="team_add_label">Add</string>
+    <string name="team_tera_type_add">+ Tera</string>
+    <string name="team_tera_type_dialog_title">Choose Tera Type for %1$s</string>
     <string name="team_suggestions_title">Suggestions</string>
     <string name="team_suggestions_subtitle">Would help both your team-wide weaknesses and coverage gaps.</string>
     <string name="team_suggestions_subtitle_defense">Would help your team-wide weaknesses.</string>

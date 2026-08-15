@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Button
@@ -36,8 +38,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LanguageSettings
 import com.mandallaz.pikadex.data.TeamRepository
+import com.mandallaz.pikadex.ui.components.OptionsDialog
 import com.mandallaz.pikadex.ui.components.PikaDexTopBar
+import com.mandallaz.pikadex.ui.components.localizedTypeName
+import com.mandallaz.pikadex.ui.components.typeIcon
 import com.mandallaz.pikadex.ui.team.sections.AddMemberChip
+import com.mandallaz.pikadex.util.TypeColors
+import com.mandallaz.pikadex.util.TypeIds
+import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.ui.team.sections.TeamMatrix
 import com.mandallaz.pikadex.ui.team.sections.TeamMemberChip
 
@@ -58,6 +66,7 @@ fun TeamScreen(
     val activeTeamName = teams.firstOrNull { it.id == activeTeamId }?.name ?: stringResource(R.string.team_default_name)
     var showPresetPicker by rememberSaveable { mutableStateOf(false) }
     var showTeamSlots by rememberSaveable { mutableStateOf(false) }
+    var selectedMemberForTera by rememberSaveable { mutableStateOf<String?>(null) }
     // Resolved here, not inside TeamSlotsDialog's onCreate lambda below — stringResource() is
     // @Composable and that lambda isn't.
     val newTeamDefaultName = stringResource(R.string.team_new_team_default_name)
@@ -112,6 +121,10 @@ fun TeamScreen(
                 maxHeight = maxHeight,
                 onAddSuggestion = viewModel::addSuggestion,
                 onPokemonClick = onPokemonClick,
+                onTeraClick = { memberName ->
+                    selectedMemberForTera = memberName
+                    viewModel.loadTeraTypeOptionsForMember(memberName)
+                },
                 headerContent = {
                     Row(
                         modifier = Modifier
@@ -122,11 +135,16 @@ fun TeamScreen(
                     ) {
                         uiState.members.forEach { member ->
                             TeamMemberChip(
-                                member,
-                                uiState.speciesNames,
-                                language,
+                                member = member,
+                                speciesNames = uiState.speciesNames,
+                                language = language,
+                                teraType = uiState.teraTypes[member.name],
                                 onRemove = { viewModel.removeFromTeam(member) },
-                                onSpriteClick = { onPokemonClick(member.name) }
+                                onSpriteClick = { onPokemonClick(member.name) },
+                                onTeraClick = {
+                                    selectedMemberForTera = member.name
+                                    viewModel.loadTeraTypeOptionsForMember(member.name)
+                                }
                             )
                         }
                         if (uiState.members.size < TeamRepository.MAX_SIZE) {
@@ -186,6 +204,42 @@ fun TeamScreen(
             },
             onRename = viewModel::renameTeam,
             onDelete = viewModel::deleteTeam
+        )
+    }
+
+    selectedMemberForTera?.let { memberName ->
+        val noneLabel = stringResource(R.string.detail_tera_type_none)
+        val rankedNames = uiState.memberTeraTypeOptions.map { it.first }.ifEmpty { TypeIds.standardTypeNames }
+        val scoreByType = uiState.memberTeraTypeOptions.toMap()
+        val displayName = memberName.localizedDisplayName(uiState.speciesNames, language)
+        OptionsDialog(
+            title = stringResource(R.string.team_tera_type_dialog_title, displayName),
+            options = listOf<String?>(null) + rankedNames,
+            labelFor = { type ->
+                if (type == null) {
+                    noneLabel
+                } else {
+                    val score = scoreByType[type]
+                    val scoreSuffix = if (score != null) " (${if (score > 0) "+$score" else score.toString()})" else ""
+                    type.localizedTypeName() + scoreSuffix
+                }
+            },
+            selected = uiState.teraTypes[memberName],
+            iconFor = { type ->
+                type?.let {
+                    Icon(
+                        imageVector = typeIcon(it),
+                        contentDescription = null,
+                        tint = TypeColors.of(it),
+                        modifier = Modifier.size(AssistChipDefaults.IconSize)
+                    )
+                }
+            },
+            onDismiss = { selectedMemberForTera = null },
+            onSelect = { type ->
+                viewModel.setTeraType(memberName, type)
+                selectedMemberForTera = null
+            }
         )
     }
 }

@@ -42,4 +42,22 @@ class TeamStorageTest {
     fun `decodeMembers drops an entry with no id field rather than crashing`() {
         assertEquals(listOf(resource("bulbasaur", 1)), decodeMembers("pikachu,bulbasaur|1"))
     }
+
+    @Test
+    fun `tera types round-trip through encode and decode`() {
+        val teraMap = mapOf("pikachu" to "electric", "charizard" to "water")
+        assertEquals(teraMap, decodeTeraTypes(encodeTeraTypes(teraMap)))
+    }
+
+    @Test
+    fun `decodeTeraTypes returns empty for null or blank input`() {
+        assertEquals(emptyMap<String, String>(), decodeTeraTypes(null))
+        assertEquals(emptyMap<String, String>(), decodeTeraTypes(""))
+        assertEquals(emptyMap<String, String>(), decodeTeraTypes("   "))
+    }
+
+    @Test
+    fun `decodeTeraTypes drops malformed entries`() {
+        assertEquals(mapOf("pikachu" to "electric"), decodeTeraTypes("pikachu|electric,malformed|"))
+    }
 }

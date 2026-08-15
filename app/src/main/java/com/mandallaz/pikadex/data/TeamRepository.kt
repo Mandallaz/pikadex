@@ -6,8 +6,10 @@ import androidx.core.content.edit
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.util.decodeMembers
 import com.mandallaz.pikadex.util.decodeTeamIds
+import com.mandallaz.pikadex.util.decodeTeraTypes
 import com.mandallaz.pikadex.util.encodeMembers
 import com.mandallaz.pikadex.util.encodeTeamIds
+import com.mandallaz.pikadex.util.encodeTeraTypes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +48,7 @@ object TeamRepository {
     private const val KEY_NEXT_TEAM_ID = "next_team_id"
     private const val PREFIX_TEAM_NAME = "team_name_"
     private const val PREFIX_MEMBERS = "members_"
+    private const val PREFIX_TERA = "tera_"
 
     /** issue #71 (B21) — persisted in place of a hardcoded English name for a slot that's never
      *  been explicitly (re)named, so the UI can resolve a localized default instead. Not renaming
@@ -65,6 +68,9 @@ object TeamRepository {
 
     private val _activeTeamId = MutableStateFlow(1)
     val activeTeamId: StateFlow<Int> = _activeTeamId.asStateFlow()
+
+    private val _teraTypes = MutableStateFlow<Map<String, String>>(emptyMap())
+    val teraTypes: StateFlow<Map<String, String>> = _teraTypes.asStateFlow()
 
     fun init(context: Context) {
         val sharedPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -94,6 +100,7 @@ object TeamRepository {
         val active = if (storedActive in ids) storedActive else ids.first()
         _activeTeamId.value = active
         _team.value = decodeMembers(p.getString(PREFIX_MEMBERS + active, null))
+        _teraTypes.value = decodeTeraTypes(p.getString(PREFIX_TERA + active, null))
     }
 
     private fun teamName(p: SharedPreferences, id: Int): String? = resolveStoredTeamName(p.getString(PREFIX_TEAM_NAME + id, null))
@@ -101,8 +108,27 @@ object TeamRepository {
     private fun persistActiveTeam() {
         val p = prefs ?: return
         val id = _activeTeamId.value
-        p.edit { putString(PREFIX_MEMBERS + id, encodeMembers(persistableMembers(_team.value))) }
+        val validNames = _team.value.map { it.name }.toSet()
+        val cleanedTera = _teraTypes.value.filterKeys { it in validNames }
+        _teraTypes.value = cleanedTera
+        p.edit {
+            putString(PREFIX_MEMBERS + id, encodeMembers(persistableMembers(_team.value)))
+            putString(PREFIX_TERA + id, encodeTeraTypes(cleanedTera))
+        }
         _teams.value = _teams.value.map { if (it.id == id) it.copy(size = _team.value.size) else it }
+    }
+
+    fun setTeraType(memberName: String, teraType: String?) {
+        val current = _teraTypes.value
+        val updated = if (teraType.isNullOrBlank()) {
+            current - memberName
+        } else {
+            current + (memberName to teraType)
+        }
+        if (updated != current) {
+            _teraTypes.value = updated
+            persistActiveTeam()
+        }
     }
 
     fun isFull(): Boolean = _team.value.size >= MAX_SIZE
@@ -122,11 +148,14 @@ object TeamRepository {
      *  the invariant "a team never exceeds MAX_SIZE" belongs here, not in every caller. */
     fun replaceAll(pokemon: List<NamedApiResource>) {
         _team.value = pokemon.distinctBy { it.name }.take(MAX_SIZE)
+        val teamNames = _team.value.map { it.name }.toSet()
+        _teraTypes.value = _teraTypes.value.filterKeys { it in teamNames }
         persistActiveTeam()
     }
 
     fun remove(pokemon: NamedApiResource) {
         _team.value = _team.value.filterNot { it.name == pokemon.name }
+        _teraTypes.value = _teraTypes.value - pokemon.name
         persistActiveTeam()
     }
 
@@ -188,6 +217,7 @@ object TeamRepository {
         p.edit {
             remove(PREFIX_TEAM_NAME + id)
             remove(PREFIX_MEMBERS + id)
+            remove(PREFIX_TERA + id)
             putString(KEY_TEAM_IDS, encodeTeamIds(remainingIds))
         }
         _teams.value = _teams.value.filterNot { it.id == id }
@@ -202,6 +232,7 @@ object TeamRepository {
         p.edit { putInt(KEY_ACTIVE_TEAM_ID, id) }
         _activeTeamId.value = id
         _team.value = decodeMembers(p.getString(PREFIX_MEMBERS + id, null))
+        _teraTypes.value = decodeTeraTypes(p.getString(PREFIX_TERA + id, null))
     }
 }
 

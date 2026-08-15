@@ -269,6 +269,8 @@
     <string name="team_remove_member_cd">Quitar a %1$s del equipo</string>
     <string name="team_add_member_cd">Añadir un Pokémon a tu equipo</string>
     <string name="team_add_label">Añadir</string>
+    <string name="team_tera_type_add">+ Tera</string>
+    <string name="team_tera_type_dialog_title">Elegir tipo Tera para %1$s</string>
     <string name="team_suggestions_title">Sugerencias</string>
     <string name="team_suggestions_subtitle">Ayudaría tanto a las debilidades del equipo como a los huecos de cobertura.</string>
     <string name="team_suggestions_tier_limited">Limitado a %1$s y por debajo (Ajustes).</string>
