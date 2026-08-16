@@ -1,6 +1,7 @@
 package com.mandallaz.pikadex.data.repository
 
 import com.mandallaz.pikadex.data.JsonDiskCache
+import com.mandallaz.pikadex.data.remote.PokeApiGraphQLDataSource
 import com.mandallaz.pikadex.data.remote.PokeApiService
 import com.mandallaz.pikadex.data.remote.dto.AbilityDetailDto
 import com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto
@@ -16,7 +17,13 @@ import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.runBlocking
+import okhttp3.Call
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Timeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -50,6 +57,41 @@ class PokedexRepositoryTest {
     @After
     fun tearDownDiskCache() {
         diskCacheDir.deleteRecursively()
+        PokeApiGraphQLDataSource.client = null
+    }
+
+    /** Serves a fixed GraphQL body to [PokeApiGraphQLDataSource.fetchAllBasics] — B62's
+     *  getStatPercentile tests need real (non-mocked) `stats` data flowing through
+     *  getAllBaseStats(), and that bulk fetch always goes through the hardcoded
+     *  PokeApiGraphQLDataSource singleton, not the injectable [PokeApiService]. */
+    private fun basicsGraphQLCallFactory(hpByName: Map<String, Int>): Call.Factory {
+        val pokemonJson = hpByName.entries.joinToString(",") { (name, hp) ->
+            """{"name":"$name","pokemonstats":[{"base_stat":$hp,"stat":{"name":"hp"}}],"pokemontypes":[],"pokemonspecy":null,"pokemonabilities":[]}"""
+        }
+        val body = """{"data":{"pokemon":[$pokemonJson]}}"""
+        return Call.Factory { request ->
+            object : Call {
+                override fun request(): Request = request
+                override fun execute(): OkHttpResponse = error("unexpected sync execute()")
+                override fun enqueue(responseCallback: okhttp3.Callback) {
+                    responseCallback.onResponse(
+                        this,
+                        OkHttpResponse.Builder()
+                            .request(request)
+                            .protocol(Protocol.HTTP_1_1)
+                            .message("OK")
+                            .code(200)
+                            .body(body.toResponseBody("application/json".toMediaType()))
+                            .build()
+                    )
+                }
+                override fun cancel() {}
+                override fun isExecuted(): Boolean = true
+                override fun isCanceled(): Boolean = false
+                override fun timeout(): Timeout = Timeout.NONE
+                override fun clone(): Call = this
+            }
+        }
     }
 
     private fun pokemon(name: String, id: Int, speciesName: String = name) = PokemonDto(
@@ -230,5 +272,58 @@ class PokedexRepositoryTest {
 
         assertEquals(original.pokemon.name, cached.pokemon.name)
         assertEquals(original.species.id, cached.species.id)
+    }
+
+    // B62 — getStatPercentile had no unit tests: below/tied/boundary cases in its binary-search
+    // percentile logic were unverified. hp values below are [10, 20, 20, 30, 40] once sorted.
+    @Test
+    fun `getStatPercentile splits ties evenly rather than pushing them to an extreme`() = runBlocking {
+        PokeApiGraphQLDataSource.client = basicsGraphQLCallFactory(
+            mapOf("a" to 10, "b" to 20, "c" to 20, "d" to 30, "e" to 40)
+        )
+        val repository = PokedexRepository(UnexpectedApi())
+
+        // below=1 (10), equal=2 (20,20) -> (1 + 2/2.0) / 5 = 0.4
+        assertEquals(0.4, repository.getStatPercentile("hp", 20), 0.0001)
+    }
+
+    @Test
+    fun `getStatPercentile for a value with no exact match counts only strictly-lower entries`() = runBlocking {
+        PokeApiGraphQLDataSource.client = basicsGraphQLCallFactory(
+            mapOf("a" to 10, "b" to 20, "c" to 20, "d" to 30, "e" to 40)
+        )
+        val repository = PokedexRepository(UnexpectedApi())
+
+        // below=3 (10,20,20), equal=0 -> 3/5 = 0.6
+        assertEquals(0.6, repository.getStatPercentile("hp", 25), 0.0001)
+    }
+
+    @Test
+    fun `getStatPercentile coerces below-min and above-max values to 0 and 1`() = runBlocking {
+        PokeApiGraphQLDataSource.client = basicsGraphQLCallFactory(
+            mapOf("a" to 10, "b" to 20, "c" to 20, "d" to 30, "e" to 40)
+        )
+        val repository = PokedexRepository(UnexpectedApi())
+
+        assertEquals(0.0, repository.getStatPercentile("hp", 1), 0.0001)
+        assertEquals(1.0, repository.getStatPercentile("hp", 999), 0.0001)
+    }
+
+    @Test
+    fun `getStatPercentile returns 0-5 for a stat key every pokemon in the dataset is missing`() = runBlocking {
+        // Every entry only carries "hp" — "speed" is absent from every stats map, so its sorted
+        // array ends up empty.
+        PokeApiGraphQLDataSource.client = basicsGraphQLCallFactory(mapOf("a" to 10, "b" to 20))
+        val repository = PokedexRepository(UnexpectedApi())
+
+        assertEquals(0.5, repository.getStatPercentile("speed", 50), 0.0001)
+    }
+
+    @Test
+    fun `getStatPercentile returns 0-5 for an unknown stat key`() = runBlocking {
+        PokeApiGraphQLDataSource.client = basicsGraphQLCallFactory(mapOf("a" to 10, "b" to 20))
+        val repository = PokedexRepository(UnexpectedApi())
+
+        assertEquals(0.5, repository.getStatPercentile("bogus-stat", 50), 0.0001)
     }
 }

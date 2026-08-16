@@ -6,20 +6,26 @@ import android.content.Context
 import android.net.ConnectivityManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.ForegroundInfo
+import androidx.work.ForegroundUpdater
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import androidx.work.workDataOf
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.PokemonDetailBundle
 import com.mandallaz.pikadex.data.repository.fakePokemonDto
 import com.mandallaz.pikadex.data.repository.fakePokemonSpeciesDto
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -152,5 +158,49 @@ class PrefetchWorkerTest {
         val text = notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
 
         assertEquals("Sprites — 1204/2702", text)
+    }
+
+    // B62 — the tests above only call getForegroundInfo()/createForegroundInfo() directly with
+    // fixed arguments; none of them drove doWork() and checked that setForeground is actually
+    // invoked with increasing progress as work proceeds, which is the entire point of promoting
+    // this worker to a foreground service.
+    private class RecordingForegroundUpdater : ForegroundUpdater {
+        val progressValues = mutableListOf<Int>()
+
+        override fun setForegroundAsync(context: Context, id: UUID, foregroundInfo: ForegroundInfo): ListenableFuture<Void> {
+            val text = foregroundInfo.notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
+            // createForegroundInfo formats progress as "Phase — done/total"; done is the part this
+            // test cares about, total/phase text are covered by the tests above.
+            text.substringAfterLast("— ").substringBefore("/").toIntOrNull()?.let { progressValues.add(it) }
+            return Futures.immediateFuture(null)
+        }
+    }
+
+    @Test
+    fun `doWork calls setForeground with increasing progress as units complete`(): Unit = runBlocking {
+        fakeRepo.masterList = listOf(
+            NamedApiResource("bulbasaur", "https://pokeapi.co/api/v2/pokemon/1/"),
+            NamedApiResource("ivysaur", "https://pokeapi.co/api/v2/pokemon/2/"),
+            NamedApiResource("venusaur", "https://pokeapi.co/api/v2/pokemon/3/")
+        )
+        val foregroundUpdater = RecordingForegroundUpdater()
+        val worker = TestListenableWorkerBuilder<PrefetchWorker>(context)
+            .setInputData(workDataOf("tiers" to arrayOf("FULL_DETAIL")))
+            .setForegroundUpdater(foregroundUpdater)
+            .build()
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.success(workDataOf("failed" to 0)), result)
+        assertTrue(
+            "expected setForeground to be called at least once per completed unit, got ${foregroundUpdater.progressValues}",
+            foregroundUpdater.progressValues.size >= 3
+        )
+        assertEquals(
+            "progress must never regress once a unit completes",
+            foregroundUpdater.progressValues.sorted(),
+            foregroundUpdater.progressValues
+        )
+        assertEquals(3, foregroundUpdater.progressValues.last())
     }
 }
