@@ -48,20 +48,7 @@ class CryPlayer {
      *  inside its own callback. Posting the retry to the next main-thread loop iteration avoids
      *  that unsupported re-entrant call pattern. */
     fun play(context: Context, source: String, fallbackSource: String? = null) {
-        val isSourceRemote = UrlValidator.isRemoteUrl(source)
-        val isSourceValid = !isSourceRemote || UrlValidator.isValid(source)
-
-        val isFallbackRemote = fallbackSource?.let { UrlValidator.isRemoteUrl(it) } ?: false
-        val isFallbackValid = fallbackSource == null || !isFallbackRemote || UrlValidator.isValid(fallbackSource)
-
-        val cleanSource = if (isSourceValid) source else {
-            if (isFallbackValid && fallbackSource != null) fallbackSource else null
-        }
-        val cleanFallback = if (isSourceValid) {
-            if (isFallbackValid) fallbackSource else null
-        } else {
-            null
-        }
+        val (cleanSource, cleanFallback) = resolvePlaySources(source, fallbackSource)
 
         if (cleanSource == null) {
             _isPlaying.value = false
@@ -132,6 +119,32 @@ class CryPlayer {
         }
         audioManager = null
         audioFocusRequest = null
+    }
+
+    companion object {
+        /** Pure source/fallback resolution pulled out of [play] so it's directly
+         *  unit-testable without a real `MediaPlayer`/`Looper`: [UrlValidator] rejects any remote
+         *  URL that isn't an https PokeAPI/GitHub host (a stale or tampered cry URL), falling back
+         *  to [fallbackSource] when the primary is rejected and dropping the fallback too once it's
+         *  already been promoted to primary — a local file path is never checked against
+         *  [UrlValidator], since [UrlValidator.isRemoteUrl] only guards remote sources. */
+        internal fun resolvePlaySources(source: String, fallbackSource: String?): Pair<String?, String?> {
+            val isSourceRemote = UrlValidator.isRemoteUrl(source)
+            val isSourceValid = !isSourceRemote || UrlValidator.isValid(source)
+
+            val isFallbackRemote = fallbackSource?.let { UrlValidator.isRemoteUrl(it) } ?: false
+            val isFallbackValid = fallbackSource == null || !isFallbackRemote || UrlValidator.isValid(fallbackSource)
+
+            val cleanSource = if (isSourceValid) source else {
+                if (isFallbackValid && fallbackSource != null) fallbackSource else null
+            }
+            val cleanFallback = if (isSourceValid) {
+                if (isFallbackValid) fallbackSource else null
+            } else {
+                null
+            }
+            return cleanSource to cleanFallback
+        }
     }
 
     fun release() {
