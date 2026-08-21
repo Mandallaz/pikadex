@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.test.retry)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.kover)
 }
 
 // Release signing key material lives outside the repo (see .gitignore: keystore.properties,
@@ -169,5 +170,26 @@ tasks.withType<Test>().configureEach {
             includeClasses.add("com.mandallaz.pikadex.ui.detail.PokedexDetailViewModelLoadTest")
         }
         maxRetries.set(2)
+    }
+}
+
+// Coverage over business logic only — @Composable functions (screens/cards/dialogs) are excluded
+// at the function level rather than by package/class name, so pure helper functions that share a
+// file with Composables (e.g. PokedexDetailScreen.kt's eggGroupDisplayName, moveStatsLabel) stay
+// counted; this app's Compose UI is verified via the emulator (see emulator-ui-check), not JVM
+// unit tests, so folding its bytecode into the coverage denominator would measure the wrong thing.
+kover {
+    reports {
+        filters {
+            excludes {
+                annotatedBy("androidx.compose.runtime.Composable")
+                classes(
+                    "com.mandallaz.pikadex.BuildConfig",
+                    "com.mandallaz.pikadex.data.remote.dto.*", // plain DTOs, no logic of their own
+                    "*.R", "*.R\$*",
+                    "*JsonAdapter*" // Moshi/KSP-generated (de)serializers, not hand-written logic
+                )
+            }
+        }
     }
 }
