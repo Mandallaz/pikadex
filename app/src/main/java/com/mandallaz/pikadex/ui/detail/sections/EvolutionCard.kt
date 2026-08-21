@@ -28,8 +28,8 @@ import com.mandallaz.pikadex.util.evolutionPaths
 import com.mandallaz.pikadex.util.localizedDisplayName
 
 // issue #14 — Evolution moved up to sit right after the core stat/ability/matchup
-// cluster (Base Stats/Abilities/Type Matchups), ahead of Team Impact/Type Triangles/Smogon
-// rather than after them — those 3 keep their existing relative order among themselves,
+// cluster (Base Stats/Abilities/Type Matchups), ahead of Team Impact/Smogon
+// rather than after them — those keep their existing relative order among themselves,
 // just now following Evolution instead of leading it.
 // issue #19 — every alternate form of this species (Mega, Gigantamax, one-off special
 // forms like Ursaluna Bloodmoon...), not just Megas — see SpeciesDto.otherForms.

@@ -1,7 +1,6 @@
 package com.mandallaz.pikadex.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChangeHistory
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -38,12 +37,10 @@ import com.mandallaz.pikadex.ui.detail.PokedexDetailScreen
 import com.mandallaz.pikadex.ui.list.PokedexListScreen
 import com.mandallaz.pikadex.ui.settings.SettingsScreen
 import com.mandallaz.pikadex.ui.team.TeamScreen
-import com.mandallaz.pikadex.ui.typechart.TypeTrianglesScreen
 
 private const val ROUTE_LIST = "list"
 private const val ROUTE_DETAIL = "detail/{pokemonName}"
 private const val ROUTE_TEAM = "team"
-private const val ROUTE_TYPE_TRIANGLES = "type-triangles"
 private const val ROUTE_COMPARE = "compare/{leftName}/{rightName}"
 private const val ROUTE_SETTINGS = "settings"
 
@@ -66,7 +63,6 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
     // discoverable from anywhere and makes the current one obvious via the selected state.
     val bottomTabs = listOf(
         BottomTab(ROUTE_LIST, stringResource(R.string.nav_pokedex), Icons.Default.Home),
-        BottomTab(ROUTE_TYPE_TRIANGLES, stringResource(R.string.nav_triangles), Icons.Default.ChangeHistory),
         BottomTab(ROUTE_TEAM, stringResource(R.string.nav_team), Icons.Default.Groups),
         BottomTab(ROUTE_SETTINGS, stringResource(R.string.nav_settings), Icons.Default.Settings)
     )
@@ -145,26 +141,12 @@ fun PokedexNavHost(navController: NavHostController = rememberNavController()) {
             composable(ROUTE_LIST) {
                 PokedexListScreen(onPokemonClick = { name -> ifIdle { navController.navigate("detail/$name") } })
             }
-            composable(ROUTE_TYPE_TRIANGLES) {
-                // Reached either as a bottom tab or pushed from a Pokémon's "View chart" — only the
-                // pushed instance gets a Back arrow, since there's nothing to go back to from the tab.
-                val pushedFromDetail = navController.previousBackStackEntry?.destination?.route == ROUTE_DETAIL
-                TypeTrianglesScreen(
-                    onBack = if (pushedFromDetail) ({ ifIdle { navController.popBackStack() } }) else null
-                )
-            }
             composable(ROUTE_DETAIL) { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("pokemonName").orEmpty()
                 PokedexDetailScreen(
                     pokemonNameOrId = name,
                     onBack = { ifIdle { navController.popBackStack() } },
                     onPokemonClick = { newName -> ifIdle { navController.navigate("detail/$newName") } },
-                    // A plain push (not switchTab's popUpTo-to-start pattern) — this is a
-                    // cross-reference link from *within* a Pokémon's page, not the user picking the
-                    // Triangles tab, so Back should return to this Pokémon, not to the Pokédex list.
-                    onViewTypeTriangles = {
-                        ifIdle { navController.navigate(ROUTE_TYPE_TRIANGLES) { launchSingleTop = true } }
-                    },
                     onCompare = { left, right ->
                         ifIdle { navController.navigate("compare/$left/$right") }
                     },

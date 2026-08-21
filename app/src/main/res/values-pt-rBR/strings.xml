@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Bottom navigation -->
     <string name="nav_pokedex">Pokédex</string>
-    <string name="nav_triangles">Triângulos</string>
     <string name="nav_team">Equipe</string>
     <string name="nav_settings">Configurações</string>
 
@@ -193,12 +192,6 @@
     <string name="detail_tera_type_none">Nenhum</string>
     <string name="detail_tera_type_dialog_title">Escolher tipo Tera</string>
 
-    <string name="detail_type_triangles_title">Triângulos de tipo</string>
-    <string name="detail_view_chart">Ver diagrama</string>
-    <string name="detail_best_counter_to">Esta tipagem é a melhor contra para:</string>
-    <string name="detail_triangle_perfect_suffix">(Perfeito)</string>
-    <string name="detail_triangle_imperfect_suffix">(Imperfeito)</string>
-    <string name="detail_partial_counter_to">Esta tipagem contra parcialmente:</string>
 
     <string name="detail_smogon_strategy_dex_title">Dex estratégico Smogon</string>
 
@@ -318,14 +311,6 @@
     <string name="teamslots_save">Salvar</string>
 
     <!-- Type Triangles screen (F35 continued) -->
-    <string name="triangles_title">Triângulos de Tipo</string>
-    <string name="triangles_back_cd">Voltar</string>
-    <string name="triangles_intro">Cada tipo aqui é superefetivo contra o próximo no ciclo — uma relação de pedra-papel-tesoura que se repete em toda a tabela de tipos.</string>
-    <string name="triangles_perfect_title">Triângulos perfeitos</string>
-    <string name="triangles_perfect_subtitle">Cada tipo também resiste ao anterior no ciclo — o ataque e a defesa são totalmente simétricos.</string>
-    <string name="triangles_imperfect_title">Triângulos imperfeitos</string>
-    <string name="triangles_imperfect_subtitle">O ciclo ofensivo ainda vale, mas um vínculo defensivo é apenas um acerto neutro — ou uma imunidade total — em vez de uma resistência.</string>
-    <string name="triangles_best_counter">Melhor counter</string>
 
     <!-- Pokédex list/filters screen (F35 continued) -->
     <string name="list_search_placeholder">Nome ou número...</string>
@@ -369,7 +354,6 @@
     <string name="list_ability_label">Habilidade</string>
     <string name="list_format_label">Formato</string>
     <string name="list_tier_label">Tier</string>
-    <string name="list_perfect_counter_label">Counter perfeito</string>
     <string name="list_minimum_stats_section">Estatísticas mínimas</string>
     <string name="list_loading_base_stats">Carregando estatísticas base…</string>
     <string name="list_any_value">Qualquer</string>

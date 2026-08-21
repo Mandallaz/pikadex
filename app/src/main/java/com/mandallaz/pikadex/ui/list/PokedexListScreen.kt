@@ -178,9 +178,9 @@ fun PokedexListScreen(
     }
 
     Scaffold(
-        // Team/Type Triangles access moved to the bottom navigation bar (see PokedexNavHost) — a
-        // labelled, always-visible tab reads as a much clearer destination than an icon-only button
-        // buried in this screen's own top bar, and it no longer disappears while browsing this list.
+        // Team access moved to the bottom navigation bar (see PokedexNavHost) — a labelled,
+        // always-visible tab reads as a much clearer destination than an icon-only button buried
+        // in this screen's own top bar, and it no longer disappears while browsing this list.
         topBar = { PikaDexTopBar(title = { Text("PikaDex") }) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
@@ -354,7 +354,6 @@ fun PokedexListScreen(
                         activeDialog = ActiveDialog.FORMAT_TIER
                     },
                     onOpenRarity = { activeDialog = ActiveDialog.RARITY },
-                    onToggleCounterFilter = viewModel::onCounterFilterToggled,
                     onStatMinimumChanged = viewModel::onStatMinimumChanged
                 )
             }

@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Bottom navigation -->
     <string name="nav_pokedex">Pokédex</string>
-    <string name="nav_triangles">Dreiecke</string>
     <string name="nav_team">Team</string>
     <string name="nav_settings">Einstellungen</string>
 
@@ -193,12 +192,6 @@
     <string name="detail_tera_type_none">Keine</string>
     <string name="detail_tera_type_dialog_title">Terakristall-Typ wählen</string>
 
-    <string name="detail_type_triangles_title">Typ-Dreiecke</string>
-    <string name="detail_view_chart">Diagramm ansehen</string>
-    <string name="detail_best_counter_to">Dieser Typ ist der beste Konter für:</string>
-    <string name="detail_triangle_perfect_suffix">(Perfekt)</string>
-    <string name="detail_triangle_imperfect_suffix">(Unvollständig)</string>
-    <string name="detail_partial_counter_to">Dieser Typ kontert teilweise:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon Strategie-Dex</string>
 
@@ -318,14 +311,6 @@
     <string name="teamslots_save">Speichern</string>
 
     <!-- Type Triangles screen (F35 continued) -->
-    <string name="triangles_title">Typ-Dreiecke</string>
-    <string name="triangles_back_cd">Zurück</string>
-    <string name="triangles_intro">Jeder Typ hier ist besonders effektiv gegen den nächsten im Zyklus — eine Schere-Stein-Papier-Beziehung, die sich in der gesamten Typentabelle wiederholt.</string>
-    <string name="triangles_perfect_title">Perfekte Dreiecke</string>
-    <string name="triangles_perfect_subtitle">Jeder Typ widersteht auch dem vorherigen in der Schleife — Angriff und Verteidigung sind vollständig symmetrisch.</string>
-    <string name="triangles_imperfect_title">Unvollständige Dreiecke</string>
-    <string name="triangles_imperfect_subtitle">Die offensive Schleife bleibt bestehen, aber eine defensive Verbindung ist nur ein neutraler Treffer — oder eine vollständige Immunität — statt einer Resistenz.</string>
-    <string name="triangles_best_counter">Bester Konter</string>
 
     <!-- Pokédex list/filters screen (F35 continued) -->
     <string name="list_search_placeholder">Name oder Nummer...</string>
@@ -369,7 +354,6 @@
     <string name="list_ability_label">Fähigkeit</string>
     <string name="list_format_label">Format</string>
     <string name="list_tier_label">Tier</string>
-    <string name="list_perfect_counter_label">Perfekter Konter</string>
     <string name="list_minimum_stats_section">Mindestwerte</string>
     <string name="list_loading_base_stats">Basiswerte werden geladen…</string>
     <string name="list_any_value">Beliebig</string>

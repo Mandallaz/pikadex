@@ -47,7 +47,6 @@ internal fun FilterSheetContent(
     onOpenFormat: () -> Unit,
     onOpenTier: () -> Unit,
     onOpenRarity: () -> Unit,
-    onToggleCounterFilter: () -> Unit,
     onStatMinimumChanged: (String, Int) -> Unit
 ) {
     // verticalScroll: a plain Column here could overflow the sheet's available height in
@@ -132,13 +131,6 @@ internal fun FilterSheetContent(
                 label = uiState.rarityFilter?.let { stringResource(it.labelResId) } ?: stringResource(R.string.list_rarity_title),
                 selected = uiState.rarityFilter != null,
                 onClick = onOpenRarity
-            )
-            // Binary toggle (F33), not a dialog-backed chip like the others above — "counters any
-            // triangle" is a single on/off predicate, same shape as Favorites.
-            SelectableChip(
-                label = stringResource(R.string.list_perfect_counter_label),
-                selected = uiState.counterFilterActive,
-                onClick = onToggleCounterFilter
             )
         }
 

@@ -127,42 +127,6 @@ class PokedexListViewModelTest {
         assertEquals(unsorted, computeDisplayed(state, ""))
     }
 
-    // --- Perfect Counter filter (F33) -----------------------------------
-
-    @Test
-    fun `counter filter keeps only Pokemon whose typing counters a triangle`() {
-        val state = PokedexListUiState(
-            allPokemon = unsorted,
-            counterFilterActive = true,
-            typesByName = mapOf(
-                "charmander" to listOf("fire", "flying"), // counters Fire/Grass/Ground
-                "bulbasaur" to listOf("grass", "poison"), // no triangle counter
-                "squirtle" to listOf("water")
-            )
-        )
-        assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
-    }
-
-    // typesByName comes from the same bulk fetch as legendaryNames/mythicalNames/baseStats — empty
-    // means "not loaded yet", not "nothing counters a triangle", so the filter must not apply.
-    @Test
-    fun `a counter filter with no type data loaded yet leaves the list untouched`() {
-        val state = PokedexListUiState(allPokemon = unsorted, counterFilterActive = true)
-        assertEquals(unsorted, computeDisplayed(state, ""))
-    }
-
-    // An entry missing from an otherwise-loaded typesByName map (partial/stale fetch) is excluded
-    // rather than assumed to pass — same reasoning as the identical statMinimums guard below.
-    @Test
-    fun `an entry missing from a present typesByName map is excluded, not assumed to pass`() {
-        val state = PokedexListUiState(
-            allPokemon = unsorted,
-            counterFilterActive = true,
-            typesByName = mapOf("charmander" to listOf("fire", "flying"))
-        )
-        assertEquals(listOf("charmander"), computeDisplayed(state, "").map { it.name })
-    }
-
     // --- Name sort -------------------------------------------------------
 
     @Test
@@ -384,19 +348,6 @@ class PokedexListViewModelTest {
             legendaryNames = setOf("charmander")
         )
         val result = applyRarityFilter(unsorted, state)
-        assertEquals(listOf("charmander"), result.map { it.name })
-    }
-
-    @Test
-    fun `applyCounterFilter directly filters by triangle counters`() {
-        val state = PokedexListUiState(
-            counterFilterActive = true,
-            typesByName = mapOf(
-                "charmander" to listOf("fire", "flying"),
-                "squirtle" to listOf("water")
-            )
-        )
-        val result = applyCounterFilter(unsorted, state)
         assertEquals(listOf("charmander"), result.map { it.name })
     }
 

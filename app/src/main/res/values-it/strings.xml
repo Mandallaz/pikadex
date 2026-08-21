@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Bottom navigation -->
     <string name="nav_pokedex">Pokédex</string>
-    <string name="nav_triangles">Triangoli</string>
     <string name="nav_team">Squadra</string>
     <string name="nav_settings">Impostazioni</string>
 
@@ -193,12 +192,6 @@
     <string name="detail_tera_type_none">Nessuno</string>
     <string name="detail_tera_type_dialog_title">Scegli tipo Terastal</string>
 
-    <string name="detail_type_triangles_title">Triangoli di tipo</string>
-    <string name="detail_view_chart">Vedi schema</string>
-    <string name="detail_best_counter_to">Questa combinazione di tipi è il miglior contro per:</string>
-    <string name="detail_triangle_perfect_suffix">(Perfetto)</string>
-    <string name="detail_triangle_imperfect_suffix">(Imperfetto)</string>
-    <string name="detail_partial_counter_to">Questa combinazione di tipi contrasta parzialmente:</string>
 
     <string name="detail_smogon_strategy_dex_title">Dex strategico Smogon</string>
 
@@ -318,14 +311,6 @@
     <string name="teamslots_save">Salva</string>
 
     <!-- Type Triangles screen (F35 continued) -->
-    <string name="triangles_title">Triangoli di tipo</string>
-    <string name="triangles_back_cd">Indietro</string>
-    <string name="triangles_intro">Ogni tipo qui è superefficace contro il successivo nel ciclo — una relazione carta-forbice-sasso che si ripete in tutta la tabella dei tipi.</string>
-    <string name="triangles_perfect_title">Triangoli perfetti</string>
-    <string name="triangles_perfect_subtitle">Ogni tipo resiste anche a quello precedente nel ciclo — attacco e difesa sono perfettamente simmetrici.</string>
-    <string name="triangles_imperfect_title">Triangoli imperfetti</string>
-    <string name="triangles_imperfect_subtitle">Il ciclo offensivo resta valido, ma un legame difensivo è solo un colpo neutro — o un\'immunità totale — invece di una resistenza.</string>
-    <string name="triangles_best_counter">Miglior contro</string>
 
     <!-- Pokédex list/filters screen (F35 continued) -->
     <string name="list_search_placeholder">Nome o numero...</string>
@@ -369,7 +354,6 @@
     <string name="list_ability_label">Abilità</string>
     <string name="list_format_label">Formato</string>
     <string name="list_tier_label">Tier</string>
-    <string name="list_perfect_counter_label">Contro perfetto</string>
     <string name="list_minimum_stats_section">Statistiche minime</string>
     <string name="list_loading_base_stats">Caricamento statistiche base…</string>
     <string name="list_any_value">Qualsiasi</string>

@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Bottom navigation -->
     <string name="nav_pokedex">ずかん</string>
-    <string name="nav_triangles">三角関係</string>
     <string name="nav_team">パーティ</string>
     <string name="nav_settings">設定</string>
 
@@ -193,12 +192,6 @@
     <string name="detail_tera_type_none">なし</string>
     <string name="detail_tera_type_dialog_title">テラスタイプを選択</string>
 
-    <string name="detail_type_triangles_title">三角関係</string>
-    <string name="detail_view_chart">図を見る</string>
-    <string name="detail_best_counter_to">このタイプは次の三角関係の最良のカウンターです:</string>
-    <string name="detail_triangle_perfect_suffix">（完全）</string>
-    <string name="detail_triangle_imperfect_suffix">（不完全）</string>
-    <string name="detail_partial_counter_to">このタイプは次の三角関係を部分的にカウンターします:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon戦略ずかん</string>
 
@@ -318,14 +311,6 @@
     <string name="teamslots_save">保存</string>
 
     <!-- Type Triangles screen (F35 continued) -->
-    <string name="triangles_title">タイプ三すくみ</string>
-    <string name="triangles_back_cd">戻る</string>
-    <string name="triangles_intro">ここに表示される各タイプは、サイクル内の次のタイプに対して効果抜群です — タイプ相性表全体で繰り返される三すくみの関係です。</string>
-    <string name="triangles_perfect_title">完全な三すくみ</string>
-    <string name="triangles_perfect_subtitle">各タイプはループ内の1つ前のタイプにも耐性を持ちます — 攻撃と防御が完全に対称です。</string>
-    <string name="triangles_imperfect_title">不完全な三すくみ</string>
-    <string name="triangles_imperfect_subtitle">攻撃のループは成り立ちますが、防御側のつながりは耐性ではなく等倍、または完全な無効になります。</string>
-    <string name="triangles_best_counter">最高のカウンター</string>
 
     <!-- Pokédex list/filters screen (F35 continued) -->
     <string name="list_search_placeholder">名前または番号...</string>
@@ -369,7 +354,6 @@
     <string name="list_ability_label">特性</string>
     <string name="list_format_label">フォーマット</string>
     <string name="list_tier_label">ティア</string>
-    <string name="list_perfect_counter_label">完全カウンター</string>
     <string name="list_minimum_stats_section">最低種族値</string>
     <string name="list_loading_base_stats">種族値を読み込み中…</string>
     <string name="list_any_value">指定なし</string>

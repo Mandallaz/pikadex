@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Bottom navigation -->
     <string name="nav_pokedex">도감</string>
-    <string name="nav_triangles">삼각관계</string>
     <string name="nav_team">파티</string>
     <string name="nav_settings">설정</string>
 
@@ -193,12 +192,6 @@
     <string name="detail_tera_type_none">없음</string>
     <string name="detail_tera_type_dialog_title">테라 타입 선택</string>
 
-    <string name="detail_type_triangles_title">삼각관계</string>
-    <string name="detail_view_chart">차트 보기</string>
-    <string name="detail_best_counter_to">이 타입은 다음의 최고의 카운터입니다:</string>
-    <string name="detail_triangle_perfect_suffix">(완전)</string>
-    <string name="detail_triangle_imperfect_suffix">(불완전)</string>
-    <string name="detail_partial_counter_to">이 타입은 다음을 부분적으로 카운터합니다:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon 전략 도감</string>
 
@@ -318,14 +311,6 @@
     <string name="teamslots_save">저장</string>
 
     <!-- Type Triangles screen (F35 continued) -->
-    <string name="triangles_title">타입 삼각관계</string>
-    <string name="triangles_back_cd">뒤로</string>
-    <string name="triangles_intro">여기 있는 각 타입은 순환에서 다음 타입에 매우 효과적입니다 — 타입 상성표 전체에서 반복되는 가위바위보 관계입니다.</string>
-    <string name="triangles_perfect_title">완전한 삼각관계</string>
-    <string name="triangles_perfect_subtitle">각 타입은 순환에서 이전 타입에도 내성이 있습니다 — 공격과 방어가 완전히 대칭적입니다.</string>
-    <string name="triangles_imperfect_title">불완전한 삼각관계</string>
-    <string name="triangles_imperfect_subtitle">공격 순환은 그대로 유지되지만, 방어 관계는 내성 대신 등배 공격이거나 완전 무효일 뿐입니다.</string>
-    <string name="triangles_best_counter">최고의 카운터</string>
 
     <!-- Pokédex list/filters screen (F35 continued) -->
     <string name="list_search_placeholder">이름 또는 번호...</string>
@@ -369,7 +354,6 @@
     <string name="list_ability_label">특성</string>
     <string name="list_format_label">포맷</string>
     <string name="list_tier_label">티어</string>
-    <string name="list_perfect_counter_label">완벽한 카운터</string>
     <string name="list_minimum_stats_section">최소 종족값</string>
     <string name="list_loading_base_stats">종족값 불러오는 중…</string>
     <string name="list_any_value">지정 안 함</string>

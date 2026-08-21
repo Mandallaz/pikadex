@@ -74,13 +74,11 @@ import com.mandallaz.pikadex.ui.detail.sections.EvolutionCard
 import com.mandallaz.pikadex.ui.detail.sections.SmogonLinksCard
 import com.mandallaz.pikadex.ui.detail.sections.TeamImpactCard
 import com.mandallaz.pikadex.ui.detail.sections.TypeMatchupsCard
-import com.mandallaz.pikadex.ui.detail.sections.TypeTrianglesCard
 import com.mandallaz.pikadex.ui.detail.sections.moveSection
 import com.mandallaz.pikadex.ui.detail.sections.moveLabels
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.Smogon
 import com.mandallaz.pikadex.util.LearnedMove
-import com.mandallaz.pikadex.util.TypeTriangle
 import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.localizedOrEnglish
 import com.mandallaz.pikadex.util.SortStat
@@ -107,7 +105,6 @@ fun PokedexDetailScreen(
     pokemonNameOrId: String,
     onBack: () -> Unit,
     onPokemonClick: (String) -> Unit,
-    onViewTypeTriangles: () -> Unit,
     onCompare: (left: String, right: String) -> Unit,
     // Distinct from onPokemonClick, which *pushes* a new detail screen — used for cross-references
     // like evolution stages, where Back should return to the page you tapped from. This one
@@ -293,12 +290,8 @@ fun PokedexDetailScreen(
                         evolutionChain = uiState.evolutionChain,
                         typeMatchups = uiState.typeMatchups,
                         abilityDescriptions = uiState.abilityDescriptions,
-                        counteredTriangles = uiState.counteredTriangles,
-                        partiallyCounteredTriangles = uiState.partiallyCounteredTriangles,
                         teraType = uiState.teraType,
                         teraTypeMatchups = uiState.teraTypeMatchups,
-                        teraCounteredTriangles = uiState.teraCounteredTriangles,
-                        teraPartiallyCounteredTriangles = uiState.teraPartiallyCounteredTriangles,
                         teraTypeOptions = uiState.teraTypeOptions,
                         moveInfo = uiState.moveInfo,
                         statPercentiles = uiState.statPercentiles,
@@ -325,8 +318,7 @@ fun PokedexDetailScreen(
                     // above), but that's `pokemon`, not `uiState.pokemon` — same underlying value,
                     // captured locally so playCry doesn't need its own null check.
                     onPlayCry = { viewModel.playCry(context, pokemon.id) },
-                    onPokemonClick = onPokemonClick,
-                    onViewTypeTriangles = onViewTypeTriangles
+                    onPokemonClick = onPokemonClick
                 )
             }
 
@@ -394,12 +386,8 @@ internal data class DetailData(
     val evolutionChain: com.mandallaz.pikadex.data.remote.dto.EvolutionChainDto? = null,
     val typeMatchups: Map<String, Double> = emptyMap(),
     val abilityDescriptions: Map<String, String> = emptyMap(),
-    val counteredTriangles: List<TypeTriangle> = emptyList(),
-    val partiallyCounteredTriangles: List<TypeTriangle> = emptyList(),
     val teraType: String? = null,
     val teraTypeMatchups: Map<String, Double>? = null,
-    val teraCounteredTriangles: List<TypeTriangle>? = null,
-    val teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
     val teraTypeOptions: List<Pair<String, Int>> = emptyList(),
     val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap(),
     val statPercentiles: Map<String, Double> = emptyMap(),
@@ -429,8 +417,7 @@ internal fun DetailContent(
     onToggleAnimated: () -> Unit,
     onToggleFrontBackSprites: () -> Unit,
     onPlayCry: () -> Unit,
-    onPokemonClick: (String) -> Unit,
-    onViewTypeTriangles: () -> Unit
+    onPokemonClick: (String) -> Unit
 ) {
     val (
         pokemon,
@@ -438,12 +425,8 @@ internal fun DetailContent(
         evolutionChain,
         typeMatchups,
         abilityDescriptions,
-        counteredTriangles,
-        partiallyCounteredTriangles,
         teraType,
         teraTypeMatchups,
-        teraCounteredTriangles,
-        teraPartiallyCounteredTriangles,
         teraTypeOptions,
         moveInfo,
         statPercentiles,
@@ -557,8 +540,8 @@ internal fun DetailContent(
         }
 
         // issue #14 — Evolution sits right after Abilities, ahead of Type Matchups/Team
-        // Impact/Type Triangles/Smogon rather than after them — those keep their existing
-        // relative order among themselves, just now following Evolution instead of leading it.
+        // Impact/Smogon rather than after them — those keep their existing relative order
+        // among themselves, just now following Evolution instead of leading it.
         // issue #19 — every alternate form of this species (Mega, Gigantamax, one-off special
         // forms like Ursaluna Bloodmoon...), not just Megas — see SpeciesDto.otherForms.
         val otherForms = species.otherForms(pokemon.name)
@@ -572,9 +555,6 @@ internal fun DetailContent(
         // replace the Pokémon's real ones everywhere they'd otherwise be shown, matching the
         // actual game mechanic (Terastallizing fully replaces typing with one pure type).
         val effectiveTypeMatchups = teraTypeMatchups ?: typeMatchups
-        val effectiveCounteredTriangles = if (teraType != null) teraCounteredTriangles.orEmpty() else counteredTriangles
-        val effectivePartiallyCounteredTriangles =
-            if (teraType != null) teraPartiallyCounteredTriangles.orEmpty() else partiallyCounteredTriangles
 
         item {
             TypeMatchupsCard(
@@ -594,12 +574,6 @@ internal fun DetailContent(
         if (showTeamImpactCard) {
             item {
                 TeamImpactCard(isTeamImpactLoading, teamImpactError, teamImpact)
-            }
-        }
-
-        if (effectiveCounteredTriangles.isNotEmpty() || effectivePartiallyCounteredTriangles.isNotEmpty()) {
-            item {
-                TypeTrianglesCard(effectiveCounteredTriangles, effectivePartiallyCounteredTriangles, onViewTypeTriangles)
             }
         }
 

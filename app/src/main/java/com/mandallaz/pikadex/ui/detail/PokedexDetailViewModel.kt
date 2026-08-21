@@ -22,8 +22,6 @@ import com.mandallaz.pikadex.util.LearnedMove
 import com.mandallaz.pikadex.util.MoveCategory
 import com.mandallaz.pikadex.util.TeamImpactSummary
 import com.mandallaz.pikadex.util.TypeIds
-import com.mandallaz.pikadex.util.TypeTriangle
-import com.mandallaz.pikadex.util.TypeTriangles
 import com.mandallaz.pikadex.util.adjacentNames
 import com.mandallaz.pikadex.util.computeDefensiveMultipliers
 import com.mandallaz.pikadex.util.computeTeamImpact
@@ -62,16 +60,6 @@ data class PokedexDetailUiState(
     val evolutionChain: EvolutionChainDto? = null,
     val typeMatchups: Map<String, Double> = emptyMap(),
     val abilityDescriptions: Map<String, String> = emptyMap(),
-    /** issue #16 — triangles this Pokémon's typing is the exact best counter to (see
-     *  [TypeTriangles.counteredBy]). The card that reads this is hidden entirely when it's empty;
-     *  merely being *part of* a triangle (the pre-F26 `memberTriangles`) was dropped as too weak a
-     *  signal to be worth a callout on its own. */
-    val counteredTriangles: List<TypeTriangle> = emptyList(),
-    /** issue #72 (F69) — triangles this Pokémon's typing partially breaks (shares one of the two
-     *  types in [TypeTriangles.TypeCounter.types] without matching it exactly; see
-     *  [TypeTriangles.partiallyCounteredBy]). Shown as a second, visually distinct section on the
-     *  same card that reads [counteredTriangles], never overlapping it. */
-    val partiallyCounteredTriangles: List<TypeTriangle> = emptyList(),
     val moveInfo: Map<String, PokeApiGraphQLDataSource.MoveInfo> = emptyMap(),
     /** Learned moves grouped and sorted per [MoveCategory] — used to be recomputed by the screen
      *  itself on every recomposition-surviving `remember(pokemon)`, which for a pokemon with a
@@ -103,8 +91,6 @@ data class PokedexDetailUiState(
     /** [typeMatchups] recomputed against only [teraType]'s own typing instead of the Pokémon's
      *  real types, once [teraType] is set — null while no Tera type is being previewed. */
     val teraTypeMatchups: Map<String, Double>? = null,
-    val teraCounteredTriangles: List<TypeTriangle>? = null,
-    val teraPartiallyCounteredTriangles: List<TypeTriangle>? = null,
     /** F90 follow-up — (type, score) pairs from [rankTeraTypes] against this Pokémon's current
      *  weaknesses, best-first; empty until [loadTeraTypeOptionsIfNeeded] resolves. The score is
      *  shown next to each option in the picker, not just used to order it. */
@@ -208,9 +194,6 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                         .map { async { repository.getTypeDetail(it.type.name) } }
                         .awaitAll()
                     val matchups = computeDefensiveMultipliers(typeDetails)
-                    val pokemonTypes = bundle.pokemon.types.orEmpty().map { it.type.name }
-                    val counteredTriangles = TypeTriangles.counteredBy(pokemonTypes)
-                    val partiallyCounteredTriangles = TypeTriangles.partiallyCounteredBy(pokemonTypes)
                     val abilityNames = bundle.pokemon.abilities.orEmpty().map { it.ability.name }
                     val descriptionsDeferred = async {
                         abilityNames
@@ -272,8 +255,6 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                             evolutionChain = bundle.evolutionChain,
                             typeMatchups = matchups,
                             abilityDescriptions = descriptions,
-                            counteredTriangles = counteredTriangles,
-                            partiallyCounteredTriangles = partiallyCounteredTriangles,
                             moveInfo = moveInfo,
                             statPercentiles = percentiles,
                             formVersionGroup = formVersionGroup,
@@ -384,7 +365,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
         teraTypeJob?.cancel()
         if (type == null) {
             _uiState.update {
-                it.copy(teraType = null, teraTypeMatchups = null, teraCounteredTriangles = null, teraPartiallyCounteredTriangles = null)
+                it.copy(teraType = null, teraTypeMatchups = null)
             }
             return
         }
@@ -394,9 +375,7 @@ class PokedexDetailViewModel @JvmOverloads constructor(
                 _uiState.update {
                     it.copy(
                         teraType = type,
-                        teraTypeMatchups = computeDefensiveMultipliers(listOf(detail)),
-                        teraCounteredTriangles = TypeTriangles.counteredBy(listOf(type)),
-                        teraPartiallyCounteredTriangles = TypeTriangles.partiallyCounteredBy(listOf(type))
+                        teraTypeMatchups = computeDefensiveMultipliers(listOf(detail))
                     )
                 }
             } catch (e: CancellationException) {

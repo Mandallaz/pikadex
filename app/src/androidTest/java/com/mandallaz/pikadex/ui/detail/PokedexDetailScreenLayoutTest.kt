@@ -62,8 +62,7 @@ class PokedexDetailScreenLayoutTest {
                 onToggleAnimated = {},
                 onToggleFrontBackSprites = {},
                 onPlayCry = {},
-                onPokemonClick = {},
-                onViewTypeTriangles = {}
+                onPokemonClick = {}
             )
         }
 

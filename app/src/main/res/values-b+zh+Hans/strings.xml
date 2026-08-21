@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Bottom navigation -->
     <string name="nav_pokedex">图鉴</string>
-    <string name="nav_triangles">三角关系</string>
     <string name="nav_team">队伍</string>
     <string name="nav_settings">设置</string>
 
@@ -193,12 +192,6 @@
     <string name="detail_tera_type_none">无</string>
     <string name="detail_tera_type_dialog_title">选择太晶属性</string>
 
-    <string name="detail_type_triangles_title">三角关系</string>
-    <string name="detail_view_chart">查看图表</string>
-    <string name="detail_best_counter_to">此属性组合是以下三角关系的最佳克制方：</string>
-    <string name="detail_triangle_perfect_suffix">（完美）</string>
-    <string name="detail_triangle_imperfect_suffix">（不完美）</string>
-    <string name="detail_partial_counter_to">此属性组合部分克制以下三角关系：</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon战略图鉴</string>
 
@@ -318,14 +311,6 @@
     <string name="teamslots_save">保存</string>
 
     <!-- Type Triangles screen (F35 continued) -->
-    <string name="triangles_title">属性三角关系</string>
-    <string name="triangles_back_cd">返回</string>
-    <string name="triangles_intro">这里的每种属性都对循环中的下一种属性效果拔群 — 这是一种在整个属性相克表中反复出现的相生相克关系。</string>
-    <string name="triangles_perfect_title">完美三角</string>
-    <string name="triangles_perfect_subtitle">每种属性也抵抗循环中前一种属性 — 攻防完全对称。</string>
-    <string name="triangles_imperfect_title">不完美三角</string>
-    <string name="triangles_imperfect_subtitle">攻击循环依然成立，但防御关系只是等效伤害，或是完全免疫，而非抵抗。</string>
-    <string name="triangles_best_counter">最佳克制</string>
 
     <!-- Pokédex list/filters screen (F35 continued) -->
     <string name="list_search_placeholder">名称或编号...</string>
@@ -369,7 +354,6 @@
     <string name="list_ability_label">特性</string>
     <string name="list_format_label">赛制</string>
     <string name="list_tier_label">分级</string>
-    <string name="list_perfect_counter_label">完美克制</string>
     <string name="list_minimum_stats_section">最低种族值</string>
     <string name="list_loading_base_stats">正在加载种族值…</string>
     <string name="list_any_value">不限</string>

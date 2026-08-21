@@ -24,11 +24,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/** F90 — previewing a Terastallization type on the detail screen overrides the defensive (Type
- *  Matchups) and offensive (Type Triangles) calculations to use only that one type, instead of the
- *  Pokémon's real types — same "one pure type replaces everything" rule the actual game mechanic
- *  has. Ephemeral: [PokedexDetailViewModel.selectTeraType] mutates in-memory state only, nothing
- *  persisted. */
+/** F90 — previewing a Terastallization type on the detail screen overrides the Type Matchups
+ *  calculation to use only that one type, instead of the Pokémon's real types — same "one pure
+ *  type replaces everything" rule the actual game mechanic has. Ephemeral:
+ *  [PokedexDetailViewModel.selectTeraType] mutates in-memory state only, nothing persisted. */
 class PokedexDetailViewModelTeraTest {
 
     private val dispatcher = StandardTestDispatcher()

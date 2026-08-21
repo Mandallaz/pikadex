@@ -128,9 +128,9 @@ fun typeIcon(typeName: String): ImageVector = TYPE_ICONS[typeName.lowercase()] ?
  * the Pokémon's real typing alone would show) — same "here's what changed" signal as
  * [strikethrough], for the opposite direction (types the preview added rather than removed).
  *
- * F114 — when a caller constrains this badge's width (e.g. [TeamScreen]'s type-matrix column, or
- * [TypeTriangleDiagram]'s fixed-width badges) and the full localized name wouldn't fit next to the
- * icon, the label falls back to [typeShortNameEn]'s abbreviation ("Fighting" -> "Fight") rather
+ * F114 — when a caller constrains this badge's width (e.g. [TeamScreen]'s type-matrix column) and
+ * the full localized name wouldn't fit next to the icon, the label falls back to
+ * [typeShortNameEn]'s abbreviation ("Fighting" -> "Fight") rather
  * than clipping or ellipsizing — but only when the active language is English, per the issue's
  * scope; every other locale keeps showing its full translated name exactly as before, since no
  * short-form translations exist for them. A caller with unconstrained width (the common case —

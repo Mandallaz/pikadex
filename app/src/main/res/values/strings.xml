@@ -3,7 +3,6 @@
 
     <!-- Bottom navigation -->
     <string name="nav_pokedex">Pokédex</string>
-    <string name="nav_triangles">Triangles</string>
     <string name="nav_team">Team</string>
     <string name="nav_settings">Settings</string>
 
@@ -198,12 +197,6 @@
     <string name="detail_tera_type_none">None</string>
     <string name="detail_tera_type_dialog_title">Choose Tera Type</string>
 
-    <string name="detail_type_triangles_title">Type Triangles</string>
-    <string name="detail_view_chart">View chart</string>
-    <string name="detail_best_counter_to">This typing is the best counter to:</string>
-    <string name="detail_triangle_perfect_suffix">(Perfect)</string>
-    <string name="detail_triangle_imperfect_suffix">(Imperfect)</string>
-    <string name="detail_partial_counter_to">This typing partially counters:</string>
 
     <string name="detail_smogon_strategy_dex_title">Smogon Strategy Dex</string>
 
@@ -335,14 +328,6 @@
     <string name="teamslots_save">Save</string>
 
     <!-- Type Triangles screen (F35 continued) -->
-    <string name="triangles_title">Type Triangles</string>
-    <string name="triangles_back_cd">Back</string>
-    <string name="triangles_intro">Each type here is super effective against the next one in the cycle — a rock-paper-scissors relationship that repeats throughout the type chart.</string>
-    <string name="triangles_perfect_title">Perfect triangles</string>
-    <string name="triangles_perfect_subtitle">Each type also resists the one before it in the loop — the offense and defense are fully symmetric.</string>
-    <string name="triangles_imperfect_title">Imperfect triangles</string>
-    <string name="triangles_imperfect_subtitle">The offensive loop still holds, but a defensive link is only a neutral hit — or a full immunity — instead of a resistance.</string>
-    <string name="triangles_best_counter">Best counter</string>
 
     <!-- Pokédex list/filters screen (F35 continued) -->
     <string name="list_search_placeholder">Name or number...</string>
@@ -387,7 +372,6 @@
     <string name="list_ability_label">Ability</string>
     <string name="list_format_label">Format</string>
     <string name="list_tier_label">Tier</string>
-    <string name="list_perfect_counter_label">Perfect Counter</string>
     <string name="list_minimum_stats_section">Minimum Stats</string>
     <string name="list_loading_base_stats">Loading base stats…</string>
     <string name="list_any_value">Any</string>
