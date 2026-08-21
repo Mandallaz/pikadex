@@ -298,6 +298,174 @@ class PokedexListViewModelLoadTest {
         assertNull(state.typeFilterNames)
     }
 
+    @Test
+    fun `loadMoveOptionsIfNeeded populates moveOptions and is a no-op once already loaded`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.moveNames = listOf("tackle", "growl")
+
+        viewModel.loadMoveOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf("tackle", "growl"), viewModel.uiState.value.moveOptions)
+
+        repository.moveNames = listOf("should not overwrite")
+        viewModel.loadMoveOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf("tackle", "growl"), viewModel.uiState.value.moveOptions)
+    }
+
+    @Test
+    fun `a failed loadMoveOptionsIfNeeded fetch surfaces an error`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.failWith = RuntimeException("boom")
+
+        viewModel.loadMoveOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `onMoveSelected null clears the move filter without fetching`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.onMoveSelected(null)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNull(state.selectedMove)
+        assertNull(state.moveFilterNames)
+        assertFalse(state.isFilterLoading)
+    }
+
+    @Test
+    fun `a failed onMoveSelected fetch surfaces an error and clears the spinner`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.failWith = RuntimeException("boom")
+
+        viewModel.onMoveSelected("tackle")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isFilterLoading)
+        assertNotNull(state.errorMessage)
+    }
+
+    @Test
+    fun `loadAbilityOptionsIfNeeded populates abilityOptions and is a no-op once already loaded`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.abilityNames = listOf("overgrow", "blaze")
+
+        viewModel.loadAbilityOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf("overgrow", "blaze"), viewModel.uiState.value.abilityOptions)
+
+        repository.abilityNames = listOf("should not overwrite")
+        viewModel.loadAbilityOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf("overgrow", "blaze"), viewModel.uiState.value.abilityOptions)
+    }
+
+    @Test
+    fun `a failed loadAbilityOptionsIfNeeded fetch surfaces an error`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.failWith = RuntimeException("boom")
+
+        viewModel.loadAbilityOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `onAbilitySelected null clears the ability filter without fetching`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.onAbilitySelected(null)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNull(state.selectedAbility)
+        assertNull(state.abilityFilterNames)
+        assertFalse(state.isFilterLoading)
+    }
+
+    @Test
+    fun `a failed onAbilitySelected fetch surfaces an error and clears the spinner`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.failWith = RuntimeException("boom")
+
+        viewModel.onAbilitySelected("overgrow")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isFilterLoading)
+        assertNotNull(state.errorMessage)
+    }
+
+    @Test
+    fun `loadTierOptionsIfNeeded populates formatTierOptions and is a no-op for the same generation`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.smogonTiers = mapOf("charizard" to "OU", "pikachu" to "UU")
+
+        viewModel.loadTierOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        val firstResult = viewModel.uiState.value.formatTierOptions
+        assertTrue(firstResult.isNotEmpty())
+
+        repository.smogonTiers = mapOf("should not overwrite" to "Uber")
+        viewModel.loadTierOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(firstResult, viewModel.uiState.value.formatTierOptions)
+    }
+
+    @Test
+    fun `a failed loadTierOptionsIfNeeded fetch surfaces an error and clears the spinner`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.failWith = RuntimeException("boom")
+
+        viewModel.loadTierOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isFilterLoading)
+        assertNotNull(state.errorMessage)
+    }
+
+    @Test
+    fun `loadBaseStatsIfNeeded populates baseStats and is a no-op once already loaded`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.allBasics = mapOf(
+            "bulbasaur" to PokeApiGraphQLDataSource.PokemonBasics(
+                stats = mapOf("attack" to 49),
+                types = listOf("grass", "poison"),
+                isLegendary = false,
+                isMythical = false
+            )
+        )
+
+        viewModel.loadBaseStatsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(mapOf("attack" to 49), viewModel.uiState.value.baseStats["bulbasaur"])
+        assertFalse(viewModel.uiState.value.isStatsLoading)
+
+        repository.allBasics = emptyMap()
+        viewModel.loadBaseStatsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(mapOf("attack" to 49), viewModel.uiState.value.baseStats["bulbasaur"])
+    }
+
+    @Test
+    fun `a failed loadBaseStatsIfNeeded fetch surfaces an error, clears sort, and clears the spinner`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.failWith = RuntimeException("boom")
+
+        viewModel.loadBaseStatsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isStatsLoading)
+        assertNull(state.sortStat)
+        assertNotNull(state.errorMessage)
+    }
+
     private class TestTrackingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
         var blocksDispatched = 0
             private set
