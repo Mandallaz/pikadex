@@ -187,7 +187,10 @@ kover {
                     "com.mandallaz.pikadex.BuildConfig",
                     "com.mandallaz.pikadex.data.remote.dto.*", // plain DTOs, no logic of their own
                     "*.R", "*.R\$*",
-                    "*JsonAdapter*" // Moshi/KSP-generated (de)serializers, not hand-written logic
+                    "*JsonAdapter*", // Moshi/KSP-generated (de)serializers, not hand-written logic
+                    "*ComposableSingletons*", // compiler-generated Composable lambda holders
+                    "com.mandallaz.pikadex.ui.theme.TypeKt", // static Material3 Typography tokens
+                    "com.mandallaz.pikadex.ui.detail.DetailData" // plain data holder, no logic of its own
                 )
             }
         }

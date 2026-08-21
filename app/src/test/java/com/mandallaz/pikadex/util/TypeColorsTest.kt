@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.util
 
+import androidx.compose.ui.graphics.Color
 import com.mandallaz.pikadex.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -69,5 +70,21 @@ class TypeColorsTest {
     fun `a type with no short name falls back to null, not a crash`() {
         assertNull(typeShortNameEn("stellar"))
         assertNull(typeShortNameEn("unknown"))
+    }
+
+    @Test
+    fun `TypeColors of returns each standard type's own color`() {
+        assertEquals(Color(0xFFF08030), TypeColors.of("fire"))
+        assertEquals(Color(0xFF6890F0), TypeColors.of("water"))
+    }
+
+    @Test
+    fun `TypeColors of is case-insensitive`() {
+        assertEquals(TypeColors.of("fire"), TypeColors.of("FIRE"))
+    }
+
+    @Test
+    fun `TypeColors of falls back to the unknown-type color rather than crashing`() {
+        assertEquals(Color(0xFF68A090), TypeColors.of("some-future-type"))
     }
 }
