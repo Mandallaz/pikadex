@@ -1,5 +1,6 @@
 package com.mandallaz.pikadex.ui.team
 
+import com.mandallaz.pikadex.R
 import com.mandallaz.pikadex.data.LocalizedNames
 import com.mandallaz.pikadex.data.TeamRepository
 import com.mandallaz.pikadex.data.clearForTest
@@ -9,6 +10,8 @@ import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.data.remote.dto.TypeDetailDto
 import com.mandallaz.pikadex.data.repository.FakePokedexRepository
 import com.mandallaz.pikadex.data.repository.fakeTypeDetailDto
+import com.mandallaz.pikadex.util.PresetRole
+import com.mandallaz.pikadex.util.PresetTeam
 import com.mandallaz.pikadex.util.TypeIds
 import com.mandallaz.pikadex.util.clearForTest
 import kotlinx.coroutines.CompletableDeferred
@@ -297,6 +300,73 @@ class TeamViewModelTest {
         assertFalse(state.isSuggestionsLoading)
         assertTrue(state.suggestions.isNotEmpty())
         assertEquals(mapOf("pikachu" to 25, "charmander" to 4), state.suggestionSpriteIds)
+    }
+
+    @Test
+    fun `loadPreset replaces the team with the preset's resolvable members`() = runTest(dispatcher) {
+        val charmander = NamedApiResource("charmander", "https://pokeapi.co/api/v2/pokemon/4/")
+        repository.masterList = listOf(squirtle, charmander)
+        val preset = PresetTeam("Misty", PresetRole.GYM_LEADER, "red-blue", listOf("squirtle", "charmander"))
+
+        viewModel.loadPreset(preset)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(squirtle, charmander), TeamRepository.team.value)
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `loadPreset drops preset members no longer present in the master list`() = runTest(dispatcher) {
+        repository.masterList = listOf(squirtle)
+        val preset = PresetTeam("Misty", PresetRole.GYM_LEADER, "red-blue", listOf("squirtle", "some-removed-form"))
+
+        viewModel.loadPreset(preset)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(squirtle), TeamRepository.team.value)
+    }
+
+    @Test
+    fun `loadPreset with no resolvable members sets an error instead of emptying the team`() = runTest(dispatcher) {
+        TeamRepository.replaceAll(listOf(squirtle))
+        repository.masterList = listOf(squirtle) // preset's own species aren't in it
+        val preset = PresetTeam("Misty", PresetRole.GYM_LEADER, "red-blue", listOf("some-removed-form"))
+
+        viewModel.loadPreset(preset)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(squirtle), TeamRepository.team.value) // untouched
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertEquals(R.string.team_error_load_preset, viewModel.uiState.value.errorMessage?.resId)
+    }
+
+    @Test
+    fun `a failed loadPreset fetch surfaces the network error and clears the spinner`() = runTest(dispatcher) {
+        repository.failWith = RuntimeException("boom")
+        val preset = PresetTeam("Misty", PresetRole.GYM_LEADER, "red-blue", listOf("squirtle"))
+
+        viewModel.loadPreset(preset)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertEquals(R.string.team_error_load_preset_network, viewModel.uiState.value.errorMessage?.resId)
+    }
+
+    // The StateFlow this collects from conflates equal values — loading a preset that resolves to
+    // the team already running emits nothing new, so the spinner set at the start of loadPreset
+    // must still be cleared explicitly, or the screen spins forever (see loadPreset's own doc).
+    @Test
+    fun `loading a preset identical to the current team still clears the spinner`() = runTest(dispatcher) {
+        TeamRepository.replaceAll(listOf(squirtle))
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.masterList = listOf(squirtle)
+        val preset = PresetTeam("Misty", PresetRole.GYM_LEADER, "red-blue", listOf("squirtle"))
+
+        viewModel.loadPreset(preset)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isLoading)
     }
 
     @Test
