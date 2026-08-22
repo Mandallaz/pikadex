@@ -32,7 +32,7 @@ fun evolutionPaths(link: ChainLink, viewedPokemonName: String? = null): List<Lis
     if (applicableBranches.isEmpty()) return listOf(listOf(currentStage))
 
     return applicableBranches.flatMap { next ->
-        val condition = describeEvolutionDetail(next.evolutionDetails.firstOrNull())
+        val condition = describeEvolutionDetail(selectDetail(next.evolutionDetails, viewedPokemonName))
         evolutionPaths(next, viewedPokemonName = null).map { restOfPath ->
             val restWithCondition = restOfPath.mapIndexed { index, stage ->
                 if (index == 0) stage.copy(conditionLabel = condition) else stage
@@ -48,6 +48,19 @@ fun evolutionPaths(link: ChainLink, viewedPokemonName: String? = null): List<Lis
 private fun isBranchApplicable(details: List<EvolutionDetail>, viewedPokemonName: String?): Boolean {
     if (viewedPokemonName == null || details.isEmpty()) return true
     return details.any { it.baseForm == null || it.baseForm.name == viewedPokemonName }
+}
+
+/** B67 — a branch can carry multiple [EvolutionDetail]s, one per pre-evolution variety, with
+ *  genuinely different conditions (e.g. Rockruff's day/night/dusk-Own-Tempo split into Lycanroc).
+ *  A bare `firstOrNull()` always showed the first entry's condition regardless of which variety
+ *  was actually on screen. Prefers the entry whose [EvolutionDetail.baseForm] matches
+ *  [viewedPokemonName], falling back to the first entry when there's no name to match against or
+ *  none of them do — same fallback [describeEvolutionDetail] already handles via a null detail. */
+private fun selectDetail(details: List<EvolutionDetail>, viewedPokemonName: String?): EvolutionDetail? {
+    if (viewedPokemonName != null) {
+        details.firstOrNull { it.baseForm?.name == viewedPokemonName }?.let { return it }
+    }
+    return details.firstOrNull()
 }
 
 fun describeEvolutionDetail(detail: EvolutionDetail?): UiText? {

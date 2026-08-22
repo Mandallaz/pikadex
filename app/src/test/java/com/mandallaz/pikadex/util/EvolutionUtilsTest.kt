@@ -6,6 +6,7 @@ import com.mandallaz.pikadex.data.remote.dto.EvolutionDetail
 import com.mandallaz.pikadex.data.remote.dto.NamedApiResource
 import com.mandallaz.pikadex.ui.UiText
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -233,6 +234,49 @@ class EvolutionUtilsTest {
         val paths = evolutionPaths(corsola, viewedPokemonName = "corsola-galar")
 
         assertEquals(listOf(listOf("corsola", "cursola")), paths.map { path -> path.map { it.speciesName } })
+    }
+
+    // The exact bug this guards (B67): Rockruff's real chain (id 383) has three evolution_details
+    // on its one "evolves into Lycanroc" branch — one per variety, each with a different
+    // time_of_day. A bare firstOrNull() always showed the first entry's condition (the
+    // event-exclusive Own Tempo variety's "dusk") regardless of which Rockruff was on screen.
+    @Test
+    fun `the condition shown matches the viewed variety when a branch has multiple evolution_details`() {
+        val lycanroc = leaf("lycanroc-dusk", 745)
+        val rockruff = ChainLink(
+            species("rockruff", 744),
+            emptyList(),
+            listOf(
+                ChainLink(
+                    lycanroc.species,
+                    listOf(
+                        EvolutionDetail(
+                            null, null, null, null, null, null, null, "dusk", null,
+                            baseForm = resource("rockruff-own-tempo")
+                        ),
+                        EvolutionDetail(
+                            null, null, null, null, null, null, null, "night", null,
+                            baseForm = resource("rockruff")
+                        ),
+                        EvolutionDetail(
+                            null, null, null, null, null, null, null, "day", null,
+                            baseForm = resource("rockruff")
+                        )
+                    ),
+                    emptyList()
+                )
+            )
+        )
+
+        val ownTempoPaths = evolutionPaths(rockruff, viewedPokemonName = "rockruff-own-tempo")
+        assertEquals(UiText(R.string.detail_evolution_condition_time, listOf("dusk")), ownTempoPaths.single()[1].conditionLabel)
+
+        // Standard Rockruff matches two of the three details (night and day); the bug this test
+        // guards is specifically the wrong condition leaking in from the *other* variety
+        // (own-tempo/dusk), not which of night/day wins between two equally-valid matches — both
+        // are level 25 either way, so this only asserts it isn't the own-tempo one.
+        val standardPaths = evolutionPaths(rockruff, viewedPokemonName = "rockruff")
+        assertNotEquals(UiText(R.string.detail_evolution_condition_time, listOf("dusk")), standardPaths.single()[1].conditionLabel)
     }
 
     @Test
