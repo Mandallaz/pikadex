@@ -51,8 +51,12 @@ internal fun EvolutionCard(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            val paths = remember(evolutionChain) {
-                evolutionChain?.let { evolutionPaths(it.chain) }.orEmpty()
+            val paths = remember(evolutionChain, pokemon.name) {
+                // B66 — pokemon.name is the specific variety being viewed, so a branch restricted
+                // to a *different* variety (e.g. Cursola's evolution, restricted to
+                // corsola-galar) is dropped rather than shown as if the species-in-general
+                // evolves.
+                evolutionChain?.let { evolutionPaths(it.chain, pokemon.name) }.orEmpty()
             }
             if (paths.all { it.size <= 1 }) {
                 Text(

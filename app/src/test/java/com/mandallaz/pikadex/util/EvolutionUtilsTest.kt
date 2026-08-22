@@ -182,6 +182,72 @@ class EvolutionUtilsTest {
         assertNull(paths[1][0].conditionLabel)
     }
 
+    // The exact bug this guards (B66): PokeAPI's real corsola/cursola chain (id 113) — only
+    // Galarian Corsola (base_form "corsola-galar") evolves into Cursola; standard Corsola never
+    // evolves. Without filtering, both varieties showed the same "evolves into Cursola" branch.
+    @Test
+    fun `a branch restricted to a different variety's base_form is hidden from the standard variety`() {
+        val cursola = leaf("cursola", 864)
+        val corsola = ChainLink(
+            species("corsola", 222),
+            emptyList(),
+            listOf(
+                ChainLink(
+                    cursola.species,
+                    listOf(
+                        EvolutionDetail(
+                            resource("level-up"), 38, null, null, null, null, null, null, null,
+                            baseForm = resource("corsola-galar")
+                        )
+                    ),
+                    emptyList()
+                )
+            )
+        )
+
+        val paths = evolutionPaths(corsola, viewedPokemonName = "corsola")
+
+        assertEquals(listOf(listOf("corsola")), paths.map { path -> path.map { it.speciesName } })
+    }
+
+    @Test
+    fun `a branch restricted to a variety's base_form is shown when that variety is being viewed`() {
+        val cursola = leaf("cursola", 864)
+        val corsola = ChainLink(
+            species("corsola", 222),
+            emptyList(),
+            listOf(
+                ChainLink(
+                    cursola.species,
+                    listOf(
+                        EvolutionDetail(
+                            resource("level-up"), 38, null, null, null, null, null, null, null,
+                            baseForm = resource("corsola-galar")
+                        )
+                    ),
+                    emptyList()
+                )
+            )
+        )
+
+        val paths = evolutionPaths(corsola, viewedPokemonName = "corsola-galar")
+
+        assertEquals(listOf(listOf("corsola", "cursola")), paths.map { path -> path.map { it.speciesName } })
+    }
+
+    @Test
+    fun `an unrestricted branch is unaffected by a viewedPokemonName that matches nothing`() {
+        val chain = ChainLink(
+            species("bulbasaur", 1),
+            emptyList(),
+            listOf(ChainLink(species("ivysaur", 2), listOf(EvolutionDetail(null, 16, null, null, null, null, null, null, null)), emptyList()))
+        )
+
+        val paths = evolutionPaths(chain, viewedPokemonName = "bulbasaur")
+
+        assertEquals(listOf(listOf("bulbasaur", "ivysaur")), paths.map { path -> path.map { it.speciesName } })
+    }
+
     @Test
     fun `a species with no id-bearing url falls back to id 0 rather than crashing`() {
         val chain = ChainLink(NamedApiResource("missingno", "not-a-real-url"), emptyList(), emptyList())

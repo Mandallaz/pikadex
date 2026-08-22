@@ -14,20 +14,40 @@ data class EvolutionStage(
 /**
  * Flattens the evolution tree into a list of root -> leaf paths. Needed for branching evolutions
  * (e.g. Eevee) that can't be represented as a simple list.
+ *
+ * [viewedPokemonName] — B66 — the specific variety currently on screen (e.g. "corsola-galar"),
+ * used to drop branches restricted to a *different* variety via [EvolutionDetail.baseForm] (e.g.
+ * only Galarian Corsola evolves into Cursola; standard Corsola never evolves). Only applied to
+ * this call's own direct branches, not recursively — a chain stacking two variety-restricted
+ * evolutions back to back doesn't occur in practice, and recursing with the same name would risk
+ * hiding a legitimate later-stage branch that happens to carry an unrelated base_form check.
+ * `null` (the default) disables the filter entirely, e.g. for chains it's fetched independently of
+ * any specific Pokémon on screen.
  */
-fun evolutionPaths(link: ChainLink): List<List<EvolutionStage>> {
+fun evolutionPaths(link: ChainLink, viewedPokemonName: String? = null): List<List<EvolutionStage>> {
     val currentStage = EvolutionStage(link.species.name, link.species.id ?: 0, null)
     if (link.evolvesTo.isEmpty()) return listOf(listOf(currentStage))
 
-    return link.evolvesTo.flatMap { next ->
+    val applicableBranches = link.evolvesTo.filter { next -> isBranchApplicable(next.evolutionDetails, viewedPokemonName) }
+    if (applicableBranches.isEmpty()) return listOf(listOf(currentStage))
+
+    return applicableBranches.flatMap { next ->
         val condition = describeEvolutionDetail(next.evolutionDetails.firstOrNull())
-        evolutionPaths(next).map { restOfPath ->
+        evolutionPaths(next, viewedPokemonName = null).map { restOfPath ->
             val restWithCondition = restOfPath.mapIndexed { index, stage ->
                 if (index == 0) stage.copy(conditionLabel = condition) else stage
             }
             listOf(currentStage) + restWithCondition
         }
     }
+}
+
+/** A branch with no [EvolutionDetail.baseForm] restriction applies to every variety (the
+ *  overwhelming majority of evolutions). A branch where *every* detail names a base_form applies
+ *  only when [viewedPokemonName] matches one of them. */
+private fun isBranchApplicable(details: List<EvolutionDetail>, viewedPokemonName: String?): Boolean {
+    if (viewedPokemonName == null || details.isEmpty()) return true
+    return details.any { it.baseForm == null || it.baseForm.name == viewedPokemonName }
 }
 
 fun describeEvolutionDetail(detail: EvolutionDetail?): UiText? {
