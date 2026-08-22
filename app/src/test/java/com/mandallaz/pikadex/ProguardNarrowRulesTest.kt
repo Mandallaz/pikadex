@@ -77,6 +77,33 @@ class ProguardNarrowRulesTest {
     }
 
     @Test
+    fun `proguard rules keep Moshi codegen JsonAdapter classes`() {
+        val rulesFile = File("proguard-rules.pro")
+        val actualFile = if (rulesFile.exists()) {
+            rulesFile
+        } else {
+            File("app/proguard-rules.pro")
+        }
+        val rulesText = actualFile.readText()
+
+        // B64 — Moshi's kotlin-codegen generates a separate `Outer_InnerJsonAdapter` class per
+        // @JsonClass type, looked up reflectively by constructed class name at runtime with no
+        // static reference anywhere. Without these rules R8's tree-shaker removes every generated
+        // adapter for the GraphQL DTOs nested in PokeApiGraphQLDataSource, breaking team matchups
+        // and the dex base-stats filter with a misleading "network error" in the release build.
+        assertTrue(
+            "proguard-rules.pro should keep top-level @JsonClass generated adapters",
+            rulesText.contains("-if @com.squareup.moshi.JsonClass class *") &&
+                rulesText.contains("-keep class <1>JsonAdapter")
+        )
+        assertTrue(
+            "proguard-rules.pro should keep nested @JsonClass generated adapters",
+            rulesText.contains("-if @com.squareup.moshi.JsonClass class **\$*") &&
+                rulesText.contains("-keep class <1>_<2>JsonAdapter")
+        )
+    }
+
+    @Test
     fun `DTOs can be correctly serialized and deserialized via Gson`() {
         val gson = Gson()
 

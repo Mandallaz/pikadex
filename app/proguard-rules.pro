@@ -23,6 +23,23 @@
 
 -dontwarn sun.misc.**
 
+# B64 — Moshi's kotlin-codegen (KSP) generates a separate `Outer_InnerJsonAdapter` class per
+# @JsonClass type at compile time, looked up reflectively by constructed class name at runtime
+# with no static reference anywhere in the code. Moshi ships no consumer proguard rules for this
+# (documented codegen limitation), so R8's tree-shaker removed every generated adapter for the
+# GraphQL DTOs nested in PokeApiGraphQLDataSource, breaking every feature that depends on GraphQL
+# data (team matchups, dex base-stats filter) with a misleading "network error" in the release
+# build only. Moshi's own recommended rule pair, including the nested-class variant since these
+# DTOs live inside PokeApiGraphQLDataSource rather than at the top level.
+-if @com.squareup.moshi.JsonClass class *
+-keep class <1>JsonAdapter {
+    <init>(...);
+}
+-if @com.squareup.moshi.JsonClass class **$*
+-keep class <1>_<2>JsonAdapter {
+    <init>(...);
+}
+
 # B63 — WorkManager's internal WorkDatabase (a Room database) is instantiated reflectively by
 # Room at runtime via its generated `*_Impl` class name and no-arg constructor. R8 strips that
 # constructor under isMinifyEnabled, which crashed the app at launch (NoSuchMethodException:
