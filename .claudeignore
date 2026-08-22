@@ -1,0 +1,27 @@
+# Gradle/Android build output — generated, huge (hundreds of MB)
+build/
+app/build/
+baselineprofile/build/
+.gradle/
+.kotlin/
+.cxx/
+.externalNativeBuild/
+captures/
+
+# IDE / local config
+.idea/
+*.iml
+local.properties
+keystore.properties
+
+# Build artifacts
+*.apk
+*.ap_
+*.dex
+*.jks
+*.keystore
+
+# OS / VCS / tool caches
+.DS_Store
+.git/
+.code-review-graph/

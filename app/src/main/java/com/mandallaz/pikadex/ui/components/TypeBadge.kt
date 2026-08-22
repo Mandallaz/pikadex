@@ -27,9 +27,9 @@ import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsMma
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Storm
 import androidx.compose.material.icons.filled.Terrain
 import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -92,7 +92,7 @@ private val TYPE_ICONS: Map<String, ImageVector> = mapOf(
     "bug" to Icons.Filled.BugReport,
     "rock" to Icons.Filled.Landscape,
     "ghost" to Icons.Filled.NightsStay,
-    "dragon" to Icons.Filled.Waves,
+    "dragon" to Icons.Filled.Storm,
     "dark" to Icons.Filled.DarkMode,
     "steel" to Icons.Filled.Shield,
     "fairy" to Icons.Filled.AutoAwesome,
