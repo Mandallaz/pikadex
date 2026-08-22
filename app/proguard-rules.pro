@@ -23,6 +23,15 @@
 
 -dontwarn sun.misc.**
 
+# B63 — WorkManager's internal WorkDatabase (a Room database) is instantiated reflectively by
+# Room at runtime via its generated `*_Impl` class name and no-arg constructor. R8 strips that
+# constructor under isMinifyEnabled, which crashed the app at launch (NoSuchMethodException:
+# WorkDatabase_Impl.<init>) before MainActivity ever opened, since WorkManager initializes via
+# androidx.startup at process start. Room's own consumer rules don't cover this case with the
+# "optimize" R8 config this app uses, so keep it explicitly.
+-keep class * extends androidx.room.RoomDatabase
+-keep class androidx.work.impl.WorkDatabase_Impl { <init>(...); }
+
 # Gson's TypeToken (used directly in PokedexRepository/JsonDiskCache to describe the
 # Map<String, ...> shapes read back from disk) reads its own generic superclass signature via
 # reflection at runtime to know which type it represents. Without this rule R8 strips that

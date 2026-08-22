@@ -53,6 +53,30 @@ class ProguardNarrowRulesTest {
     }
 
     @Test
+    fun `proguard rules keep Room-generated database classes for WorkManager`() {
+        val rulesFile = File("proguard-rules.pro")
+        val actualFile = if (rulesFile.exists()) {
+            rulesFile
+        } else {
+            File("app/proguard-rules.pro")
+        }
+        val rulesText = actualFile.readText()
+
+        // B63 — WorkManager's internal WorkDatabase (a Room database) is instantiated
+        // reflectively by its generated *_Impl class and no-arg constructor. Without these
+        // rules R8 strips that constructor, crashing the app on launch before MainActivity
+        // ever opens.
+        assertTrue(
+            "proguard-rules.pro should keep RoomDatabase subclasses",
+            rulesText.contains("-keep class * extends androidx.room.RoomDatabase")
+        )
+        assertTrue(
+            "proguard-rules.pro should keep WorkDatabase_Impl's constructor",
+            rulesText.contains("-keep class androidx.work.impl.WorkDatabase_Impl { <init>(...); }")
+        )
+    }
+
+    @Test
     fun `DTOs can be correctly serialized and deserialized via Gson`() {
         val gson = Gson()
 
