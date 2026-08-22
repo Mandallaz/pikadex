@@ -30,7 +30,7 @@ import com.mandallaz.pikadex.ui.components.localizedLabel
 import com.mandallaz.pikadex.ui.components.localizedTierLabel
 import com.mandallaz.pikadex.ui.list.PokedexListUiState
 import com.mandallaz.pikadex.util.SortStat
-import com.mandallaz.pikadex.util.toDisplayName
+import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.TOTAL
 
 /** Bottom sheet holding every filter control except Sort — Types as one wrapping row (was two
@@ -40,6 +40,7 @@ import com.mandallaz.pikadex.util.TOTAL
 @Composable
 internal fun FilterSheetContent(
     uiState: PokedexListUiState,
+    language: String,
     onToggleFavoritesOnly: () -> Unit,
     onTypeToggled: (String) -> Unit,
     onOpenMove: () -> Unit,
@@ -108,12 +109,17 @@ internal fun FilterSheetContent(
                 unselectedIcon = { Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
             SelectableChip(
-                label = uiState.selectedMove?.toDisplayName() ?: stringResource(R.string.list_move_label),
+                // B65 — the picker dialog itself already localizes via SearchableListDialog's
+                // displayName param; the selected-filter chip must show the same localized name,
+                // not fall back to the raw English slug once something is actually chosen.
+                label = uiState.selectedMove?.localizedDisplayName(uiState.moveLocalizedNames, language)
+                    ?: stringResource(R.string.list_move_label),
                 selected = uiState.selectedMove != null,
                 onClick = onOpenMove
             )
             SelectableChip(
-                label = uiState.selectedAbility?.toDisplayName() ?: stringResource(R.string.list_ability_label),
+                label = uiState.selectedAbility?.localizedDisplayName(uiState.abilityLocalizedNames, language)
+                    ?: stringResource(R.string.list_ability_label),
                 selected = uiState.selectedAbility != null,
                 onClick = onOpenAbility
             )

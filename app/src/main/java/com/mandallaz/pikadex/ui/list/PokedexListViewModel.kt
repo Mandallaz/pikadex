@@ -85,7 +85,15 @@ data class PokedexListUiState(
     // LocalizedNames cache (see loadSpeciesNamesIfNeeded); empty until that completes, which is
     // fine since every card falls back to the English-formatted raw name
     // (String.localizedDisplayName) until then.
-    val speciesNames: Map<String, Map<String, String>> = emptyMap()
+    val speciesNames: Map<String, Map<String, String>> = emptyMap(),
+    // B65 — same shape/reasoning as speciesNames above, but for the Move/Ability filter pickers,
+    // which used to show raw English PokeAPI slugs regardless of the selected game-data language
+    // (SearchableListDialog's displayName param defaulted to English-only formatting for these two
+    // callers specifically — see its own doc comment). Fetched alongside moveOptions/abilityOptions
+    // in loadMoveOptionsIfNeeded/loadAbilityOptionsIfNeeded rather than eagerly, since the filter
+    // sheet's Move/Ability dialogs are opened far less often than the list itself.
+    val moveLocalizedNames: Map<String, Map<String, String>> = emptyMap(),
+    val abilityLocalizedNames: Map<String, Map<String, String>> = emptyMap()
 ) {
     val hasActiveFilters: Boolean
         get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
@@ -495,6 +503,17 @@ class PokedexListViewModel @JvmOverloads constructor(
             try {
                 val moves = repository.getMoveNames()
                 _uiState.update { it.copy(moveOptions = moves) }
+                // B65 — best-effort, separate from the try/catch above: a failure here should leave
+                // the picker showing English-formatted names (SearchableListDialog's own fallback),
+                // not fail the whole picker load the way a missing moveOptions would.
+                val localizedNames = try {
+                    repository.getAllMoveLocalizedNames()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    emptyMap()
+                }
+                _uiState.update { it.copy(moveLocalizedNames = localizedNames) }
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {
@@ -526,6 +545,15 @@ class PokedexListViewModel @JvmOverloads constructor(
             try {
                 val abilities = repository.getAbilityNames()
                 _uiState.update { it.copy(abilityOptions = abilities) }
+                // B65 — see the identical fallback reasoning in loadMoveOptionsIfNeeded.
+                val localizedNames = try {
+                    repository.getAllAbilityLocalizedNames()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    emptyMap()
+                }
+                _uiState.update { it.copy(abilityLocalizedNames = localizedNames) }
             } catch (e: CancellationException) {
                 throw e // see onTypeToggled
             } catch (e: Exception) {

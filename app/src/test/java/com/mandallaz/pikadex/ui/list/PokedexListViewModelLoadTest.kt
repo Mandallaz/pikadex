@@ -313,6 +313,39 @@ class PokedexListViewModelLoadTest {
         assertEquals(listOf("tackle", "growl"), viewModel.uiState.value.moveOptions)
     }
 
+    // B65 — the Move/Ability pickers used to show raw English PokeAPI slugs regardless of the
+    // selected game-data language; loadMoveOptionsIfNeeded/loadAbilityOptionsIfNeeded must now
+    // also populate the localized-name maps the filter sheet renders through.
+    @Test
+    fun `loadMoveOptionsIfNeeded also populates moveLocalizedNames`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.moveNames = listOf("thunder-wave")
+        repository.allMoveLocalizedNames = mapOf("thunder-wave" to mapOf("fr" to "Onde de Choc"))
+
+        viewModel.loadMoveOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            mapOf("thunder-wave" to mapOf("fr" to "Onde de Choc")),
+            viewModel.uiState.value.moveLocalizedNames
+        )
+    }
+
+    @Test
+    fun `loadAbilityOptionsIfNeeded also populates abilityLocalizedNames`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.abilityNames = listOf("levitate")
+        repository.allAbilityLocalizedNames = mapOf("levitate" to mapOf("fr" to "Lévitation"))
+
+        viewModel.loadAbilityOptionsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            mapOf("levitate" to mapOf("fr" to "Lévitation")),
+            viewModel.uiState.value.abilityLocalizedNames
+        )
+    }
+
     @Test
     fun `a failed loadMoveOptionsIfNeeded fetch surfaces an error`() = runTest(dispatcher) {
         dispatcher.scheduler.advanceUntilIdle()

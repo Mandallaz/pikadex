@@ -338,6 +338,7 @@ fun PokedexListScreen(
             LocalizedContext {
                 FilterSheetContent(
                     uiState = uiState,
+                    language = language,
                     onToggleFavoritesOnly = viewModel::onToggleFavoritesOnly,
                     onTypeToggled = viewModel::onTypeToggled,
                     onOpenMove = {
@@ -365,6 +366,9 @@ fun PokedexListScreen(
             title = stringResource(R.string.list_choose_move_title),
             options = uiState.moveOptions,
             clearLabel = stringResource(R.string.list_any_move),
+            // B65 — same pattern as the species picker above, now that moveLocalizedNames is
+            // actually fetched (see PokedexListViewModel.loadMoveOptionsIfNeeded).
+            displayName = { it.localizedDisplayName(uiState.moveLocalizedNames, language) },
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { move ->
                 viewModel.onMoveSelected(move)
@@ -376,6 +380,8 @@ fun PokedexListScreen(
             title = stringResource(R.string.list_choose_ability_title),
             options = uiState.abilityOptions,
             clearLabel = stringResource(R.string.list_any_ability),
+            // B65 — see the identical MOVE case above.
+            displayName = { it.localizedDisplayName(uiState.abilityLocalizedNames, language) },
             onDismiss = { activeDialog = ActiveDialog.NONE },
             onSelect = { ability ->
                 viewModel.onAbilitySelected(ability)
