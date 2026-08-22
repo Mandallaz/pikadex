@@ -348,6 +348,16 @@
     <string name="list_type_section">屬性</string>
     <string name="list_type_all_selected_hint">符合所有已選屬性</string>
     <string name="list_selected_cd">已選擇</string>
+    <string name="list_region_section">地區</string>
+    <string name="region_kanto">關都</string>
+    <string name="region_johto">城都</string>
+    <string name="region_hoenn">豐緣</string>
+    <string name="region_sinnoh">神奧</string>
+    <string name="region_unova">合眾</string>
+    <string name="region_kalos">卡洛斯</string>
+    <string name="region_alola">阿羅拉</string>
+    <string name="region_galar">伽勒爾</string>
+    <string name="region_paldea">帕底亞</string>
     <string name="list_other_filters_section">其他篩選</string>
     <string name="list_favorites_label">收藏</string>
     <string name="list_move_label">招式</string>

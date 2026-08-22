@@ -341,6 +341,7 @@ fun PokedexListScreen(
                     language = language,
                     onToggleFavoritesOnly = viewModel::onToggleFavoritesOnly,
                     onTypeToggled = viewModel::onTypeToggled,
+                    onRegionToggled = viewModel::onRegionToggled,
                     onOpenMove = {
                         viewModel.loadMoveOptionsIfNeeded()
                         activeDialog = ActiveDialog.MOVE

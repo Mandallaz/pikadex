@@ -29,6 +29,7 @@ import com.mandallaz.pikadex.ui.components.TypeBadge
 import com.mandallaz.pikadex.ui.components.localizedLabel
 import com.mandallaz.pikadex.ui.components.localizedTierLabel
 import com.mandallaz.pikadex.ui.list.PokedexListUiState
+import com.mandallaz.pikadex.util.Region
 import com.mandallaz.pikadex.util.SortStat
 import com.mandallaz.pikadex.util.localizedDisplayName
 import com.mandallaz.pikadex.util.TOTAL
@@ -43,6 +44,7 @@ internal fun FilterSheetContent(
     language: String,
     onToggleFavoritesOnly: () -> Unit,
     onTypeToggled: (String) -> Unit,
+    onRegionToggled: (String) -> Unit,
     onOpenMove: () -> Unit,
     onOpenAbility: () -> Unit,
     onOpenFormat: () -> Unit,
@@ -86,6 +88,32 @@ internal fun FilterSheetContent(
                     selected = isSelected,
                     onClick = { onTypeToggled(type.name) },
                     label = { TypeBadge(type.name, type.id ?: 0, height = 20.dp) },
+                    leadingIcon = if (isSelected) {
+                        { Icon(Icons.Default.Check, contentDescription = stringResource(R.string.list_selected_cd), modifier = Modifier.size(18.dp)) }
+                    } else {
+                        null
+                    }
+                )
+            }
+        }
+
+        Text(
+            stringResource(R.string.list_region_section),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 20.dp)
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Region.entries.forEach { region ->
+                val isSelected = region.generationName in uiState.selectedRegions
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onRegionToggled(region.generationName) },
+                    label = { Text(stringResource(region.labelResId)) },
                     leadingIcon = if (isSelected) {
                         { Icon(Icons.Default.Check, contentDescription = stringResource(R.string.list_selected_cd), modifier = Modifier.size(18.dp)) }
                     } else {

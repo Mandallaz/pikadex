@@ -366,6 +366,16 @@
     <string name="list_type_section">Type</string>
     <string name="list_type_all_selected_hint">Matching all selected types</string>
     <string name="list_selected_cd">Selected</string>
+    <string name="list_region_section">Region</string>
+    <string name="region_kanto">Kanto</string>
+    <string name="region_johto">Johto</string>
+    <string name="region_hoenn">Hoenn</string>
+    <string name="region_sinnoh">Sinnoh</string>
+    <string name="region_unova">Unova</string>
+    <string name="region_kalos">Kalos</string>
+    <string name="region_alola">Alola</string>
+    <string name="region_galar">Galar</string>
+    <string name="region_paldea">Paldea</string>
     <string name="list_other_filters_section">Other filters</string>
     <string name="list_favorites_label">Favorites</string>
     <string name="list_move_label">Move</string>

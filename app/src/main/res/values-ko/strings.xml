@@ -348,6 +348,16 @@
     <string name="list_type_section">타입</string>
     <string name="list_type_all_selected_hint">선택한 모든 타입과 일치</string>
     <string name="list_selected_cd">선택됨</string>
+    <string name="list_region_section">지방</string>
+    <string name="region_kanto">관동</string>
+    <string name="region_johto">성도</string>
+    <string name="region_hoenn">호연</string>
+    <string name="region_sinnoh">신오</string>
+    <string name="region_unova">하나</string>
+    <string name="region_kalos">칼로스</string>
+    <string name="region_alola">알로라</string>
+    <string name="region_galar">가라르</string>
+    <string name="region_paldea">팔데아</string>
     <string name="list_other_filters_section">기타 필터</string>
     <string name="list_favorites_label">즐겨찾기</string>
     <string name="list_move_label">기술</string>

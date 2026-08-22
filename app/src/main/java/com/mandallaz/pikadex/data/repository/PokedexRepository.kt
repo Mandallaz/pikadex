@@ -363,7 +363,12 @@ class PokedexRepository(private val api: PokeApiService) : PokedexRepositoryApi 
         // re-fetches instead of reading back an old cached payload with `abilities` missing
         // (Gson's reflection-based deserialization doesn't apply Kotlin default parameter values
         // for an absent field, so it would land as null despite the non-null List<String> type).
-        const val BASICS_CACHE_KEY = "pokemon_basics_v2"
+        // _v3 (F117): PokemonBasics gained a `generation` field — bumped for the same reason as
+        // the _v2 bump above: an upgrading install must re-fetch rather than reading back an old
+        // cached payload with `generation` missing (defaults to "", which never matches any
+        // region filter, so every Pokémon would silently vanish from every region until the
+        // multi-day disk-cache TTL happened to expire on its own).
+        const val BASICS_CACHE_KEY = "pokemon_basics_v3"
         // _v3: MoveInfo gained a `pp` field — bumped so an upgrading install re-fetches instead of
         // reading back an old cached payload with no pp in it and showing "—" for every move.
         const val MOVE_INFO_CACHE_KEY = "move_info_v3"

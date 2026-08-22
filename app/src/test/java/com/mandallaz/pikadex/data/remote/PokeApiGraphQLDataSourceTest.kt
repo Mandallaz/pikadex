@@ -40,7 +40,7 @@ class PokeApiGraphQLDataSourceTest {
                   { "type": { "name": "grass" } },
                   { "type": { "name": "poison" } }
                 ],
-                "pokemonspecy": { "is_legendary": false, "is_mythical": false },
+                "pokemonspecy": { "is_legendary": false, "is_mythical": false, "generation": { "name": "generation-i" } },
                 "pokemonabilities": [
                   { "ability": { "name": "overgrow" } },
                   { "ability": { "name": "chlorophyll" } }
@@ -54,7 +54,7 @@ class PokeApiGraphQLDataSourceTest {
                 "pokemontypes": [
                   { "type": { "name": "psychic" } }
                 ],
-                "pokemonspecy": { "is_legendary": true, "is_mythical": false },
+                "pokemonspecy": { "is_legendary": true, "is_mythical": false, "generation": { "name": "generation-i" } },
                 "pokemonabilities": [
                   { "ability": { "name": "pressure" } }
                 ]
@@ -81,6 +81,7 @@ class PokeApiGraphQLDataSourceTest {
         assertFalse(bulbasaur.isLegendary)
         assertFalse(bulbasaur.isMythical)
         assertEquals(listOf("overgrow", "chlorophyll"), bulbasaur.abilities)
+        assertEquals("generation-i", bulbasaur.generation)
     }
 
     @Test
@@ -98,6 +99,7 @@ class PokeApiGraphQLDataSourceTest {
         assertFalse(entry.isLegendary)
         assertFalse(entry.isMythical)
         assertEquals(emptyList<String>(), entry.abilities)
+        assertEquals("", entry.generation)
     }
 
     // --- fetchAllMoveInfo / parseMoveInfo (F37: priority + movemeta) --------------------

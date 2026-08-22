@@ -348,6 +348,16 @@
     <string name="list_type_section">タイプ</string>
     <string name="list_type_all_selected_hint">選択したすべてのタイプに一致</string>
     <string name="list_selected_cd">選択中</string>
+    <string name="list_region_section">地方</string>
+    <string name="region_kanto">カントー</string>
+    <string name="region_johto">ジョウト</string>
+    <string name="region_hoenn">ホウエン</string>
+    <string name="region_sinnoh">シンオウ</string>
+    <string name="region_unova">イッシュ</string>
+    <string name="region_kalos">カロス</string>
+    <string name="region_alola">アローラ</string>
+    <string name="region_galar">ガラル</string>
+    <string name="region_paldea">パルデア</string>
     <string name="list_other_filters_section">その他のフィルター</string>
     <string name="list_favorites_label">お気に入り</string>
     <string name="list_move_label">技</string>

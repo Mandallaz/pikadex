@@ -205,6 +205,38 @@ class PokedexListViewModelLoadTest {
         freshViewModel.clearForTest(dispatcher.scheduler)
     }
 
+    // F117 — generationsByName rides the same bulk fetch as typesByName above, and must be
+    // populated the same eager way so the Region filter has data as soon as the sheet opens.
+    @Test
+    fun `loadBaseStatsIfNeeded also populates generationsByName`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.allBasics = mapOf(
+            "bulbasaur" to PokeApiGraphQLDataSource.PokemonBasics(
+                stats = emptyMap(),
+                types = emptyList(),
+                isLegendary = false,
+                isMythical = false,
+                generation = "generation-i"
+            )
+        )
+
+        viewModel.loadBaseStatsIfNeeded()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("generation-i", viewModel.uiState.value.generationsByName["bulbasaur"])
+    }
+
+    @Test
+    fun `onRegionToggled adds then removes a region from selectedRegions`() = runTest(dispatcher) {
+        dispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onRegionToggled("generation-i")
+        assertEquals(setOf("generation-i"), viewModel.uiState.value.selectedRegions)
+
+        viewModel.onRegionToggled("generation-i")
+        assertEquals(emptySet<String>(), viewModel.uiState.value.selectedRegions)
+    }
+
     @Test
     fun `selecting a type filter applies the fetched intersection`() = runTest(dispatcher) {
         dispatcher.scheduler.advanceUntilIdle() // let the initial load finish first

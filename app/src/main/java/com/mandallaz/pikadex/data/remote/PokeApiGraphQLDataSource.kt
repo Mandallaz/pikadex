@@ -52,6 +52,7 @@ object PokeApiGraphQLDataSource {
             pokemonspecy {
               is_legendary
               is_mythical
+              generation { name }
             }
             pokemonabilities {
               ability { name }
@@ -161,7 +162,11 @@ object PokeApiGraphQLDataSource {
         // F79 — every possible ability (standard or hidden), not just the ones an actual instance
         // has — the app has no per-member ability selection yet (see F81), so team suggestions
         // treat a species as immunity-eligible whenever any of its possible abilities grants one.
-        val abilities: List<String> = emptyList()
+        val abilities: List<String> = emptyList(),
+        // F117 — "generation-i".."generation-ix", used to derive the region filter (Kanto=gen1,
+        // Johto=gen2...). Empty string rather than nullable: a response missing this field should
+        // just fail to match any region filter, not force every reader to handle null.
+        val generation: String = ""
     )
 
     /** pokemonName -> [PokemonBasics], e.g. "bulbasaur" -> stats={"hp" to 45, ...}, types=[grass,
@@ -180,7 +185,8 @@ object PokeApiGraphQLDataSource {
                 types = p.pokemontypes.orEmpty().mapNotNull { it.type?.name },
                 isLegendary = p.pokemonspecy?.isLegendary ?: false,
                 isMythical = p.pokemonspecy?.isMythical ?: false,
-                abilities = p.pokemonabilities.orEmpty().mapNotNull { it.ability?.name }
+                abilities = p.pokemonabilities.orEmpty().mapNotNull { it.ability?.name },
+                generation = p.pokemonspecy?.generation?.name ?: ""
             )
         }
     }
@@ -211,8 +217,11 @@ object PokeApiGraphQLDataSource {
     @JsonClass(generateAdapter = true)
     internal data class GraphQLSpecy(
         @field:Json(name = "is_legendary") val isLegendary: Boolean?,
-        @field:Json(name = "is_mythical") val isMythical: Boolean?
+        @field:Json(name = "is_mythical") val isMythical: Boolean?,
+        val generation: GraphQLGenerationName?
     )
+    @JsonClass(generateAdapter = true)
+    internal data class GraphQLGenerationName(val name: String)
     @JsonClass(generateAdapter = true)
     internal data class GraphQLPokemonAbility(val ability: GraphQLAbilityName?)
     @JsonClass(generateAdapter = true)

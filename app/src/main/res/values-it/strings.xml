@@ -348,6 +348,16 @@
     <string name="list_type_section">Tipo</string>
     <string name="list_type_all_selected_hint">Corrisponde a tutti i tipi selezionati</string>
     <string name="list_selected_cd">Selezionato</string>
+    <string name="list_region_section">Regione</string>
+    <string name="region_kanto">Kanto</string>
+    <string name="region_johto">Johto</string>
+    <string name="region_hoenn">Hoenn</string>
+    <string name="region_sinnoh">Sinnoh</string>
+    <string name="region_unova">Unima</string>
+    <string name="region_kalos">Kalos</string>
+    <string name="region_alola">Alola</string>
+    <string name="region_galar">Galar</string>
+    <string name="region_paldea">Paldea</string>
     <string name="list_other_filters_section">Altri filtri</string>
     <string name="list_favorites_label">Preferiti</string>
     <string name="list_move_label">Mossa</string>

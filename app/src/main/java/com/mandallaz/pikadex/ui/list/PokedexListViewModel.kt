@@ -78,6 +78,10 @@ data class PokedexListUiState(
     // Same bulk fetch as legendaryNames/mythicalNames above (see loadBaseStatsIfNeeded) — backs the
     // F82 type badges (see PokemonCard.kt), each Pokémon's typing without a separate network call.
     val typesByName: Map<String, List<String>> = emptyMap(),
+    // F117 — same bulk fetch as legendaryNames/mythicalNames/typesByName above (see
+    // loadBaseStatsIfNeeded); "generation-i".."generation-ix", backs the region filter below.
+    val generationsByName: Map<String, String> = emptyMap(),
+    val selectedRegions: Set<String> = emptySet(),
     // Only keys with an active (> 0) minimum are present — a slider at its default (0) imposes no
     // constraint, so there's nothing to filter on and no reason for it to occupy a map entry.
     val statMinimums: Map<String, Int> = emptyMap(),
@@ -98,7 +102,8 @@ data class PokedexListUiState(
     val hasActiveFilters: Boolean
         get() = selectedTypes.isNotEmpty() || selectedMove != null || selectedAbility != null ||
             selectedFormatGen != null || selectedFormatTier != null || showFavoritesOnly ||
-            sortStat != null || rarityFilter != null || statMinimums.isNotEmpty()
+            sortStat != null || rarityFilter != null || statMinimums.isNotEmpty() ||
+            selectedRegions.isNotEmpty()
 
     /** How many of the filter controls (not counting sort) are currently set — shown as a badge
      *  count on the "Filters" button so it's clear at a glance whether/how much filtering is active
@@ -110,7 +115,8 @@ data class PokedexListUiState(
             (if (selectedFormatGen != null || selectedFormatTier != null) 1 else 0) +
             (if (showFavoritesOnly) 1 else 0) +
             (if (rarityFilter != null) 1 else 0) +
-            statMinimums.size
+            statMinimums.size +
+            selectedRegions.size
 
     /** The tier filter works standalone (e.g. picking "Uber" with no generation chosen), so it
      *  needs a generation to look up regardless — this defaults to the current one. */
@@ -147,6 +153,8 @@ data class PokedexListUiState(
             legendaryNames = legendaryNames,
             mythicalNames = mythicalNames,
             typesByName = typesByName,
+            generationsByName = generationsByName,
+            selectedRegions = selectedRegions,
             statMinimums = statMinimums,
             speciesNames = speciesNames
         )
@@ -250,6 +258,18 @@ internal fun applyRarityFilter(
     return list
 }
 
+internal fun applyRegionFilter(
+    list: List<NamedApiResource>,
+    state: PokedexListUiState
+): List<NamedApiResource> {
+    // F117 — same "no data yet, don't filter" guard as applyRarityFilter above:
+    // generationsByName comes from the same bulk fetch as baseStats/legendaryNames.
+    if (state.selectedRegions.isNotEmpty() && state.generationsByName.isNotEmpty()) {
+        return list.filter { resource -> state.generationsByName[resource.name] in state.selectedRegions }
+    }
+    return list
+}
+
 internal fun applyStatMinimums(
     list: List<NamedApiResource>,
     state: PokedexListUiState
@@ -325,6 +345,7 @@ internal fun computeDisplayed(
     list = applyTypeFilters(list, state)
     list = applyFavoritesFilter(list, state)
     list = applyRarityFilter(list, state)
+    list = applyRegionFilter(list, state)
     list = applyStatMinimums(list, state)
     list = applySort(list, state)
     return list
@@ -339,7 +360,9 @@ private data class BasicsPostProcessed(
     val baseStats: Map<String, Map<String, Int>>,
     val legendaryNames: Set<String>,
     val mythicalNames: Set<String>,
-    val typesByName: Map<String, List<String>>
+    val typesByName: Map<String, List<String>>,
+    // F117 — "generation-i".."generation-ix", same bulk fetch as the fields above.
+    val generationsByName: Map<String, String>
 )
 
 class PokedexListViewModel @JvmOverloads constructor(
@@ -447,6 +470,14 @@ class PokedexListViewModel @JvmOverloads constructor(
 
     fun onToggleFavoritesOnly() {
         _uiState.update { it.copy(showFavoritesOnly = !it.showFavoritesOnly) }
+    }
+
+    /** F117 — unlike [onTypeToggled], no network round-trip: generationsByName is already loaded
+     *  in bulk by [loadBaseStatsIfNeeded], so this is a plain local toggle over the already-fetched
+     *  data, same as [onStatMinimumChanged]. */
+    fun onRegionToggled(generation: String) {
+        val current = _uiState.value.selectedRegions
+        _uiState.update { it.copy(selectedRegions = if (generation in current) current - generation else current + generation) }
     }
 
     fun onSearchQueryChange(query: String) {
@@ -686,7 +717,8 @@ class PokedexListViewModel @JvmOverloads constructor(
             val legendaryNames = basics.filterValues { b -> b.isLegendary }.keys
             val mythicalNames = basics.filterValues { b -> b.isMythical }.keys
             val typesByName = basics.mapValues { (_, b) -> b.types }
-            BasicsPostProcessed(baseStats, legendaryNames, mythicalNames, typesByName)
+            val generationsByName = basics.mapValues { (_, b) -> b.generation }
+            BasicsPostProcessed(baseStats, legendaryNames, mythicalNames, typesByName, generationsByName)
         }
         _uiState.update {
             it.copy(
@@ -694,6 +726,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 legendaryNames = processed.legendaryNames,
                 mythicalNames = processed.mythicalNames,
                 typesByName = processed.typesByName,
+                generationsByName = processed.generationsByName,
                 isStatsLoading = false
             )
         }
@@ -778,6 +811,7 @@ class PokedexListViewModel @JvmOverloads constructor(
                 selectedFormatTier = null, formatFilterNames = null,
                 showFavoritesOnly = false,
                 rarityFilter = null,
+                selectedRegions = emptySet(),
                 statMinimums = emptyMap(),
                 // Same reason as the individual cancel sites: whichever of the four jobs just got
                 // cancelled will never clear this itself, so Reset while a filter was still

@@ -351,6 +351,33 @@ class PokedexListViewModelTest {
         assertEquals(listOf("charmander"), result.map { it.name })
     }
 
+    // F117
+    @Test
+    fun `applyRegionFilter directly filters by generation`() {
+        val state = PokedexListUiState(
+            selectedRegions = setOf("generation-i"),
+            generationsByName = mapOf("charmander" to "generation-i", "bulbasaur" to "generation-i", "squirtle" to "generation-vii")
+        )
+        val result = applyRegionFilter(unsorted, state)
+        assertEquals(listOf("charmander", "bulbasaur"), result.map { it.name })
+    }
+
+    @Test
+    fun `applyRegionFilter matches any of several selected regions`() {
+        val state = PokedexListUiState(
+            selectedRegions = setOf("generation-i", "generation-vii"),
+            generationsByName = mapOf("charmander" to "generation-i", "bulbasaur" to "generation-iv", "squirtle" to "generation-vii")
+        )
+        val result = applyRegionFilter(unsorted, state)
+        assertEquals(listOf("charmander", "squirtle"), result.map { it.name })
+    }
+
+    @Test
+    fun `applyRegionFilter is a no-op before generationsByName has loaded`() {
+        val state = PokedexListUiState(selectedRegions = setOf("generation-i"), generationsByName = emptyMap())
+        assertEquals(unsorted, applyRegionFilter(unsorted, state))
+    }
+
     @Test
     fun `applyStatMinimums directly filters by minimum stats`() {
         val state = PokedexListUiState(
